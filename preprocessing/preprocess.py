@@ -7,7 +7,7 @@ import csv
 import re
 import logging
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 # Configure logging
 logging.basicConfig(
@@ -267,8 +267,8 @@ if __name__ == "__main__":
 
     # Extract entries from the records
     all_entries = []
-    for record in weekly_records:
-        entries = extract_entries(record)
-        all_entries.extend(entries)
+    for curr_record in weekly_records:
+        curr_entries = extract_entries(curr_record)
+        all_entries.extend(curr_entries)
 
     print(f"Extracted {len(all_entries)} media entries")
