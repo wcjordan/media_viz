@@ -134,5 +134,5 @@ def load_weekly_records(path: str) -> List[Dict]:
 
 if __name__ == "__main__":
     # Example usage
-    records = load_weekly_records("media_enjoyed.csv")
+    records = load_weekly_records("preprocessing/media_enjoyed.csv")
     print(f"Loaded {len(records)} records")
