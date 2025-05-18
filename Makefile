@@ -8,6 +8,16 @@ aider:
 init:
 	bash setup.sh
 
+.PHONY: lint
+lint:
+	black --check .
+	flake8 .
+	pylint -j 0 .
+
+.PHONY: format
+format:
+	black .
+
 .PHONY: test
 test:
-	pytest tests/test_setup.py -v
+	python -m pytest tests -v

@@ -65,3 +65,6 @@ tilt_modules/
 # AI tools
 .aider*
 repomix-output.xml
+
+# Raw data files
+preprocessing/raw_data/

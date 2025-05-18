@@ -11,10 +11,10 @@
 - [x] Create `tests/test_setup.py` with a dummy test that always passes
 
 ## 2. CSV Loader & Year Propagation
-- [ ] Implement `load_weekly_records(path: str) -> List[Dict]` in `preprocess.py`
-- [ ] Parse `DateRange` into `start_date` and `end_date` (YYYY-MM-DD), inferring missing years
-- [ ] Return records with `start_date`, `end_date`, and `raw_notes`
-- [ ] Write tests in `tests/test_loader.py` for date parsing and year propagation
+- [x] Implement `load_weekly_records(path: str) -> List[Dict]` in `preprocess.py`
+- [x] Parse `DateRange` into `start_date` and `end_date` (YYYY-MM-DD), inferring missing years
+- [x] Return records with `start_date`, `end_date`, and `raw_notes`
+- [x] Write tests in `tests/test_loader.py` for date parsing and year propagation
 
 ## 3. NLP Extraction Engine
 - [ ] Add `extract_entries(record: Dict) -> List[Dict]` in `preprocess.py`
