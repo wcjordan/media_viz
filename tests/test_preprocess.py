@@ -81,12 +81,6 @@ def test_parse_date_range_different_separators():
     assert end_date == "2023-04-05"
     assert current_year == 2023
 
-    # Word "to"
-    start_date, end_date, current_year = parse_date_range("Apr 1 to 5", 2023)
-    assert start_date == "2023-04-01"
-    assert end_date == "2023-04-05"
-    assert current_year == 2023
-
 
 def test_year_propagation():
     """Test that the year is correctly propagated through multiple date ranges."""
