@@ -7,7 +7,7 @@ import csv
 import re
 import logging
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 # Configure logging
 logging.basicConfig(
@@ -182,7 +182,89 @@ def load_weekly_records(path: str) -> List[Dict]:
     return records
 
 
+def extract_entries(record: Dict) -> List[Dict]:
+    """
+    Extract media entries from a weekly record's raw notes.
+    
+    Args:
+        record: Dictionary containing start_date, end_date, and raw_notes
+        
+    Returns:
+        List of dictionaries with raw_text, action, and week_date
+    """
+    entries = []
+    
+    # Get the raw notes and dates from the record
+    raw_notes = record.get("raw_notes", "")
+    start_date = record.get("start_date")
+    end_date = record.get("end_date")
+    
+    if not raw_notes or not start_date or not end_date:
+        logger.warning("Skipping record with missing data: %s", record)
+        return entries
+    
+    # Split the raw notes on '&' or newlines
+    raw_items = []
+    for item in re.split(r'&|\n', raw_notes):
+        item = item.strip()
+        if item:
+            raw_items.append(item)
+    
+    # Define patterns for different actions
+    action_patterns = [
+        (r'(?i)started(?:\s+reading|\s+playing|\s+watching)?\s+(.*)', 'started'),
+        (r'(?i)finished(?:\s+reading|\s+playing|\s+watching)?\s+(.*)', 'finished'),
+        (r'(?i)watched\s+(.*)', 'watched'),
+        (r'(?i)playing\s+(.*)', 'playing'),
+        (r'(?i)reading\s+(.*)', 'reading'),
+        (r'(?i)completed\s+(.*)', 'completed'),
+        (r'(?i)began\s+(.*)', 'started'),
+        (r'(?i)continuing\s+(.*)', 'continuing'),
+    ]
+    
+    # Process each item
+    for raw_text in raw_items:
+        action = None
+        title = None
+        
+        # Try to match each action pattern
+        for pattern, act in action_patterns:
+            match = re.search(pattern, raw_text)
+            if match:
+                action = act
+                title = match.group(1).strip()
+                break
+        
+        # If no specific action was found, treat as a general mention
+        if not action:
+            action = "mentioned"
+            title = raw_text
+        
+        # Create an entry
+        entry = {
+            "raw_text": raw_text,
+            "action": action,
+            "title": title,
+            "start_date": start_date,
+            "end_date": end_date
+        }
+        
+        entries.append(entry)
+    
+    logger.info("Extracted %d entries from record with dates %s to %s", 
+                len(entries), start_date, end_date)
+    return entries
+
+
 if __name__ == "__main__":
     # Example usage
     weekly_records = load_weekly_records("raw_data/media_enjoyed.csv")
     print(f"Loaded {len(weekly_records)} records")
+    
+    # Extract entries from the records
+    all_entries = []
+    for record in weekly_records:
+        entries = extract_entries(record)
+        all_entries.extend(entries)
+    
+    print(f"Extracted {len(all_entries)} media entries")
