@@ -168,8 +168,14 @@ def load_weekly_records(path: str) -> List[Dict]:
                         "Skipping row with unparseable date range: %s", date_range
                     )
 
-    except Exception as e:
-        logger.error("Error loading CSV file: %s", e)
+    except FileNotFoundError as e:
+        logger.error("File not found: %s", e)
+        raise
+    except PermissionError as e:
+        logger.error("Permission denied: %s", e)
+        raise
+    except csv.Error as e:
+        logger.error("CSV parsing error: %s", e)
         raise
 
     logger.info("Loaded %d weekly records from %s", len(records), path)
