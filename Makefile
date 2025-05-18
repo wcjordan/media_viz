@@ -10,4 +10,4 @@ init:
 
 .PHONY: test
 test:
-	pytest tests/test_setup.py -v
+	pytest tests -v
