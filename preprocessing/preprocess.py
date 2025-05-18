@@ -45,7 +45,9 @@ def parse_date_range(date_range: str, last_year: int = None) -> tuple:
         last_year: The year to use if not specified in the date_range
 
     Returns:
-        Tuple of (start_date, end_date) in ISO format (YYYY-MM-DD)
+        Tuple of (start_date, end_date, current_year) where:
+            - start_date and end_date are in ISO format (YYYY-MM-DD)
+            - current_year is the year used for parsing the date range
     """
     # Get the year from the date range if specificed in the format "month start_date-end_date (YYYY)"
     current_year = last_year
