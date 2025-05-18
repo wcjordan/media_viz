@@ -18,6 +18,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+DATE_COLUMN_NAME = ""
 MONTHS = [
     "jan",
     "feb",
@@ -62,7 +63,7 @@ def parse_date_range(date_range: str, last_year: int = None) -> tuple:
     date_range = date_range.strip()
 
     # Handle various separators (-, –, —, to)
-    date_range = re.sub(r"[\-–—]|to", "-", date_range)
+    date_range = re.sub(r"[\-–—]", "-", date_range)
 
     # Check if there's a range or just a single date
     if "-" in date_range:
@@ -145,7 +146,7 @@ def load_weekly_records(path: str) -> List[Dict]:
             reader = csv.DictReader(file)
 
             for row in reader:
-                date_range = row.get("", "").strip()
+                date_range = row.get(DATE_COLUMN_NAME, "").strip()
                 notes = row.get("Notes", "").strip()
 
                 # Parse the date range
