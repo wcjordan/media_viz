@@ -1,6 +1,6 @@
 """Unit tests for the media entry extraction functionality."""
 
-from preprocessing.preprocess import extract_entries
+from preprocessing.media_extractor import extract_entries
 
 
 def test_extract_single_entry():
