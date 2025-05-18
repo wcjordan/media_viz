@@ -7,7 +7,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r dev-requirements.txt
 
 # Export API key placeholders
 export TMDB_API_KEY="your_tmdb_api_key_here"
