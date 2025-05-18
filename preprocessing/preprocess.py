@@ -88,7 +88,7 @@ def parse_date_range(date_range: str, last_year: int = None) -> tuple:
 
         # Parse the end date
         try:
-            # Check if month is in the start string
+            # Check if month is in the end string
             if any(month in end_str.lower() for month in MONTHS):
                 # If there's a month, try to parse with the current year
                 end_date = datetime.strptime(f"{end_str} {current_year}", "%b %d %Y")
