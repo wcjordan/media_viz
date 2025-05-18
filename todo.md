@@ -2,8 +2,8 @@
 
 ## 1. Repository & Environment Setup
 - [x] Initialize Git repository
-- [ ] Create `.gitignore` excluding `media_entries.json`, raw CSVs, `preprocess.log`
-- [ ] Create `requirements.txt` with: `streamlit`, `requests`, `pydantic`, `pytest`, `spacy`
+- [x] Create `.gitignore` excluding `media_entries.json`, raw CSVs, `preprocess.log`
+- [x] Create `requirements.txt` with: `streamlit`, `requests`, `pydantic`, `pytest`, `spacy`
 - [ ] Write `setup.sh` to:
   - [ ] Create Python virtual environment
   - [ ] Install dependencies
