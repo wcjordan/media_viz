@@ -190,7 +190,7 @@ def extract_entries(record: Dict) -> List[Dict]:
         record: Dictionary containing start_date, end_date, and raw_notes
 
     Returns:
-        List of dictionaries with raw_text, action, and week_date
+        List of dictionaries with title, action, and date
     """
     entries = []
 
@@ -203,53 +203,10 @@ def extract_entries(record: Dict) -> List[Dict]:
         logger.warning("Skipping record with missing data: %s", record)
         return entries
 
-    # Split the raw notes on '&' or newlines
-    raw_items = []
-    for item in re.split(r"&|\n", raw_notes):
-        item = item.strip()
-        if item:
-            raw_items.append(item)
-
-    # Define patterns for different actions
-    action_patterns = [
-        (r"(?i)started(?:\s+reading|\s+playing|\s+watching)?\s+(.*)", "started"),
-        (r"(?i)finished(?:\s+reading|\s+playing|\s+watching)?\s+(.*)", "finished"),
-        (r"(?i)watched\s+(.*)", "watched"),
-        (r"(?i)playing\s+(.*)", "playing"),
-        (r"(?i)reading\s+(.*)", "reading"),
-        (r"(?i)completed\s+(.*)", "completed"),
-        (r"(?i)began\s+(.*)", "started"),
-        (r"(?i)continuing\s+(.*)", "continuing"),
-    ]
-
-    # Process each item
-    for raw_text in raw_items:
-        action = None
-        title = None
-
-        # Try to match each action pattern
-        for pattern, act in action_patterns:
-            match = re.search(pattern, raw_text)
-            if match:
-                action = act
-                title = match.group(1).strip()
-                break
-
-        # If no specific action was found, treat as a general mention
-        if not action:
-            action = "mentioned"
-            title = raw_text
-
-        # Create an entry
-        entry = {
-            "raw_text": raw_text,
-            "action": action,
-            "title": title,
-            "start_date": start_date,
-            "end_date": end_date,
-        }
-
-        entries.append(entry)
+    # Split the raw notes on newlines to process each line separately
+    for line in raw_notes.splitlines():
+        line = line.strip()
+        entries.extend(_extract_entries_from_line(line, start_date))
 
     logger.info(
         "Extracted %d entries from record with dates %s to %s",
@@ -257,6 +214,53 @@ def extract_entries(record: Dict) -> List[Dict]:
         start_date,
         end_date,
     )
+    return entries
+
+
+def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
+    """
+    Extract media entries from a weekly record's raw notes.
+    This helper method handles the extraction from a single line of the notes.
+
+    Args:
+        line: String containing a single line from the Notes
+        start_date: The start date of the week
+
+    Returns:
+        List of dictionaries with title, action, and date
+    """
+    entries = []
+
+    # Split the line to extract the action from the items
+    tokens = line.split()
+    if len(tokens) < 2:
+        logger.warning("Skipping line with insufficient tokens: %s", line)
+        return entries
+
+    action = tokens[0].lower()
+    if action not in ("finished", "played", "read", "started", "watched"):
+        raise ValueError(f"Invalid action '{action}' in line: {line}")
+
+    # Split the entities on '&' or newlines
+    entities = " ".join(tokens[1:])
+    for title in entities.split("&"):
+        title = title.strip()
+        if title:
+            if action in ("finished", "started"):
+                entry = {
+                    "action": action,
+                    "title": title,
+                    "date": start_date,
+                }
+                entries.append(entry)
+            else:
+                for sub_action in ("finished", "started"):
+                    entry = {
+                        "action": sub_action,
+                        "title": title,
+                        "date": start_date,
+                    }
+                    entries.append(entry)
     return entries
 
 

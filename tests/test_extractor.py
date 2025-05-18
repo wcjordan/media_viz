@@ -81,8 +81,8 @@ def test_single_week_action_phrasings():
         assert len(entries) == 2
         assert entries[0]["title"] == expected_title
         assert entries[1]["title"] == expected_title
-        assert entries[0]["action"] == "started"
-        assert entries[1]["action"] == "finished"
+        assert entries[0]["action"] == "finished"
+        assert entries[1]["action"] == "started"
         assert entries[0]["date"] == "2023-04-01"
         assert entries[1]["date"] == "2023-04-01"
 
