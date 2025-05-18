@@ -104,7 +104,7 @@ def test_year_propagation():
 
     # Mock the open function to return our StringIO object
     with patch("builtins.open", mock_open(read_data=csv_content)):
-        records = load_weekly_records("preprocessing/dummy_path.csv")
+        records = load_weekly_records("dummy_path.csv")
 
     # Check that years are correctly propagated
     assert records[0]["start_date"].startswith("2023-")  # Assuming current year is 2023
