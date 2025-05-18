@@ -4,11 +4,11 @@
 - [x] Initialize Git repository
 - [x] Create `.gitignore` excluding `media_entries.json`, raw CSVs, `preprocess.log`
 - [x] Create `requirements.txt` with: `streamlit`, `requests`, `pydantic`, `pytest`, `spacy`
-- [ ] Write `setup.sh` to:
-  - [ ] Create Python virtual environment
-  - [ ] Install dependencies
-  - [ ] Export placeholders for `TMDB_API_KEY`, `IGDB_API_KEY`, `OPENLIBRARY_API_KEY`
-- [ ] Create `tests/test_setup.py` with a dummy test that always passes
+- [x] Write `setup.sh` to:
+  - [x] Create Python virtual environment
+  - [x] Install dependencies
+  - [x] Export placeholders for `TMDB_API_KEY`, `IGDB_API_KEY`, `OPENLIBRARY_API_KEY`
+- [x] Create `tests/test_setup.py` with a dummy test that always passes
 
 ## 2. CSV Loader & Year Propagation
 - [ ] Implement `load_weekly_records(path: str) -> List[Dict]` in `preprocess.py`
