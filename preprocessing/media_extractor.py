@@ -77,8 +77,8 @@ def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
         raise ValueError(f"Invalid action '{action}' in line: {line}")
 
     # Split the entities on '&' or newlines
-    entities = " ".join(tokens[1:])
-    for title in entities.split("&"):
+    titles_str = " ".join(tokens[1:])
+    for title in titles_str.split("&"):
         title = title.strip()
         if title:
             if action in ("finished", "started"):
