@@ -10,13 +10,7 @@ from typing import List, Dict
 from .media_extractor import extract_entries
 from .week_extractor import parse_row
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    filename="preprocess.log",
-    filemode="w",
-)
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,8 +50,16 @@ def load_weekly_records(path: str) -> List[Dict]:
 
 
 if __name__ == "__main__":
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        filename="preprocess.log",
+        filemode="w",
+    )
+
     # Example usage
-    weekly_records = load_weekly_records("raw_data/media_enjoyed.csv")
+    weekly_records = load_weekly_records("preprocessing/raw_data/media_enjoyed.csv")
     print(f"Loaded {len(weekly_records)} records")
 
     all_entries = []

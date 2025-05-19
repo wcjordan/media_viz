@@ -153,7 +153,7 @@ def parse_row(row: Dict, current_year: int) -> List[Dict]:
 if __name__ == "__main__":
     # Example usage
     record = parse_row(
-        {"Date": "Jan 01 - Jan 07 (2023)", "Notes": "Started The Hobbit"},
+        {"": "Jan 1-7 (2023)", "Notes": "Started The Hobbit"},
         None,
     )
     print(f"Loaded record: {record}")

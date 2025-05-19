@@ -109,3 +109,4 @@ if __name__ == "__main__":
             "raw_notes": "Started The Hobbit",
         }
     )
+    print(f"Extracted {curr_entries}")
