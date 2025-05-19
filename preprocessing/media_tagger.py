@@ -5,8 +5,8 @@ This module includes functions to load hints from YAML and query external APIs.
 
 import os
 import logging
+from typing import Dict, List, Tuple, Optional
 import yaml
-from typing import Dict, List, Tuple, Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,10 @@ def load_hints(hints_path: str = DEFAULT_HINTS_PATH) -> Dict:
         Dictionary containing hints for media entries.
     """
     if not os.path.exists(hints_path):
-        logger.warning("Hints file not found at %s. No manual overrides will be applied.", hints_path)
+        logger.warning(
+            "Hints file not found at %s. No manual overrides will be applied.",
+            hints_path,
+        )
         return {}
 
     try:
@@ -140,7 +143,9 @@ def guess_media_type(title: str) -> str:
         return "Game"
 
     # Check for common TV show indicators
-    if any(term in lower_title for term in ["season", "episode", "tv", "show", "series"]):
+    if any(
+        term in lower_title for term in ["season", "episode", "tv", "show", "series"]
+    ):
         return "TV"
 
     # Check for common book indicators
@@ -151,7 +156,9 @@ def guess_media_type(title: str) -> str:
     return "Movie"
 
 
-def apply_tagging(entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH) -> List[Dict]:
+def apply_tagging(
+    entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH
+) -> List[Dict]:
     """
     Apply tagging to media entries using hints and API calls.
 
@@ -180,7 +187,9 @@ def apply_tagging(entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH) -> 
         for hint_key, hint_data in hints.items():
             if hint_key.lower() in title.lower():
                 logger.info("Applying hint for '%s' to entry '%s'", hint_key, title)
-                tagged_entry["canonical_title"] = hint_data.get("canonical_title", title)
+                tagged_entry["canonical_title"] = hint_data.get(
+                    "canonical_title", title
+                )
                 tagged_entry["type"] = hint_data.get("type")
                 tagged_entry["tags"] = hint_data.get("tags", {})
                 tagged_entry["confidence"] = 1.0  # Hints have perfect confidence
@@ -197,7 +206,7 @@ def apply_tagging(entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH) -> 
         metadata = None
         confidence = 0.0
 
-        if media_type == "Movie" or media_type == "TV":
+        if media_type in ("Movie", "TV"):
             canonical_title, metadata, confidence = query_tmdb(title)
         elif media_type == "Game":
             canonical_title, metadata, confidence = query_igdb(title)
@@ -215,7 +224,9 @@ def apply_tagging(entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH) -> 
             tagged_entry["type"] = media_type
             tagged_entry["tags"] = {}
             tagged_entry["confidence"] = 0.1  # Low confidence for guesses
-            tagged_entry["warnings"] = tagged_entry.get("warnings", []) + ["Failed to fetch metadata from APIs"]
+            tagged_entry["warnings"] = tagged_entry.get("warnings", []) + [
+                "Failed to fetch metadata from APIs"
+            ]
 
         tagged_entries.append(tagged_entry)
 
@@ -231,5 +242,5 @@ if __name__ == "__main__":
     ]
 
     tagged = apply_tagging(sample_entries)
-    for entry in tagged:
-        print(f"Tagged entry: {entry}")
+    for curr_entry in tagged:
+        print(f"Tagged entry: {curr_entry}")

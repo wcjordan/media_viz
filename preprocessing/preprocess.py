@@ -151,16 +151,16 @@ if __name__ == "__main__":
     )
 
     # Process and save
-    input_file = "preprocessing/raw_data/media_enjoyed.csv"
-    output_file = "preprocessing/media_entries.json"
-    stats = process_and_save(input_file, output_file)
+    final_stats = process_and_save(
+        "preprocessing/raw_data/media_enjoyed.csv", "preprocessing/media_entries.json"
+    )
 
     # Print statistics
-    print(f"Processed {stats['total_entries']} media entries:")
-    print(f"  By type: {stats['by_type']}")
-    print(f"  Start only: {stats['start_only']}")
-    print(f"  Finish only: {stats['finish_only']}")
-    print(f"  Completed: {stats['completed']}")
-    print(f"  Low confidence: {stats['low_confidence']}")
-    print(f"  With warnings: {stats['with_warnings']}")
-    print(f"  Hint applied: {stats['hint_applied']}")
+    print(f"Processed {final_stats['total_entries']} media entries:")
+    print(f"  By type: {final_stats['by_type']}")
+    print(f"  Start only: {final_stats['start_only']}")
+    print(f"  Finish only: {final_stats['finish_only']}")
+    print(f"  Completed: {final_stats['completed']}")
+    print(f"  Low confidence: {final_stats['low_confidence']}")
+    print(f"  With warnings: {final_stats['with_warnings']}")
+    print(f"  Hint applied: {final_stats['hint_applied']}")

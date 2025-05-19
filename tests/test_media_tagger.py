@@ -1,8 +1,8 @@
 """Unit tests for the media tagging functionality."""
 
 import os
+from unittest.mock import patch, mock_open
 import yaml
-from unittest.mock import patch, mock_open, MagicMock
 
 import pytest
 
@@ -158,7 +158,9 @@ def test_apply_tagging_with_api_calls(sample_entries):
     with patch("preprocessing.media_tagger.load_hints", return_value={}):
         with patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb:
             with patch("preprocessing.media_tagger.query_igdb") as mock_igdb:
-                with patch("preprocessing.media_tagger.query_openlibrary") as mock_openlibrary:
+                with patch(
+                    "preprocessing.media_tagger.query_openlibrary"
+                ) as mock_openlibrary:
                     # Set up mock returns
                     mock_tmdb.return_value = (
                         "Succession",
@@ -170,11 +172,18 @@ def test_apply_tagging_with_api_calls(sample_entries):
                         {"type": "Book", "tags": {"genre": ["Fantasy"]}},
                         0.8,
                     )
+                    mock_igdb.return_value = (
+                        "Elden Ring",
+                        {"type": "Game", "tags": {"platform": ["PS5"]}},
+                        0.85,
+                    )
 
                     tagged_entries = apply_tagging(sample_entries)
 
     # Check the TV show entry
-    succession_entry = next(entry for entry in tagged_entries if "Succession" in entry["title"])
+    succession_entry = next(
+        entry for entry in tagged_entries if "Succession" in entry["title"]
+    )
     assert succession_entry["canonical_title"] == "Succession"
     assert succession_entry["type"] == "TV"
     assert succession_entry["tags"]["genre"] == ["Drama"]
@@ -192,9 +201,16 @@ def test_apply_tagging_api_failure(sample_entries):
     """Test applying tagging when API calls fail."""
     # Mock the API calls to fail
     with patch("preprocessing.media_tagger.load_hints", return_value={}):
-        with patch("preprocessing.media_tagger.query_tmdb", return_value=(None, None, 0.0)):
-            with patch("preprocessing.media_tagger.query_igdb", return_value=(None, None, 0.0)):
-                with patch("preprocessing.media_tagger.query_openlibrary", return_value=(None, None, 0.0)):
+        with patch(
+            "preprocessing.media_tagger.query_tmdb", return_value=(None, None, 0.0)
+        ):
+            with patch(
+                "preprocessing.media_tagger.query_igdb", return_value=(None, None, 0.0)
+            ):
+                with patch(
+                    "preprocessing.media_tagger.query_openlibrary",
+                    return_value=(None, None, 0.0),
+                ):
                     tagged_entries = apply_tagging(sample_entries)
 
     # Check that fallback values are used

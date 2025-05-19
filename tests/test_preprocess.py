@@ -1,12 +1,14 @@
 """Unit tests for the preprocessing module."""
 
 import io
-import json
-from unittest.mock import mock_open, patch, MagicMock
+from unittest.mock import mock_open, patch
 
-import pytest
 
-from preprocessing.preprocess import load_weekly_records, process_and_save, calculate_statistics
+from preprocessing.preprocess import (
+    load_weekly_records,
+    process_and_save,
+    calculate_statistics,
+)
 
 
 def test_year_propagation():
