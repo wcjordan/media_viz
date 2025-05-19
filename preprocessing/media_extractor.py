@@ -45,15 +45,24 @@ def extract_entries(record: Dict) -> List[Dict]:
 
 def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
     """
-    Extract media entries from a weekly record's raw notes.
-    This helper method handles the extraction from a single line of the notes.
+    Extract media entries from a single line of a weekly record's raw notes.
+
+    This helper method processes a single line of the Notes column, identifies the action 
+    (e.g., "finished", "started"), and splits the entities on the '&' character to generate 
+    individual entries. Each entry includes the action, title, and the provided start date.
 
     Args:
-        line: String containing a single line from the Notes
-        start_date: The start date of the week
+        line: A string containing a single line from the Notes column. The line is expected 
+              to start with an action followed by one or more titles separated by '&'.
+        start_date: A string representing the start date of the week, used as the date for 
+                    all generated entries.
 
     Returns:
-        List of dictionaries with title, action, and date
+        A list of dictionaries, where each dictionary represents a media entry with the 
+        following keys:
+            - "action": The action performed (e.g., "finished", "started").
+            - "title": The title of the media item.
+            - "date": The start date of the week.
     """
     entries = []
 
