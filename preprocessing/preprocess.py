@@ -144,7 +144,7 @@ def calculate_statistics(entries: List[Dict]) -> Dict:
 if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.WARN,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         filename="preprocess.log",
         filemode="w",
@@ -154,7 +154,7 @@ if __name__ == "__main__":
     input_file = "preprocessing/raw_data/media_enjoyed.csv"
     output_file = "preprocessing/media_entries.json"
     stats = process_and_save(input_file, output_file)
-    
+
     # Print statistics
     print(f"Processed {stats['total_entries']} media entries:")
     print(f"  By type: {stats['by_type']}")

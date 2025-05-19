@@ -51,19 +51,19 @@ def test_process_and_save():
     csv_content = "\n".join(
         [line.strip() for line in csv_content.getvalue().splitlines()]
     )
-    
+
     # Mock dependencies
     with patch("builtins.open", mock_open()) as mock_file:
         # Configure the mock to return our CSV content when opened for reading
         mock_file.return_value.__enter__.return_value.read.return_value = csv_content
-        
+
         # Mock the extract_entries function
         with patch("preprocessing.preprocess.extract_entries") as mock_extract:
             mock_extract.return_value = [
                 {"title": "The Hobbit", "action": "started", "date": "2023-01-01"},
                 {"title": "The Hobbit", "action": "finished", "date": "2023-02-01"},
             ]
-            
+
             # Mock the apply_tagging function
             with patch("preprocessing.preprocess.apply_tagging") as mock_tag:
                 mock_tag.return_value = [
@@ -86,10 +86,10 @@ def test_process_and_save():
                         "confidence": 0.9,
                     },
                 ]
-                
+
                 # Call the function under test
                 stats = process_and_save("input.csv", "output.json")
-    
+
     # Verify the results
     assert stats["total_entries"] == 2
     assert stats["by_type"]["Book"] == 2
@@ -131,9 +131,9 @@ def test_calculate_statistics():
             "confidence": 1.0,
         },
     ]
-    
+
     stats = calculate_statistics(entries)
-    
+
     assert stats["total_entries"] == 4
     assert stats["by_type"]["Game"] == 2
     assert stats["by_type"]["Book"] == 1

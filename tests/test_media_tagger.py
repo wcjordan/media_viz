@@ -53,11 +53,11 @@ def sample_entries():
 def test_load_hints_success(sample_hints):
     """Test loading hints from a YAML file successfully."""
     mock_yaml_content = yaml.dump(sample_hints)
-    
+
     with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
         with patch("os.path.exists", return_value=True):
             hints = load_hints("fake_path.yaml")
-    
+
     assert hints == sample_hints
     assert "FF7" in hints
     assert hints["FF7"]["canonical_title"] == "Final Fantasy VII Remake"
@@ -67,18 +67,18 @@ def test_load_hints_file_not_found():
     """Test handling when hints file is not found."""
     with patch("os.path.exists", return_value=False):
         hints = load_hints("nonexistent_file.yaml")
-    
+
     assert hints == {}
 
 
 def test_load_hints_invalid_yaml():
     """Test handling invalid YAML content."""
     invalid_yaml = "invalid: yaml: content: - ["
-    
+
     with patch("builtins.open", mock_open(read_data=invalid_yaml)):
         with patch("os.path.exists", return_value=True):
             hints = load_hints("invalid.yaml")
-    
+
     assert hints == {}
 
 
@@ -86,7 +86,7 @@ def test_query_tmdb():
     """Test querying TMDB API."""
     with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
         title, metadata, confidence = query_tmdb("The Matrix")
-    
+
     # Since this is a stub, we're just checking the structure
     assert title is not None
     assert isinstance(metadata, dict)
@@ -98,7 +98,7 @@ def test_query_tmdb_no_api_key():
     """Test querying TMDB API with no API key."""
     with patch.dict(os.environ, {}, clear=True):
         title, metadata, confidence = query_tmdb("The Matrix")
-    
+
     assert title is None
     assert metadata is None
     assert confidence == 0.0
@@ -108,7 +108,7 @@ def test_query_igdb():
     """Test querying IGDB API."""
     with patch.dict(os.environ, {"IGDB_API_KEY": "fake_key"}):
         title, metadata, confidence = query_igdb("Elden Ring")
-    
+
     # Since this is a stub, we're just checking the structure
     assert title is not None
     assert isinstance(metadata, dict)
@@ -120,7 +120,7 @@ def test_query_openlibrary():
     """Test querying Open Library API."""
     with patch.dict(os.environ, {"OPENLIBRARY_API_KEY": "fake_key"}):
         title, metadata, confidence = query_openlibrary("The Hobbit")
-    
+
     # Since this is a stub, we're just checking the structure
     assert title is not None
     assert isinstance(metadata, dict)
@@ -139,11 +139,11 @@ def test_guess_media_type():
 def test_apply_tagging_with_hints(sample_entries, sample_hints):
     """Test applying tagging with hints."""
     mock_yaml_content = yaml.dump(sample_hints)
-    
+
     with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
         with patch("os.path.exists", return_value=True):
             tagged_entries = apply_tagging(sample_entries, "fake_path.yaml")
-    
+
     # Check the entry that should match a hint
     ff7_entry = next(entry for entry in tagged_entries if "FF7" in entry["title"])
     assert ff7_entry["canonical_title"] == "Final Fantasy VII Remake"
@@ -170,16 +170,16 @@ def test_apply_tagging_with_api_calls(sample_entries):
                         {"type": "Book", "tags": {"genre": ["Fantasy"]}},
                         0.8,
                     )
-                    
+
                     tagged_entries = apply_tagging(sample_entries)
-    
+
     # Check the TV show entry
     succession_entry = next(entry for entry in tagged_entries if "Succession" in entry["title"])
     assert succession_entry["canonical_title"] == "Succession"
     assert succession_entry["type"] == "TV"
     assert succession_entry["tags"]["genre"] == ["Drama"]
     assert succession_entry["confidence"] == 0.9
-    
+
     # Check the book entry
     hobbit_entry = next(entry for entry in tagged_entries if "Hobbit" in entry["title"])
     assert hobbit_entry["canonical_title"] == "The Hobbit"
@@ -196,7 +196,7 @@ def test_apply_tagging_api_failure(sample_entries):
             with patch("preprocessing.media_tagger.query_igdb", return_value=(None, None, 0.0)):
                 with patch("preprocessing.media_tagger.query_openlibrary", return_value=(None, None, 0.0)):
                     tagged_entries = apply_tagging(sample_entries)
-    
+
     # Check that fallback values are used
     for entry in tagged_entries:
         assert "canonical_title" in entry
@@ -211,10 +211,10 @@ def test_apply_tagging_api_failure(sample_entries):
 def test_apply_tagging_missing_title():
     """Test applying tagging to an entry with a missing title."""
     entries = [{"action": "started", "date": "2023-01-01"}]  # Missing title
-    
+
     with patch("preprocessing.media_tagger.load_hints", return_value={}):
         tagged_entries = apply_tagging(entries)
-    
+
     assert len(tagged_entries) == 1
     assert "canonical_title" not in tagged_entries[0]
     assert "type" not in tagged_entries[0]

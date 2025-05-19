@@ -24,13 +24,13 @@
 - [x] Write tests in `tests/test_media_extractor.py` covering various phrasings
 
 ## 4. API Tagger & Hints Support
-- [ ] Create `tagger.py`
-- [ ] Load `hints.yaml` for manual overrides
+- [x] Create `preprocessing/media_tagger.py`
+- [x] Load `hints.yaml` for manual overrides
 - [ ] Implement stub functions: `query_tmdb`, `query_igdb`, `query_openlibrary`
 - [ ] Write `apply_tagging(entries: List[Dict]) -> List[Dict]`:
   - [ ] Apply hints first, then API calls
   - [ ] Attach `type`, `tags` (genre, platform, mood), and `confidence`
-- [ ] Write tests in `tests/test_tagger.py` with mocked API responses and hint overrides
+- [x] Write tests in `tests/test_media_tagger.py` with mocked API responses and hint overrides
 
 ## 5. JSON Schema & Validation
 - [ ] Define `MediaEntry` Pydantic model in `models.py`

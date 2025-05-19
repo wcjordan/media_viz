@@ -56,13 +56,13 @@ def query_tmdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
     # This is a stub implementation
     # In a real implementation, this would make API calls to TMDB
     logger.info("Querying TMDB for title: %s", title)
-    
+
     # Simulate API call
     api_key = os.environ.get("TMDB_API_KEY")
     if not api_key:
         logger.warning("TMDB_API_KEY not found in environment variables")
         return None, None, 0.0
-    
+
     # Mock response - would be replaced with actual API call
     return title, {"type": "Movie", "tags": {"genre": ["Drama"]}}, 0.8
 
@@ -83,13 +83,13 @@ def query_igdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
     # This is a stub implementation
     # In a real implementation, this would make API calls to IGDB
     logger.info("Querying IGDB for title: %s", title)
-    
+
     # Simulate API call
     api_key = os.environ.get("IGDB_API_KEY")
     if not api_key:
         logger.warning("IGDB_API_KEY not found in environment variables")
         return None, None, 0.0
-    
+
     # Mock response - would be replaced with actual API call
     return title, {"type": "Game", "tags": {"platform": ["PC"], "genre": ["RPG"]}}, 0.7
 
@@ -110,13 +110,13 @@ def query_openlibrary(title: str) -> Tuple[Optional[str], Optional[Dict], float]
     # This is a stub implementation
     # In a real implementation, this would make API calls to Open Library
     logger.info("Querying Open Library for title: %s", title)
-    
+
     # Simulate API call
     api_key = os.environ.get("OPENLIBRARY_API_KEY")
     if not api_key:
         logger.warning("OPENLIBRARY_API_KEY not found in environment variables")
         return None, None, 0.0
-    
+
     # Mock response - would be replaced with actual API call
     return title, {"type": "Book", "tags": {"genre": ["Fiction"]}}, 0.6
 
@@ -134,19 +134,19 @@ def guess_media_type(title: str) -> str:
     """
     # This is a very simple heuristic and would be improved in a real implementation
     lower_title = title.lower()
-    
+
     # Check for common video game indicators
     if any(term in lower_title for term in ["game", "played", "gaming"]):
         return "Game"
-    
+
     # Check for common TV show indicators
     if any(term in lower_title for term in ["season", "episode", "tv", "show", "series"]):
         return "TV"
-    
+
     # Check for common book indicators
     if any(term in lower_title for term in ["book", "novel", "read"]):
         return "Book"
-    
+
     # Default to Movie if no other indicators
     return "Movie"
 
@@ -164,17 +164,17 @@ def apply_tagging(entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH) -> 
     """
     hints = load_hints(hints_path)
     tagged_entries = []
-    
+
     for entry in entries:
         title = entry.get("title", "")
         if not title:
             logger.warning("Entry missing title, skipping tagging: %s", entry)
             tagged_entries.append(entry)
             continue
-        
+
         # Start with a copy of the original entry
         tagged_entry = entry.copy()
-        
+
         # Apply hints if available
         hint_applied = False
         for hint_key, hint_data in hints.items():
@@ -186,24 +186,24 @@ def apply_tagging(entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH) -> 
                 tagged_entry["confidence"] = 1.0  # Hints have perfect confidence
                 hint_applied = True
                 break
-        
+
         if hint_applied:
             tagged_entries.append(tagged_entry)
             continue
-        
+
         # If no hint, try API calls based on guessed media type
         media_type = guess_media_type(title)
         canonical_title = None
         metadata = None
         confidence = 0.0
-        
+
         if media_type == "Movie" or media_type == "TV":
             canonical_title, metadata, confidence = query_tmdb(title)
         elif media_type == "Game":
             canonical_title, metadata, confidence = query_igdb(title)
         elif media_type == "Book":
             canonical_title, metadata, confidence = query_openlibrary(title)
-        
+
         if canonical_title and metadata:
             tagged_entry["canonical_title"] = canonical_title
             tagged_entry["type"] = metadata.get("type", media_type)
@@ -216,9 +216,9 @@ def apply_tagging(entries: List[Dict], hints_path: str = DEFAULT_HINTS_PATH) -> 
             tagged_entry["tags"] = {}
             tagged_entry["confidence"] = 0.1  # Low confidence for guesses
             tagged_entry["warnings"] = tagged_entry.get("warnings", []) + ["Failed to fetch metadata from APIs"]
-        
+
         tagged_entries.append(tagged_entry)
-    
+
     logger.info("Tagged %d entries with metadata", len(tagged_entries))
     return tagged_entries
 
@@ -229,7 +229,7 @@ if __name__ == "__main__":
         {"title": "The Hobbit", "action": "started", "date": "2023-01-01"},
         {"title": "Elden Ring", "action": "finished", "date": "2023-02-15"},
     ]
-    
+
     tagged = apply_tagging(sample_entries)
     for entry in tagged:
         print(f"Tagged entry: {entry}")
