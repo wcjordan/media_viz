@@ -20,4 +20,4 @@ format:
 
 .PHONY: test
 test:
-	python -m pytest tests -v
+	python -m pytest preprocessing -v
