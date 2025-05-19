@@ -7,6 +7,30 @@ from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
+SINGLE_EVENT_VERBS = ("played", "read", "watched", "explored")
+RANGE_VERBS = ("finished", "started")
+IGNORED_VERBS = (
+    "celebrated",
+    "got",
+    "home",
+    "hooked",
+    "i",
+    "installed",
+    "looked",
+    "put",
+    "reviewed",
+    "setup",
+    "spoke",
+    "we",
+)
+VERB_MAPPING = {
+    "finshed": "finished",
+    "gave": "finished",
+    "good": "started",
+    "restarted": "started",
+    "resumed": "started",
+}
+
 
 def extract_entries(record: Dict) -> List[Dict]:
     """
@@ -25,14 +49,18 @@ def extract_entries(record: Dict) -> List[Dict]:
     start_date = record.get("start_date")
     end_date = record.get("end_date")
 
-    if not raw_notes or not start_date or not end_date:
+    if not start_date or not end_date:
         logger.warning("Skipping record with missing data: %s", record)
         return entries
 
     # Split the raw notes on newlines to process each line separately
+    last_action = None
     for line in raw_notes.splitlines():
         line = line.strip()
-        entries.extend(_extract_entries_from_line(line, start_date))
+        new_entries, last_action = _extract_entries_from_line(
+            line, start_date, last_action
+        )
+        entries.extend(new_entries)
 
     logger.info(
         "Extracted %d entries from record with dates %s to %s",
@@ -43,7 +71,9 @@ def extract_entries(record: Dict) -> List[Dict]:
     return entries
 
 
-def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
+def _extract_entries_from_line(
+    line: str, start_date: str, last_action: str = None
+) -> List[Dict]:
     """
     Extract media entries from a single line of a weekly record's raw notes.
 
@@ -56,7 +86,8 @@ def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
               to start with an action followed by one or more titles separated by '&'.
         start_date: A string representing the start date of the week, used as the date for
                     all generated entries.
-
+        last_action: The action from the previous line, if any.
+                     This is used to handle cases where the action is not explicitly stated in the line.
     Returns:
         A list of dictionaries, where each dictionary represents a media entry with the
         following keys:
@@ -70,19 +101,27 @@ def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
     tokens = line.split()
     if len(tokens) < 2:
         logger.warning("Skipping line with insufficient tokens: %s", line)
-        return entries
+        return entries, last_action
 
     action = tokens[0].lower()
-    if action not in ("finished", "played", "read", "started", "watched"):
-        logger.warning("Skipping line with invalid action '%s': %s", action, line)
-        return entries
+    if action == "&":
+        action = last_action
+
+    # Normalize the action to handle typos or variations
+    if action in VERB_MAPPING:
+        action = VERB_MAPPING.get(action)
+
+    if action not in RANGE_VERBS and action not in SINGLE_EVENT_VERBS:
+        if action not in IGNORED_VERBS or start_date > "2025":
+            logger.warning("Skipping line with invalid action '%s': %s", action, line)
+        return entries, action
 
     # Split the entities on '&' or newlines
     titles_str = " ".join(tokens[1:])
     for title in titles_str.split("&"):
         title = title.strip()
         if title:
-            if action in ("finished", "started"):
+            if action in RANGE_VERBS:
                 entry = {
                     "action": action,
                     "title": title,
@@ -90,14 +129,14 @@ def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
                 }
                 entries.append(entry)
             else:
-                for sub_action in ("finished", "started"):
+                for sub_action in RANGE_VERBS:
                     entry = {
                         "action": sub_action,
                         "title": title,
                         "date": start_date,
                     }
                     entries.append(entry)
-    return entries
+    return entries, action
 
 
 if __name__ == "__main__":
