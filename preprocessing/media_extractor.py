@@ -74,7 +74,8 @@ def _extract_entries_from_line(line: str, start_date: str) -> List[Dict]:
 
     action = tokens[0].lower()
     if action not in ("finished", "played", "read", "started", "watched"):
-        raise ValueError(f"Invalid action '{action}' in line: {line}")
+        logger.warning("Skipping line with invalid action '%s': %s", action, line)
+        return entries
 
     # Split the entities on '&' or newlines
     titles_str = " ".join(tokens[1:])
