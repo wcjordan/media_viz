@@ -146,7 +146,8 @@ def _contains_month_abbr(text: str) -> bool:
     Returns:
         True if the text contains a valid month abbreviation, False otherwise.
     """
-    return any(f"{month} " in text.lower() for month in MONTHS_ABBR)
+    lower_text = text.lower()
+    return any(f"{month} " in lower_text for month in MONTHS_ABBR)
 
 
 def _contains_month_name(text: str) -> bool:
