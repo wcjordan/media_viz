@@ -17,11 +17,11 @@
 - [x] Write tests in `tests/test_loader.py` for date parsing and year propagation
 
 ## 3. NLP Extraction Engine
-- [ ] Add `extract_entries(record: Dict) -> List[Dict]` in `preprocess.py`
-- [ ] Split `raw_notes` on `&` and newlines
-- [ ] Detect actions (`started`, `finished`, `watched`) using regex or spaCy
-- [ ] Return entries with `raw_text`, `action`, and `week_date`
-- [ ] Write tests in `tests/test_extractor.py` covering various phrasings
+- [x] Add `extract_entries(record: Dict) -> List[Dict]` in `preprocess.py`
+- [x] Split `raw_notes` on `&` and newlines
+- [x] Detect actions (`started`, `finished`, `watched`) using regex or spaCy
+- [x] Return entries with `title`, `action`, and `date`
+- [x] Write tests in `tests/test_media_extractor.py` covering various phrasings
 
 ## 4. API Tagger & Hints Support
 - [ ] Create `tagger.py`
