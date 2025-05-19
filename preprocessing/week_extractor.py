@@ -147,6 +147,7 @@ def _contains_month_abbr(text: str) -> bool:
         True if the text contains a valid month abbreviation, False otherwise.
     """
     lower_text = text.lower()
+    # Use an space char after month to avoid false positives from full month names like September
     return any(f"{month} " in lower_text for month in MONTHS_ABBR)
 
 
@@ -160,7 +161,8 @@ def _contains_month_name(text: str) -> bool:
     Returns:
         True if the text contains a valid month name, False otherwise.
     """
-    return any(month in text.lower() for month in MONTHS_FULL)
+    lower_text = text.lower()
+    return any(month in lower_text for month in MONTHS_FULL)
 
 
 def parse_row(row: Dict, current_year: int) -> List[Dict]:
