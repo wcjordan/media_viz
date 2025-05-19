@@ -1,0 +1,58 @@
+# Media hints file for manual overrides
+# Format:
+# key_phrase:
+#   canonical_title: "Official Title"
+#   type: "Movie|TV|Game|Book"
+#   tags:
+#     genre: ["Genre1", "Genre2"]
+#     platform: ["Platform1", "Platform2"]
+#     mood: ["Mood1", "Mood2"]
+
+# Video Games
+FF7:
+  canonical_title: "Final Fantasy VII Remake"
+  type: "Game"
+  tags:
+    platform: ["PS5"]
+    genre: ["JRPG", "Adventure"]
+    mood: ["Epic"]
+
+Elden:
+  canonical_title: "Elden Ring"
+  type: "Game"
+  tags:
+    platform: ["PS5", "PC"]
+    genre: ["Action RPG", "Open World"]
+    mood: ["Dark Fantasy"]
+
+# Books
+LOTR:
+  canonical_title: "The Lord of the Rings"
+  type: "Book"
+  tags:
+    genre: ["Fantasy"]
+    mood: ["Epic"]
+
+Hobbit:
+  canonical_title: "The Hobbit"
+  type: "Book"
+  tags:
+    genre: ["Fantasy"]
+    mood: ["Adventure"]
+
+# TV Shows
+Succession:
+  canonical_title: "Succession"
+  type: "TV"
+  tags:
+    genre: ["Drama"]
+    platform: ["HBO"]
+    mood: ["Dark"]
+
+# Movies
+Matrix:
+  canonical_title: "The Matrix"
+  type: "Movie"
+  tags:
+    genre: ["Sci-Fi", "Action"]
+    mood: ["Philosophical"]
