@@ -89,11 +89,12 @@ def _extract_entries_from_line(
         last_action: The action from the previous line, if any.
                      This is used to handle cases where the action is not explicitly stated in the line.
     Returns:
-        A list of dictionaries, where each dictionary represents a media entry with the
-        following keys:
-            - "action": The action performed (e.g., "finished", "started").
-            - "title": The title of the media item.
-            - "date": The start date of the week.
+        entries: A list of dictionaries representing a media entry with the
+                 following keys:
+                    - "action": The action performed (e.g., "finished", "started").
+                    - "title": The title of the media item.
+                    - "date": The start date of the week.
+        action: The action from the current line, which may be used for the next line.
     """
     entries = []
 
