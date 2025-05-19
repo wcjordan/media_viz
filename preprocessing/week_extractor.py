@@ -5,26 +5,15 @@ This module includes functions to parse date ranges and load records from a CSV 
 
 import re
 import logging
+import calendar
 from datetime import datetime
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
 
 DATE_COLUMN_NAME = ""
-MONTHS = [
-    "jan",
-    "feb",
-    "mar",
-    "apr",
-    "may",
-    "jun",
-    "jul",
-    "aug",
-    "sep",
-    "oct",
-    "nov",
-    "dec",
-]
+MONTHS_ABBR = [month.lower() for month in calendar.month_abbr[1:]]
+MONTHS_FULL = [month.lower() for month in calendar.month_name[1:]]
 
 
 def _parse_date_range(date_range: str, last_year: int = None) -> tuple:
@@ -59,6 +48,9 @@ def _parse_date_range(date_range: str, last_year: int = None) -> tuple:
     # Handle various separators (-, –, —, to)
     date_range = re.sub(r"[\-–—]", "-", date_range)
 
+    # Handle Sept by converting to Sep
+    date_range = date_range.replace("Sept ", "Sep ")
+
     # Check if there's a range or just a single date
     if "-" in date_range:
         # Split the range
@@ -68,58 +60,109 @@ def _parse_date_range(date_range: str, last_year: int = None) -> tuple:
 
         # Parse the start date
         try:
-            # Check if month is in the start string
-            if any(month in start_str.lower() for month in MONTHS):
-                # If there's a month, try to parse with the current year
-                start_date = datetime.strptime(
-                    f"{start_str} {current_year}", "%b %d %Y"
-                )
-            else:
-                raise ValueError("Month not found in start date string")
-        except (ValueError, AttributeError) as e:
+            start_date = _parse_date(start_str, current_year)
+        except ValueError as e:
             logger.warning("Error parsing start date '%s': %s", start_str, e)
             return None, None, current_year
 
         # Parse the end date
         try:
-            # Check if month is in the end string
-            if any(month in end_str.lower() for month in MONTHS):
-                # If there's a month, try to parse with the current year
-                end_date = datetime.strptime(f"{end_str} {current_year}", "%b %d %Y")
-            else:
-                # If no month, assume it's just a day and use the month from start_str
-                month = (
-                    re.search(
-                        r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)",
-                        start_str.lower(),
-                    )
-                    .group(1)
-                    .capitalize()
-                )
-                end_date = datetime.strptime(
-                    f"{month} {end_str} {current_year}", "%b %d %Y"
-                )
-
-            # Handle year wrap (December to January)
-            if start_date.month == 12 and end_date.month == 1:
-                raise ValueError("Rows are not expected to cross years")
-
-            # Handle case where end date is before start date (needs year increment)
-            if end_date < start_date and end_date.month != 1:
-                raise ValueError("End date is unexpectedly before the start date")
-
+            end_date = _parse_date(end_str, current_year, start_date.month)
         except ValueError as e:
             logger.warning("Error parsing end date '%s': %s", end_str, e)
             return None, None, current_year
+
+        # Validate results
+        invalid_result = False
+
+        # Handle year wrap (December to January)
+        if start_date.month == 12 and end_date.month == 1:
+            logger.warning("Rows are not expected to cross years: '%s'", date_range)
+            invalid_result = True
+
+        # Handle case where end date is before start date
+        if not invalid_result and end_date < start_date:
+            logger.warning(
+                "End date is unexpectedly before the start date '%s'", date_range
+            )
+            invalid_result = True
+
+        if invalid_result:
+            return None, None, current_year
     else:
-        logger.warning("No range found in date '%s'", date_range)
-        return None, None, current_year
+        try:
+            both_date = _parse_date(date_range, current_year)
+        except ValueError as e:
+            logger.warning("Error parsing date '%s': %s", date_range, e)
+            return None, None, current_year
+        start_date = both_date
+        end_date = both_date
 
     # Format as ISO dates
     start_iso = start_date.strftime("%Y-%m-%d")
     end_iso = end_date.strftime("%Y-%m-%d")
-
     return start_iso, end_iso, current_year
+
+
+def _parse_date(date_str: str, current_year: int, month_idx: int = None) -> datetime:
+    """
+    Parse a date string (e.g., "Jan 1") into a datetime object.
+    Uses the passed in current_year.
+    Args:
+        date_str: String representing a date
+        current_year: The year to use
+        month_idx: The month index to use if not specified in the date_str.  Optional.
+    Raises:
+        ValueError: If the date string cannot be parsed
+    Returns:
+        A datetime object representing the parsed date
+    """
+    # Check if month is in the  date_str
+    if _contains_month_abbr(date_str.lower()):
+        # If there's an abbreviated month name, try to parse with the current year
+        result_date = datetime.strptime(f"{date_str} {current_year}", "%b %d %Y")
+    elif _contains_month_name(date_str.lower()):
+        # If there's a full month name, try to parse with the current year
+        result_date = datetime.strptime(f"{date_str} {current_year}", "%B %d %Y")
+    elif month_idx:
+        # If no month, assume it's just a day and use the month from start_str
+        month = MONTHS_ABBR[month_idx - 1]
+        result_date = datetime.strptime(
+            f"{month} {date_str} {current_year}", "%b %d %Y"
+        )
+    else:
+        raise ValueError("Month not found in date string")
+
+    return result_date
+
+
+def _contains_month_abbr(text: str) -> bool:
+    """
+    Check if the given text contains a valid month abbreviation.
+
+    Args:
+        text: The text to check.
+
+    Returns:
+        True if the text contains a valid month abbreviation, False otherwise.
+    """
+    lower_text = text.lower()
+    # Use an space char after month to avoid false positives from full month names like September
+    return any(f"{month} " in lower_text for month in MONTHS_ABBR)
+
+
+def _contains_month_name(text: str) -> bool:
+    """
+    Check if the given text contains a valid full month name.
+
+    Args:
+        text: The text to check.
+
+    Returns:
+        True if the text contains a valid month name, False otherwise.
+    """
+    lower_text = text.lower()
+    return any(month in lower_text for month in MONTHS_FULL)
 
 
 def parse_row(row: Dict, current_year: int) -> List[Dict]:

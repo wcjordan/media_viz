@@ -52,7 +52,7 @@ def load_weekly_records(path: str) -> List[Dict]:
 if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.WARN,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         filename="preprocess.log",
         filemode="w",

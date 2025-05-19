@@ -13,9 +13,25 @@ def test_parse_date_range_simple():
     assert current_year == 2023
 
 
+def test_parse_date_range_full_month():
+    """Test parsing a simple date range where the month name is fully written."""
+    start_date, end_date, current_year = _parse_date_range("February 1-6", 2023)
+    assert start_date == "2023-02-01"
+    assert end_date == "2023-02-06"
+    assert current_year == 2023
+
+
 def test_parse_date_range_cross_month():
     """Test parsing a date range that crosses months."""
     start_date, end_date, current_year = _parse_date_range("Jan 28-Feb 3", 2023)
+    assert start_date == "2023-01-28"
+    assert end_date == "2023-02-03"
+    assert current_year == 2023
+
+
+def test_parse_date_range_cross_full_month():
+    """Test parsing a date range that crosses months and uses a full month name for the end date."""
+    start_date, end_date, current_year = _parse_date_range("jan 28-February 3", 2023)
     assert start_date == "2023-01-28"
     assert end_date == "2023-02-03"
     assert current_year == 2023
@@ -33,23 +49,30 @@ def test_parse_date_range_cross_year(caplog):
     """Test parsing a date range that crosses years."""
     with caplog.at_level(logging.WARNING):
         start_date, end_date, current_year = _parse_date_range("Dec 28-Jan 3", 2023)
+    assert "Rows are not expected to cross years: 'Dec 28-Jan 3'" in caplog.text
+    assert start_date is None
+    assert end_date is None
+    assert current_year == 2023
+
+
+def test_parse_date_misordered(caplog):
+    """Test parsing a date range with an end date before the start date."""
+    with caplog.at_level(logging.WARNING):
+        start_date, end_date, current_year = _parse_date_range("March 2-Feb 28", 2023)
     assert (
-        "Error parsing end date 'Jan 3': Rows are not expected to cross years"
-        in caplog.text
+        "End date is unexpectedly before the start date 'March 2-Feb 28'" in caplog.text
     )
     assert start_date is None
     assert end_date is None
     assert current_year == 2023
 
 
-def test_parse_date_range_single_date(caplog):
+def test_parse_date_range_single_date():
     """Test parsing a single date (not a range)."""
-    with caplog.at_level(logging.WARNING):
-        start_date, end_date, current_year = _parse_date_range("Mar 15", 2023)
-    assert "No range found in date 'Mar 15'" in caplog.text
-    assert start_date is None
-    assert end_date is None
-    assert current_year == 2023
+    start_date, end_date, current_year = _parse_date_range("Jan 1 (2022)", None)
+    assert start_date == "2022-01-01"
+    assert end_date == "2022-01-01"
+    assert current_year == 2022
 
 
 def test_parse_date_range_no_start_month(caplog):
@@ -57,11 +80,18 @@ def test_parse_date_range_no_start_month(caplog):
     with caplog.at_level(logging.WARNING):
         start_date, end_date, current_year = _parse_date_range("15-Mar 20", 2023)
     assert (
-        "Error parsing start date '15': Month not found in start date string"
-        in caplog.text
+        "Error parsing start date '15': Month not found in date string" in caplog.text
     )
     assert start_date is None
     assert end_date is None
+    assert current_year == 2023
+
+
+def test_parse_date_range_sept():
+    """Test parsing a date range with 'Sept'."""
+    start_date, end_date, current_year = _parse_date_range("Aug 30-Sept 2", 2023)
+    assert start_date == "2023-08-30"
+    assert end_date == "2023-09-02"
     assert current_year == 2023
 
 
