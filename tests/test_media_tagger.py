@@ -16,8 +16,8 @@ from preprocessing.media_tagger import (
 )
 
 
-@pytest.fixture
-def sample_hints():
+@pytest.fixture(name="sample_hints")
+def fixture_sample_hints():
     """Sample hints data for testing."""
     return {
         "FF7": {
@@ -40,8 +40,8 @@ def sample_hints():
     }
 
 
-@pytest.fixture
-def sample_entries():
+@pytest.fixture(name="sample_entries")
+def fixture_sample_entries():
     """Sample media entries for testing."""
     return [
         {"title": "Started FF7", "action": "started", "date": "2023-01-01"},
