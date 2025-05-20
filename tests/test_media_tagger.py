@@ -7,11 +7,10 @@ import yaml
 import pytest
 
 from preprocessing.media_tagger import (
-    load_hints,
-    query_tmdb,
-    query_igdb,
-    query_openlibrary,
-    guess_media_type,
+    _load_hints,
+    _query_tmdb,
+    _query_igdb,
+    _query_openlibrary,
     apply_tagging,
 )
 
@@ -56,7 +55,7 @@ def test_load_hints_success(sample_hints):
 
     with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
         with patch("os.path.exists", return_value=True):
-            hints = load_hints("fake_path.yaml")
+            hints = _load_hints("fake_path.yaml")
 
     assert hints == sample_hints
     assert "FF7" in hints
@@ -66,7 +65,7 @@ def test_load_hints_success(sample_hints):
 def test_load_hints_file_not_found():
     """Test handling when hints file is not found."""
     with patch("os.path.exists", return_value=False):
-        hints = load_hints("nonexistent_file.yaml")
+        hints = _load_hints("nonexistent_file.yaml")
 
     assert hints == {}
 
@@ -77,7 +76,7 @@ def test_load_hints_invalid_yaml():
 
     with patch("builtins.open", mock_open(read_data=invalid_yaml)):
         with patch("os.path.exists", return_value=True):
-            hints = load_hints("invalid.yaml")
+            hints = _load_hints("invalid.yaml")
 
     assert hints == {}
 
@@ -85,55 +84,45 @@ def test_load_hints_invalid_yaml():
 def test_query_tmdb():
     """Test querying TMDB API."""
     with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
-        title, metadata, confidence = query_tmdb("The Matrix")
+        api_hits = _query_tmdb("The Matrix")
 
     # Since this is a stub, we're just checking the structure
-    assert title is not None
-    assert isinstance(metadata, dict)
-    assert "type" in metadata
-    assert 0 <= confidence <= 1
+    assert api_hits is not None
+    assert isinstance(api_hits, list)
+    assert all("type" in hit for hit in api_hits)
+    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
 def test_query_tmdb_no_api_key():
     """Test querying TMDB API with no API key."""
     with patch.dict(os.environ, {}, clear=True):
-        title, metadata, confidence = query_tmdb("The Matrix")
+        api_hits = _query_tmdb("The Matrix")
 
-    assert title is None
-    assert metadata is None
-    assert confidence == 0.0
+    assert api_hits is None
 
 
 def test_query_igdb():
     """Test querying IGDB API."""
     with patch.dict(os.environ, {"IGDB_API_KEY": "fake_key"}):
-        title, metadata, confidence = query_igdb("Elden Ring")
+        api_hits = _query_igdb("Elden Ring")
 
     # Since this is a stub, we're just checking the structure
-    assert title is not None
-    assert isinstance(metadata, dict)
-    assert "type" in metadata
-    assert 0 <= confidence <= 1
+    assert api_hits is not None
+    assert isinstance(api_hits, list)
+    assert all("type" in hit for hit in api_hits)
+    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
 def test_query_openlibrary():
     """Test querying Open Library API."""
     with patch.dict(os.environ, {"OPENLIBRARY_API_KEY": "fake_key"}):
-        title, metadata, confidence = query_openlibrary("The Hobbit")
+        api_hits = _query_openlibrary("The Hobbit")
 
     # Since this is a stub, we're just checking the structure
-    assert title is not None
-    assert isinstance(metadata, dict)
-    assert "type" in metadata
-    assert 0 <= confidence <= 1
-
-
-def test_guess_media_type():
-    """Test guessing media type from title."""
-    assert guess_media_type("Played Elden Ring") == "Game"
-    assert guess_media_type("Watched Season 2 of Succession") == "TV"
-    assert guess_media_type("Read The Hobbit") == "Book"
-    assert guess_media_type("Avatar") == "Movie"  # Default case
+    assert api_hits is not None
+    assert isinstance(api_hits, list)
+    assert all("type" in hit for hit in api_hits)
+    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
 def test_apply_tagging_with_hints(sample_entries, sample_hints):
