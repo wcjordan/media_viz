@@ -67,7 +67,7 @@ def _query_tmdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
     api_key = os.environ.get("TMDB_API_KEY")
     if not api_key:
         logger.warning("TMDB_API_KEY not found in environment variables")
-        return None, None, 0.0
+        return []
 
     # Mock response - would be replaced with actual API call
     return [
@@ -104,7 +104,7 @@ def _query_igdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
     api_key = os.environ.get("IGDB_API_KEY")
     if not api_key:
         logger.warning("IGDB_API_KEY not found in environment variables")
-        return None, None, 0.0
+        return []
 
     # Mock response - would be replaced with actual API call
     return [
@@ -141,7 +141,7 @@ def _query_openlibrary(title: str) -> Tuple[Optional[str], Optional[Dict], float
     api_key = os.environ.get("OPENLIBRARY_API_KEY")
     if not api_key:
         logger.warning("OPENLIBRARY_API_KEY not found in environment variables")
-        return None, None, 0.0
+        return []
 
     # Mock response - would be replaced with actual API call
     return [
@@ -188,7 +188,9 @@ def _combine_votes(
         if "type" not in tagged_entry:
             tagged_entry["type"] = "Other / Unknown"
 
-        tagged_entry["tags"] = {}
+        if "type" not in tagged_entry:
+            tagged_entry["tags"] = {}
+
         tagged_entry["confidence"] = 0.1
         tagged_entry["source"] = "fallback"
         return tagged_entry
@@ -210,7 +212,10 @@ def _combine_votes(
         tagged_entry["canonical_title"] = best_api_hit.get("canonical_title")
     if "type" not in tagged_entry:
         tagged_entry["type"] = best_api_hit.get("type")
-    tagged_entry["tags"] = {**best_api_hit.get("tags", {}), **entry.get("tags", {})}
+    tagged_entry["tags"] = {
+        **best_api_hit.get("tags", {}),
+        **tagged_entry.get("tags", {}),
+    }
     tagged_entry["confidence"] = best_api_hit.get("confidence")
     tagged_entry["source"] = best_api_hit.get("source")
     return tagged_entry
@@ -236,7 +241,6 @@ def apply_tagging(
         title = entry.get("title", "")
         if not title:
             logger.warning("Entry missing title, skipping tagging: %s", entry)
-            tagged_entries.append(entry)
             continue
 
         # Apply hints if available

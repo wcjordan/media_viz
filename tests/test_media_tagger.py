@@ -1,5 +1,6 @@
 """Unit tests for the media tagging functionality."""
 
+import logging
 import os
 from unittest.mock import patch, mock_open
 import yaml
@@ -43,9 +44,9 @@ def fixture_sample_hints():
 def fixture_sample_entries():
     """Sample media entries for testing."""
     return [
-        {"title": "Started FF7", "action": "started", "date": "2023-01-01"},
-        {"title": "Finished The Hobbit", "action": "finished", "date": "2023-02-15"},
-        {"title": "Watched Succession", "action": "watched", "date": "2023-03-10"},
+        {"title": "FF7", "action": "started", "date": "2023-01-01"},
+        {"title": "The Hobbit", "action": "finished", "date": "2023-02-15"},
+        {"title": "Succession", "action": "watched", "date": "2023-03-10"},
     ]
 
 
@@ -93,12 +94,13 @@ def test_query_tmdb():
     assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
-def test_query_tmdb_no_api_key():
+def test_query_tmdb_no_api_key(caplog):
     """Test querying TMDB API with no API key."""
-    with patch.dict(os.environ, {}, clear=True):
+    with caplog.at_level(logging.WARNING), patch.dict(os.environ, {}, clear=True):
         api_hits = _query_tmdb("The Matrix")
 
-    assert api_hits is None
+    assert "TMDB_API_KEY not found in environment variables" in caplog.text
+    assert api_hits == []
 
 
 def test_query_igdb():
@@ -125,20 +127,26 @@ def test_query_openlibrary():
     assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
-def test_apply_tagging_with_hints(sample_entries, sample_hints):
-    """Test applying tagging with hints."""
+def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
+    """Test applying tagging with only hints and no API hits."""
     mock_yaml_content = yaml.dump(sample_hints)
 
-    with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
-        with patch("os.path.exists", return_value=True):
-            tagged_entries = apply_tagging(sample_entries, "fake_path.yaml")
+    with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
+        "os.path.exists", return_value=True
+    ), patch("preprocessing.media_tagger._query_tmdb") as mock_tmdb, patch(
+        "preprocessing.media_tagger._query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger._query_openlibrary"
+    ) as mock_openlibrary:
+        tagged_entries = apply_tagging(sample_entries, "fake_path.yaml")
 
     # Check the entry that should match a hint
     ff7_entry = next(entry for entry in tagged_entries if "FF7" in entry["title"])
     assert ff7_entry["canonical_title"] == "Final Fantasy VII Remake"
     assert ff7_entry["type"] == "Game"
     assert ff7_entry["tags"]["platform"] == ["PS5"]
-    assert ff7_entry["confidence"] == 1.0
+    assert ff7_entry["confidence"] == 0.1
+    assert ff7_entry["source"] == "fallback"
 
 
 def test_apply_tagging_with_api_calls(sample_entries):
@@ -213,13 +221,19 @@ def test_apply_tagging_api_failure(sample_entries):
         assert "Failed to fetch metadata from APIs" in entry["warnings"]
 
 
-def test_apply_tagging_missing_title():
+def test_apply_tagging_missing_title(caplog):
     """Test applying tagging to an entry with a missing title."""
     entries = [{"action": "started", "date": "2023-01-01"}]  # Missing title
 
-    with patch("preprocessing.media_tagger.load_hints", return_value={}):
+    with caplog.at_level(logging.WARNING), patch(
+        "preprocessing.media_tagger._load_hints", return_value={}
+    ):
         tagged_entries = apply_tagging(entries)
 
-    assert len(tagged_entries) == 1
-    assert "canonical_title" not in tagged_entries[0]
-    assert "type" not in tagged_entries[0]
+    assert len(tagged_entries) == 0
+    assert "Entry missing title, skipping tagging" in caplog.text
+
+
+# TODO API calls + hints
+# TODO API call with close confidence
+# TODO API call with low confidence
