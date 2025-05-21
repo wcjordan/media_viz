@@ -6,6 +6,7 @@ This module includes functions to load hints from YAML and query external APIs.
 import operator
 import os
 import logging
+import requests
 from typing import Dict, List, Optional
 import yaml
 
@@ -61,26 +62,120 @@ def _query_tmdb(title: str) -> List[Dict]:
             - confidence is a float between 0 and 1 indicating match confidence
             - source is the source of the metadata (e.g., "tmdb")
     """
-    # This is a stub implementation
-    # In a real implementation, this would make API calls to TMDB
     logger.info("Querying TMDB for title: %s", title)
 
-    # Simulate API call
     api_key = os.environ.get("TMDB_API_KEY")
     if not api_key:
         logger.warning("TMDB_API_KEY not found in environment variables")
         return []
 
-    # Mock response - would be replaced with actual API call
-    return [
-        {
-            "canonical_title": title,
-            "type": "Movie",
-            "tags": {"genre": ["Drama"]},
-            "confidence": 0.8,
-            "source": "tmdb",
-        }
-    ]
+    base_url = "https://api.themoviedb.org/3"
+    results = []
+
+    # Search for movies
+    try:
+        movie_response = requests.get(
+            f"{base_url}/search/movie",
+            params={
+                "api_key": api_key,
+                "query": title,
+                "language": "en-US",
+                "page": 1,
+                "include_adult": "false",
+            },
+            timeout=10,
+        )
+        movie_response.raise_for_status()
+        movie_data = movie_response.json()
+
+        # Process movie results
+        for movie in movie_data.get("results", [])[:3]:  # Get top 3 movie matches
+            # Calculate confidence based on popularity and title similarity
+            title_similarity = 1.0 - min(1.0, abs(len(title) - len(movie.get("title", ""))) / max(len(title), 1))
+            popularity = min(1.0, movie.get("popularity", 0) / 100)  # Normalize popularity
+            confidence = 0.5 * title_similarity + 0.3 * popularity + 0.2 * min(1.0, movie.get("vote_average", 0) / 10)
+
+            # Get genre information
+            genres = []
+            if "genre_ids" in movie:
+                genre_response = requests.get(
+                    f"{base_url}/genre/movie/list",
+                    params={"api_key": api_key, "language": "en-US"},
+                    timeout=10,
+                )
+                genre_response.raise_for_status()
+                genre_data = genre_response.json()
+                genre_map = {g["id"]: g["name"] for g in genre_data.get("genres", [])}
+                genres = [genre_map.get(gid) for gid in movie.get("genre_ids", []) if gid in genre_map]
+
+            # Create result entry
+            results.append({
+                "canonical_title": movie.get("title", title),
+                "type": "Movie",
+                "tags": {
+                    "genre": genres,
+                    "release_year": movie.get("release_date", "")[:4] if movie.get("release_date") else "",
+                    "overview": movie.get("overview", "")[:100] + "..." if len(movie.get("overview", "")) > 100 else movie.get("overview", ""),
+                },
+                "confidence": confidence,
+                "source": "tmdb",
+            })
+
+        # Search for TV shows
+        tv_response = requests.get(
+            f"{base_url}/search/tv",
+            params={
+                "api_key": api_key,
+                "query": title,
+                "language": "en-US",
+                "page": 1,
+                "include_adult": "false",
+            },
+            timeout=10,
+        )
+        tv_response.raise_for_status()
+        tv_data = tv_response.json()
+
+        # Process TV show results
+        for show in tv_data.get("results", [])[:2]:  # Get top 2 TV show matches
+            # Calculate confidence based on popularity and title similarity
+            title_similarity = 1.0 - min(1.0, abs(len(title) - len(show.get("name", ""))) / max(len(title), 1))
+            popularity = min(1.0, show.get("popularity", 0) / 100)  # Normalize popularity
+            confidence = 0.5 * title_similarity + 0.3 * popularity + 0.2 * min(1.0, show.get("vote_average", 0) / 10)
+
+            # Get genre information
+            genres = []
+            if "genre_ids" in show:
+                genre_response = requests.get(
+                    f"{base_url}/genre/tv/list",
+                    params={"api_key": api_key, "language": "en-US"},
+                    timeout=10,
+                )
+                genre_response.raise_for_status()
+                genre_data = genre_response.json()
+                genre_map = {g["id"]: g["name"] for g in genre_data.get("genres", [])}
+                genres = [genre_map.get(gid) for gid in show.get("genre_ids", []) if gid in genre_map]
+
+            # Create result entry
+            results.append({
+                "canonical_title": show.get("name", title),
+                "type": "TV",
+                "tags": {
+                    "genre": genres,
+                    "first_air_date": show.get("first_air_date", "")[:4] if show.get("first_air_date") else "",
+                    "overview": show.get("overview", "")[:100] + "..." if len(show.get("overview", "")) > 100 else show.get("overview", ""),
+                },
+                "confidence": confidence,
+                "source": "tmdb",
+            })
+
+        # Sort results by confidence
+        results.sort(key=lambda x: x["confidence"], reverse=True)
+        return results[:5]  # Return top 5 results overall
+
+    except requests.RequestException as e:
+        logger.error("Error querying TMDB API: %s", e)
+        return []
 
 
 def _query_igdb(title: str) -> List[Dict]:
