@@ -46,7 +46,7 @@ def fixture_sample_entries():
     return [
         {"title": "FF7", "action": "started", "date": "2023-01-01"},
         {"title": "The Hobbit", "action": "finished", "date": "2023-02-15"},
-        {"title": "Succession", "action": "watched", "date": "2023-03-10"},
+        {"title": "Succesion", "action": "started", "date": "2023-03-10"},
     ]
 
 
@@ -54,9 +54,10 @@ def test_load_hints_success(sample_hints):
     """Test loading hints from a YAML file successfully."""
     mock_yaml_content = yaml.dump(sample_hints)
 
-    with patch("builtins.open", mock_open(read_data=mock_yaml_content)):
-        with patch("os.path.exists", return_value=True):
-            hints = _load_hints("fake_path.yaml")
+    with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
+        "os.path.exists", return_value=True
+    ):
+        hints = _load_hints("fake_path.yaml")
 
     assert hints == sample_hints
     assert "FF7" in hints
@@ -75,9 +76,10 @@ def test_load_hints_invalid_yaml():
     """Test handling invalid YAML content."""
     invalid_yaml = "invalid: yaml: content: - ["
 
-    with patch("builtins.open", mock_open(read_data=invalid_yaml)):
-        with patch("os.path.exists", return_value=True):
-            hints = _load_hints("invalid.yaml")
+    with patch("builtins.open", mock_open(read_data=invalid_yaml)), patch(
+        "os.path.exists", return_value=True
+    ):
+        hints = _load_hints("invalid.yaml")
 
     assert hints == {}
 
@@ -127,17 +129,30 @@ def test_query_openlibrary():
     assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
+def test_apply_tagging_missing_title(caplog):
+    """Test applying tagging to an entry with a missing title."""
+    entries = [{"action": "started", "date": "2023-01-01"}]  # Missing title
+
+    with caplog.at_level(logging.WARNING), patch(
+        "preprocessing.media_tagger._load_hints", return_value={}
+    ):
+        tagged_entries = apply_tagging(entries)
+
+    assert len(tagged_entries) == 0
+    assert "Entry missing title, skipping tagging" in caplog.text
+
+
 def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
     """Test applying tagging with only hints and no API hits."""
     mock_yaml_content = yaml.dump(sample_hints)
 
     with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
         "os.path.exists", return_value=True
-    ), patch("preprocessing.media_tagger._query_tmdb") as mock_tmdb, patch(
+    ), patch("preprocessing.media_tagger._query_tmdb"), patch(
         "preprocessing.media_tagger._query_igdb"
-    ) as mock_igdb, patch(
+    ), patch(
         "preprocessing.media_tagger._query_openlibrary"
-    ) as mock_openlibrary:
+    ):
         tagged_entries = apply_tagging(sample_entries, "fake_path.yaml")
 
     # Check the entry that should match a hint
@@ -152,86 +167,81 @@ def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
 def test_apply_tagging_with_api_calls(sample_entries):
     """Test applying tagging with API calls when no hints match."""
     # Mock the API calls
-    with patch("preprocessing.media_tagger.load_hints", return_value={}):
-        with patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb:
-            with patch("preprocessing.media_tagger.query_igdb") as mock_igdb:
-                with patch(
-                    "preprocessing.media_tagger.query_openlibrary"
-                ) as mock_openlibrary:
-                    # Set up mock returns
-                    mock_tmdb.return_value = (
-                        "Succession",
-                        {"type": "TV", "tags": {"genre": ["Drama"]}},
-                        0.9,
-                    )
-                    mock_openlibrary.return_value = (
-                        "The Hobbit",
-                        {"type": "Book", "tags": {"genre": ["Fantasy"]}},
-                        0.8,
-                    )
-                    mock_igdb.return_value = (
-                        "Elden Ring",
-                        {"type": "Game", "tags": {"platform": ["PS5"]}},
-                        0.85,
-                    )
+    succession_entry = [
+        entry for entry in sample_entries if entry["title"] == "Succesion"
+    ]
+    with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
+        "preprocessing.media_tagger._query_tmdb"
+    ) as mock_tmdb, patch("preprocessing.media_tagger._query_igdb") as mock_igdb, patch(
+        "preprocessing.media_tagger._query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock returns
+        mock_tmdb.return_value = [
+            {
+                "canonical_title": "Succession",
+                "type": "TV",
+                "tags": {"genre": ["Drama"]},
+                "confidence": 0.9,
+                "source": "tmdb",
+            }
+        ]
+        mock_openlibrary.return_value = [
+            {
+                "canonical_title": "The Hobbit",
+                "type": "Book",
+                "tags": {"genre": ["Fantasy"]},
+                "confidence": 0.6,
+                "source": "openlibrary",
+            }
+        ]
+        mock_igdb.return_value = [
+            {
+                "canonical_title": "Elden Ring",
+                "type": "Game",
+                "tags": {"platform": ["PS5"]},
+                "confidence": 0.55,
+                "source": "igdb",
+            }
+        ]
 
-                    tagged_entries = apply_tagging(sample_entries)
+        tagged_entries = apply_tagging(succession_entry)
 
-    # Check the TV show entry
-    succession_entry = next(
-        entry for entry in tagged_entries if "Succession" in entry["title"]
-    )
-    assert succession_entry["canonical_title"] == "Succession"
-    assert succession_entry["type"] == "TV"
-    assert succession_entry["tags"]["genre"] == ["Drama"]
-    assert succession_entry["confidence"] == 0.9
-
-    # Check the book entry
-    hobbit_entry = next(entry for entry in tagged_entries if "Hobbit" in entry["title"])
-    assert hobbit_entry["canonical_title"] == "The Hobbit"
-    assert hobbit_entry["type"] == "Book"
-    assert hobbit_entry["tags"]["genre"] == ["Fantasy"]
-    assert hobbit_entry["confidence"] == 0.8
+    # Assert entry is tagged correctly
+    assert len(tagged_entries) == 1
+    tagged_entry = tagged_entries[0]
+    assert tagged_entry["title"] == "Succesion"
+    assert tagged_entry["action"] == "started"
+    assert tagged_entry["canonical_title"] == "Succession"
+    assert tagged_entry["type"] == "TV"
+    assert tagged_entry["tags"]["genre"] == ["Drama"]
+    assert tagged_entry["confidence"] == 0.9
 
 
-def test_apply_tagging_api_failure(sample_entries):
+def test_apply_tagging_api_failure(sample_entries, caplog):
     """Test applying tagging when API calls fail."""
     # Mock the API calls to fail
-    with patch("preprocessing.media_tagger.load_hints", return_value={}):
-        with patch(
-            "preprocessing.media_tagger.query_tmdb", return_value=(None, None, 0.0)
-        ):
-            with patch(
-                "preprocessing.media_tagger.query_igdb", return_value=(None, None, 0.0)
-            ):
-                with patch(
-                    "preprocessing.media_tagger.query_openlibrary",
-                    return_value=(None, None, 0.0),
-                ):
-                    tagged_entries = apply_tagging(sample_entries)
-
-    # Check that fallback values are used
-    for entry in tagged_entries:
-        assert "canonical_title" in entry
-        assert "type" in entry
-        assert "tags" in entry
-        assert entry["tags"] == {}
-        assert entry["confidence"] == 0.1
-        assert "warnings" in entry
-        assert "Failed to fetch metadata from APIs" in entry["warnings"]
-
-
-def test_apply_tagging_missing_title(caplog):
-    """Test applying tagging to an entry with a missing title."""
-    entries = [{"action": "started", "date": "2023-01-01"}]  # Missing title
+    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
 
     with caplog.at_level(logging.WARNING), patch(
         "preprocessing.media_tagger._load_hints", return_value={}
+    ), patch("preprocessing.media_tagger._query_tmdb", return_value=[]), patch(
+        "preprocessing.media_tagger._query_igdb", return_value=[]
+    ), patch(
+        "preprocessing.media_tagger._query_openlibrary",
+        return_value=[],
     ):
-        tagged_entries = apply_tagging(entries)
+        tagged_entries = apply_tagging(ff7_entry)
 
-    assert len(tagged_entries) == 0
-    assert "Entry missing title, skipping tagging" in caplog.text
+    # Check that fallback values are used
+    assert "No API hits found for entry: {'title': 'FF7'," in caplog.text
+    assert "Low confidence match for entry: {'title': 'FF7'," in caplog.text
+    assert len(tagged_entries) == 1
+    for entry in tagged_entries:
+        assert entry["canonical_title"] == entry["title"]
+        assert entry["type"] == "Other / Unknown"
+        assert entry["tags"] == {}
+        assert entry["confidence"] == 0.1
+        assert entry["source"] == "fallback"
 
 
 # TODO API calls + hints

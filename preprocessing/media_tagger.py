@@ -188,7 +188,7 @@ def _combine_votes(
         if "type" not in tagged_entry:
             tagged_entry["type"] = "Other / Unknown"
 
-        if "type" not in tagged_entry:
+        if "tags" not in tagged_entry:
             tagged_entry["tags"] = {}
 
         tagged_entry["confidence"] = 0.1
