@@ -178,6 +178,7 @@ def _combine_votes(
     # Apply the hint if available
     if hint:
         tagged_entry.update(hint)
+        api_hits = [hit for hit in api_hits if hit["type"] == hint["type"]]
 
     # If no API hits were found, fallback as best possible
     if not api_hits:
@@ -195,6 +196,7 @@ def _combine_votes(
         tagged_entry["source"] = "fallback"
         return tagged_entry
 
+    # Sort API hits by confidence so we can check how close the to matches are
     best_api_hit = api_hits[0]
     if len(api_hits) > 1:
         confidence_list = sorted([hit["confidence"] for hit in api_hits], reverse=True)
@@ -246,14 +248,9 @@ def apply_tagging(
         # Apply hints if available
         hint = None
         for hint_key, hint_data in hints.items():
-            if hint_key.lower() in title.lower():
+            if hint_key == title:
                 logger.info("Applying hint for '%s' to entry '%s'", hint_key, entry)
-                title = hint_data.get("canonical_title", title)
-                hint = {
-                    "canonical_title": title,
-                    "type": hint_data["type"],
-                    "tags": hint_data.get("tags", {}),
-                }
+                hint = hint_data
                 break
 
         api_hits = []

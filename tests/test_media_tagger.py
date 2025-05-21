@@ -165,7 +165,7 @@ def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
 
 
 def test_apply_tagging_with_api_calls(sample_entries):
-    """Test applying tagging with API calls when no hints match."""
+    """Test applying tagging with API hits."""
     # Mock the API calls
     succession_entry = [
         entry for entry in sample_entries if entry["title"] == "Succesion"
@@ -215,6 +215,7 @@ def test_apply_tagging_with_api_calls(sample_entries):
     assert tagged_entry["type"] == "TV"
     assert tagged_entry["tags"]["genre"] == ["Drama"]
     assert tagged_entry["confidence"] == 0.9
+    assert tagged_entry["source"] == "tmdb"
 
 
 def test_apply_tagging_api_failure(sample_entries, caplog):
@@ -244,6 +245,200 @@ def test_apply_tagging_api_failure(sample_entries, caplog):
         assert entry["source"] == "fallback"
 
 
-# TODO API calls + hints
-# TODO API call with close confidence
-# TODO API call with low confidence
+def test_apply_tagging_with_api_calls_and_hints(sample_entries):
+    """Test applying tagging with API hits and hints."""
+    # Mock the API calls
+    succession_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
+        "preprocessing.media_tagger._query_tmdb"
+    ) as mock_tmdb, patch("preprocessing.media_tagger._query_igdb") as mock_igdb, patch(
+        "preprocessing.media_tagger._query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock returns
+        mock_tmdb.return_value = [
+            {
+                "canonical_title": "Final Fantasy VII: Advent Children",
+                "type": "Movie",
+                "tags": {"genre": ["Animation"]},
+                "confidence": 0.7,
+                "source": "tmdb",
+            }
+        ]
+        mock_openlibrary.return_value = []
+        mock_igdb.return_value = [
+            {
+                "canonical_title": "Final Fantasy VII",
+                "type": "Game",
+                "tags": {"platform": ["PS1"]},
+                "confidence": 0.9,
+                "source": "igdb",
+            },
+            {
+                "canonical_title": "Final Fantasy VII: Remake",
+                "type": "Game",
+                "tags": {"platform": ["PS5"]},
+                "confidence": 0.85,
+                "source": "igdb",
+            },
+        ]
+
+        tagged_entries = apply_tagging(succession_entry)
+
+    # Assert entry is tagged correctly
+    assert len(tagged_entries) == 1
+    tagged_entry = tagged_entries[0]
+    assert tagged_entry["title"] == "FF7"
+    assert tagged_entry["action"] == "started"
+    assert tagged_entry["canonical_title"] == "Final Fantasy VII"
+    assert tagged_entry["type"] == "Game"
+    assert tagged_entry["tags"]["platform"] == ["PS1"]
+    assert tagged_entry["confidence"] == 0.9
+    assert tagged_entry["source"] == "igdb"
+
+
+def test_apply_tagging_with_narrow_confidence(sample_entries, caplog):
+    """Test applying tagging when multiple top API hits have a close confidence score."""
+    # Mock the API calls
+    hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
+    with caplog.at_level(logging.WARNING), patch(
+        "preprocessing.media_tagger._load_hints", return_value={}
+    ), patch("preprocessing.media_tagger._query_tmdb") as mock_tmdb, patch(
+        "preprocessing.media_tagger._query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger._query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock returns
+        mock_tmdb.return_value = [
+            {
+                "canonical_title": "The Hobbit: An Unexpected Journey",
+                "type": "Movie",
+                "tags": {"genre": ["Adventure"]},
+                "confidence": 0.9,
+                "source": "tmdb",
+            }
+        ]
+        mock_openlibrary.return_value = [
+            {
+                "canonical_title": "The Hobbit",
+                "type": "Book",
+                "tags": {"genre": ["Fantasy"]},
+                "confidence": 1.0,
+                "source": "openlibrary",
+            }
+        ]
+        mock_igdb.return_value = []
+
+        tagged_entries = apply_tagging(hobbit_entry)
+
+    # Check for warnings about close confidence scores
+    assert (
+        "Multiple API hits with close confidence for {'title': 'The Hobbit',"
+        in caplog.text
+    )
+
+    # Assert entry is tagged correctly
+    assert len(tagged_entries) == 1
+    tagged_entry = tagged_entries[0]
+    assert tagged_entry["title"] == "The Hobbit"
+    assert tagged_entry["action"] == "finished"
+    assert tagged_entry["canonical_title"] == "The Hobbit"
+    assert tagged_entry["type"] == "Book"
+    assert tagged_entry["tags"]["genre"] == ["Fantasy"]
+    assert tagged_entry["confidence"] == 1.0
+    assert tagged_entry["source"] == "openlibrary"
+
+
+def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
+    """Test applying tagging with multiple hits resolved by hints."""
+    # Mock the API calls
+    hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
+    with caplog.at_level(logging.WARNING), patch(
+        "preprocessing.media_tagger._load_hints"
+    ) as mock_hints, patch(
+        "preprocessing.media_tagger._query_tmdb"
+    ) as mock_tmdb, patch(
+        "preprocessing.media_tagger._query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger._query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock returns
+        mock_hints.return_value = {
+            "The Hobbit": {
+                "type": "Movie",
+            }
+        }
+        mock_tmdb.return_value = [
+            {
+                "canonical_title": "The Hobbit: An Unexpected Journey",
+                "type": "Movie",
+                "tags": {"genre": ["Adventure"]},
+                "confidence": 0.9,
+                "source": "tmdb",
+            }
+        ]
+        mock_openlibrary.return_value = [
+            {
+                "canonical_title": "The Hobbit",
+                "type": "Book",
+                "tags": {"genre": ["Fantasy"]},
+                "confidence": 1.0,
+                "source": "openlibrary",
+            }
+        ]
+        mock_igdb.return_value = []
+
+        tagged_entries = apply_tagging(hobbit_entry)
+
+    # Check for warnings about close confidence scores
+    assert "Multiple API hits with close confidence" not in caplog.text
+
+    # Assert entry is tagged correctly
+    assert len(tagged_entries) == 1
+    tagged_entry = tagged_entries[0]
+    assert tagged_entry["title"] == "The Hobbit"
+    assert tagged_entry["action"] == "finished"
+    assert tagged_entry["canonical_title"] == "The Hobbit: An Unexpected Journey"
+    assert tagged_entry["type"] == "Movie"
+    assert tagged_entry["tags"]["genre"] == ["Adventure"]
+    assert tagged_entry["confidence"] == 0.9
+    assert tagged_entry["source"] == "tmdb"
+
+
+def test_apply_tagging_with_low_confidence(sample_entries, caplog):
+    """Test applying tagging when the top API hit has a low confidence score."""
+    # Mock the API calls
+    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    with caplog.at_level(logging.WARNING), patch(
+        "preprocessing.media_tagger._load_hints", return_value={}
+    ), patch("preprocessing.media_tagger._query_tmdb") as mock_tmdb, patch(
+        "preprocessing.media_tagger._query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger._query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock returns
+        mock_tmdb.return_value = []
+        mock_openlibrary.return_value = []
+        mock_igdb.return_value = [
+            {
+                "canonical_title": "Final Fantasy VII",
+                "type": "Game",
+                "tags": {"platform": ["PS1"]},
+                "confidence": 0.2,
+                "source": "igdb",
+            },
+        ]
+
+        tagged_entries = apply_tagging(ff7_entry)
+
+    # Check for warnings about close confidence scores
+    assert "Low confidence match for entry: {'title': 'FF7'" in caplog.text
+
+    # Assert entry is tagged correctly
+    assert len(tagged_entries) == 1
+    tagged_entry = tagged_entries[0]
+    assert tagged_entry["title"] == "FF7"
+    assert tagged_entry["action"] == "started"
+    assert tagged_entry["canonical_title"] == "Final Fantasy VII"
+    assert tagged_entry["type"] == "Game"
+    assert tagged_entry["confidence"] == 0.2
+    assert tagged_entry["source"] == "igdb"
