@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 SINGLE_EVENT_VERBS = ("played", "read", "watched", "explored")
 RANGE_VERBS = ("finished", "started")
+CONTINUATION_VERB = "&"
 IGNORED_VERBS = (
     "celebrated",
     "got",
@@ -25,11 +26,20 @@ IGNORED_VERBS = (
 )
 VERB_MAPPING = {
     "finshed": "finished",
-    "gave": "finished",
-    "good": "started",
+    "gave up": "finished",
+    "good progress on": "started",
     "restarted": "started",
     "resumed": "started",
 }
+ALL_VERBS = (
+    SINGLE_EVENT_VERBS
+    + RANGE_VERBS
+    + IGNORED_VERBS
+    + tuple(VERB_MAPPING.keys())
+    + tuple(
+        CONTINUATION_VERB,
+    )
+)
 
 
 def extract_entries(record: Dict) -> List[Dict]:
@@ -99,13 +109,19 @@ def _extract_entries_from_line(
     entries = []
 
     # Split the line to extract the action from the items
-    tokens = line.split()
-    if len(tokens) < 2:
-        logger.warning("Skipping line with insufficient tokens: %s", line)
+    action = None
+    for verb in ALL_VERBS:
+        if line.lower().startswith(f"{verb} "):
+            action_len = len(verb) + 1
+            titles_str = line[action_len:].strip()
+            action = verb.lower()
+            break
+
+    if action is None:
+        logger.warning("Skipping line with unknown action: %s", line)
         return entries, last_action
 
-    action = tokens[0].lower()
-    if action == "&":
+    if action == CONTINUATION_VERB:
         action = last_action
 
     # Normalize the action to handle typos or variations
@@ -118,8 +134,7 @@ def _extract_entries_from_line(
         return entries, action
 
     # Split the entities on '&' or newlines
-    titles_str = " ".join(tokens[1:])
-    for title in titles_str.split("&"):
+    for title in titles_str.split(CONTINUATION_VERB):
         title = title.strip()
         if title:
             if action in RANGE_VERBS:

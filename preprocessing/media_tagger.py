@@ -6,7 +6,7 @@ This module includes functions to load hints from YAML and query external APIs.
 import operator
 import os
 import logging
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional
 import yaml
 
 logger = logging.getLogger(__name__)

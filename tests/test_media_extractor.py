@@ -154,7 +154,7 @@ def test_action_mapping_typo():
 
 def test_action_mapping_restarted():
     """Test that action mapping is correct for different ways of saying restarted."""
-    for verb in ("Good", "Restarted", "Resumed"):
+    for verb in ("Good progress on", "Restarted", "Resumed"):
         record = {
             "start_date": "2023-05-01",
             "end_date": "2023-05-07",
