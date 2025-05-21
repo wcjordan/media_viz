@@ -1,6 +1,6 @@
 """Unit tests for the media entry extraction functionality."""
 
-from preprocessing.media_extractor import extract_entries, IGNORED_VERBS
+from preprocessing.media_extractor import extract_entries, IGNORED_ENTRIES
 
 
 def test_extract_single_entry():
@@ -106,11 +106,11 @@ def test_empty_or_invalid_record():
 def test_ignored_actions():
     """Test ignoring actions from data that we don't care about."""
 
-    for verb in IGNORED_VERBS:
+    for verb in IGNORED_ENTRIES:
         record = {
             "start_date": "2023-04-01",
             "end_date": "2023-04-07",
-            "raw_notes": f"{verb} a birthday",
+            "raw_notes": f"{verb}",
         }
 
         entries = extract_entries(record)
@@ -118,22 +118,38 @@ def test_ignored_actions():
     assert len(entries) == 0
 
 
-def test_ignored_actions_after_2025(caplog):
-    """Test actions aren't ignored after 2025 so they can be reviewed."""
-    for verb in IGNORED_VERBS:
-        record = {
-            "start_date": "2025-01-01",
-            "end_date": "2025-01-07",
-            "raw_notes": f"{verb} a birthday",
-        }
+def test_lower_case_titles_before_2025(caplog):
+    """Test titles from before 2025 are warned for review."""
+    record = {
+        "start_date": "2024-01-01",
+        "end_date": "2024-01-07",
+        "raw_notes": "Read 100 Days of Solitude",
+    }
 
-        entries = extract_entries(record)
+    entries = extract_entries(record)
 
-        assert (
-            f"Skipping line with invalid action '{verb}': {record['raw_notes']}"
-            in caplog.text
-        )
-        assert len(entries) == 0
+    assert (
+        f"Title not capitalized.  This may indicate we missed part of the verb: {record['raw_notes']}"
+        not in caplog.text
+    )
+    assert len(entries) == 2
+
+
+def test_lower_case_titles_after_2025(caplog):
+    """Test titles from after 2025 are warned for review."""
+    record = {
+        "start_date": "2025-01-01",
+        "end_date": "2025-01-07",
+        "raw_notes": "Read 100 Days of Solitude",
+    }
+
+    entries = extract_entries(record)
+
+    assert (
+        f"Title not capitalized.  This may indicate we missed part of the verb: {record['raw_notes']}"
+        in caplog.text
+    )
+    assert len(entries) == 2
 
 
 def test_action_mapping_typo():

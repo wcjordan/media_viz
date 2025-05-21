@@ -3,6 +3,7 @@ Preprocessing stage to extract media entries from the Notes column of a weekly r
 """
 
 import logging
+import re
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
@@ -10,32 +11,47 @@ logger = logging.getLogger(__name__)
 SINGLE_EVENT_VERBS = ("played", "read", "watched", "explored")
 RANGE_VERBS = ("finished", "started")
 CONTINUATION_VERB = "&"
-IGNORED_VERBS = (
-    "celebrated",
-    "got",
-    "home",
-    "hooked",
-    "i",
-    "installed",
-    "looked",
-    "put",
-    "reviewed",
-    "setup",
-    "spoke",
-    "we",
+IGNORED_ENTRIES = (
+    "Celebrated Cole's first BDay!",
+    "Finished migrating Chalk to the new GCP project",
+    "Got mobile auth POC working for Chalk",
+    "Got Test-Sheriff running in k8s",
+    "Home inspection & attorney review went well for the house!",
+    "Hooked up PS remote play",
+    "I wrote a very large check... as earnest money for the house",
+    "Looked into Sentry integrations",
+    "Put an offer in on a house!",
+    "Resumed working out & Chalk",
+    "Reviewed Westworld s3",
+    "Setup gaming desktop",
+    "Spoke w/ NJ realtor & got mortgage pre-approval.  Exploring securities backed lending.",
+    "Started considering Fatherhood & Mindfulness habits more like Recreation",
+    "Started learning Terraform",
+    "Started materials science course",
+    "Started researching ML training on GPU & Terraform",
+    "We moved to Livingston!",
 )
 VERB_MAPPING = {
     "finshed": "finished",
-    "gave up": "finished",
+    "finished playing": "finished",
+    "finished reading": "started",
+    "finished watching": "started",
+    "gave up on": "finished",
     "good progress on": "started",
+    "installed": "started",
     "restarted": "started",
     "resumed": "started",
+    "started & finished": SINGLE_EVENT_VERBS[0],
+    "started listening to": "started",
+    "started playing": "started",
+    "started reading": "started",
+    "started watching": "started",
 }
 ALL_VERBS = (
-    SINGLE_EVENT_VERBS
+    tuple(VERB_MAPPING.keys())
+    + SINGLE_EVENT_VERBS
     + RANGE_VERBS
-    + IGNORED_VERBS
-    + tuple(VERB_MAPPING.keys())
+    + IGNORED_ENTRIES
     + tuple(
         CONTINUATION_VERB,
     )
@@ -81,6 +97,41 @@ def extract_entries(record: Dict) -> List[Dict]:
     return entries
 
 
+def _get_entries(title: str, action: str, start_date: str) -> List[Dict]:
+    """
+    Generate a list of entries based on the title, action, and start date.
+
+    Args:
+        title: The title of the media item.
+        action: The action performed (e.g., "finished", "started").
+        start_date: The start date of the week.
+
+    Returns:
+        entries: A list of dictionaries representing a media entry with the
+                 following keys:
+                    - "action": The action performed (e.g., "finished", "started").
+                    - "title": The title of the media item.
+                    - "date": The start date of the week.
+    """
+    entries = []
+    if action in RANGE_VERBS:
+        entry = {
+            "action": action,
+            "title": title,
+            "date": start_date,
+        }
+        entries.append(entry)
+    else:
+        for sub_action in RANGE_VERBS:
+            entry = {
+                "action": sub_action,
+                "title": title,
+                "date": start_date,
+            }
+            entries.append(entry)
+    return entries
+
+
 def _extract_entries_from_line(
     line: str, start_date: str, last_action: str = None
 ) -> List[Dict]:
@@ -107,13 +158,23 @@ def _extract_entries_from_line(
         action: The action from the current line, which may be used for the next line.
     """
     entries = []
+    if line in IGNORED_ENTRIES:
+        return entries, last_action
 
     # Split the line to extract the action from the items
     action = None
     for verb in ALL_VERBS:
-        if line.lower().startswith(f"{verb} "):
+        if line.lower().startswith(f"{verb.lower()} "):
             action_len = len(verb) + 1
             titles_str = line[action_len:].strip()
+
+            # Entries before 2025 have already been checked and added to IGNORED_ENTRIES where necessary
+            if titles_str[0] == titles_str.lower()[0] and start_date > "2025":
+                logger.warning(
+                    "Title not capitalized.  This may indicate we missed part of the verb: %s",
+                    line,
+                )
+
             action = verb.lower()
             break
 
@@ -129,29 +190,14 @@ def _extract_entries_from_line(
         action = VERB_MAPPING.get(action)
 
     if action not in RANGE_VERBS and action not in SINGLE_EVENT_VERBS:
-        if action not in IGNORED_VERBS or start_date > "2025":
-            logger.warning("Skipping line with invalid action '%s': %s", action, line)
+        logger.warning("Skipping line with invalid action '%s': %s", action, line)
         return entries, action
 
-    # Split the entities on '&' or newlines
-    for title in titles_str.split(CONTINUATION_VERB):
+    # Split the entities on '&' or ','
+    for title in re.split("&|,", titles_str):
         title = title.strip()
         if title:
-            if action in RANGE_VERBS:
-                entry = {
-                    "action": action,
-                    "title": title,
-                    "date": start_date,
-                }
-                entries.append(entry)
-            else:
-                for sub_action in RANGE_VERBS:
-                    entry = {
-                        "action": sub_action,
-                        "title": title,
-                        "date": start_date,
-                    }
-                    entries.append(entry)
+            entries.extend(_get_entries(title, action, start_date))
     return entries, action
 
 
