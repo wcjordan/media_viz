@@ -105,12 +105,7 @@ def calculate_statistics(entries: List[Dict]) -> Dict:
     stats = {
         "total_entries": len(entries),
         "by_type": {},
-        "start_only": 0,
-        "finish_only": 0,
-        "completed": 0,
         "low_confidence": 0,
-        "with_warnings": 0,
-        "hint_applied": 0,
     }
 
     for entry in entries:
@@ -118,25 +113,9 @@ def calculate_statistics(entries: List[Dict]) -> Dict:
         media_type = entry.get("type", "Unknown")
         stats["by_type"][media_type] = stats["by_type"].get(media_type, 0) + 1
 
-        # Count entries by status
-        if entry.get("action") == "started" and "finish_date" not in entry:
-            stats["start_only"] += 1
-        elif entry.get("action") == "finished" and "start_date" not in entry:
-            stats["finish_only"] += 1
-        elif "start_date" in entry and "finish_date" in entry:
-            stats["completed"] += 1
-
         # Count low confidence entries
         if entry.get("confidence", 0) < 0.5:
             stats["low_confidence"] += 1
-
-        # Count entries with warnings
-        if entry.get("warnings", []):
-            stats["with_warnings"] += 1
-
-        # Count entries with hints applied
-        if entry.get("confidence", 0) == 1.0:
-            stats["hint_applied"] += 1
 
     return stats
 
@@ -152,15 +131,11 @@ if __name__ == "__main__":
 
     # Process and save
     final_stats = process_and_save(
-        "preprocessing/raw_data/media_enjoyed.csv", "preprocessing/media_entries.json"
+        "preprocessing/raw_data/media_enjoyed.csv",
+        "preprocessing/processed_data/media_entries.json",
     )
 
     # Print statistics
     print(f"Processed {final_stats['total_entries']} media entries:")
     print(f"  By type: {final_stats['by_type']}")
-    print(f"  Start only: {final_stats['start_only']}")
-    print(f"  Finish only: {final_stats['finish_only']}")
-    print(f"  Completed: {final_stats['completed']}")
     print(f"  Low confidence: {final_stats['low_confidence']}")
-    print(f"  With warnings: {final_stats['with_warnings']}")
-    print(f"  Hint applied: {final_stats['hint_applied']}")

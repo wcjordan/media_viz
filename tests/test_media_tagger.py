@@ -102,7 +102,7 @@ def test_query_tmdb_no_api_key(caplog):
         api_hits = _query_tmdb("The Matrix")
 
     assert "TMDB_API_KEY not found in environment variables" in caplog.text
-    assert api_hits == []
+    assert not api_hits
 
 
 def test_query_igdb():
