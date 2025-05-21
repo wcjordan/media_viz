@@ -123,7 +123,7 @@ def test_lower_case_titles_before_2025(caplog):
     record = {
         "start_date": "2024-01-01",
         "end_date": "2024-01-07",
-        "raw_notes": "Read 100 Days of Solitude",
+        "raw_notes": "Watched the Clone Wars",
     }
 
     entries = extract_entries(record)
@@ -140,7 +140,7 @@ def test_lower_case_titles_after_2025(caplog):
     record = {
         "start_date": "2025-01-01",
         "end_date": "2025-01-07",
-        "raw_notes": "Read 100 Days of Solitude",
+        "raw_notes": "Watched the Clone Wars",
     }
 
     entries = extract_entries(record)

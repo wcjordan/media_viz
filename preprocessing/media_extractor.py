@@ -169,7 +169,12 @@ def _extract_entries_from_line(
             titles_str = line[action_len:].strip()
 
             # Entries before 2025 have already been checked and added to IGNORED_ENTRIES where necessary
-            if titles_str and titles_str[0].isalpha() and titles_str[0] == titles_str.lower()[0] and start_date > "2025":
+            if (
+                titles_str
+                and titles_str[0].isalpha()
+                and titles_str[0] == titles_str.lower()[0]
+                and start_date > "2025"
+            ):
                 logger.warning(
                     "Title not capitalized.  This may indicate we missed part of the verb: %s",
                     line,
