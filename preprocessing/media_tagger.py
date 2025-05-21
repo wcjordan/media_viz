@@ -46,7 +46,7 @@ def _load_hints(hints_path: Optional[str] = DEFAULT_HINTS_PATH) -> Dict:
         return {}
 
 
-def _query_tmdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
+def _query_tmdb(title: str) -> List[Dict]:
     """
     Query The Movie Database (TMDB) API for movie and TV show metadata.
 
@@ -83,7 +83,7 @@ def _query_tmdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
     ]
 
 
-def _query_igdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
+def _query_igdb(title: str) -> List[Dict]:
     """
     Query the Internet Game Database (IGDB) API for video game metadata.
 
@@ -120,7 +120,7 @@ def _query_igdb(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
     ]
 
 
-def _query_openlibrary(title: str) -> Tuple[Optional[str], Optional[Dict], float]:
+def _query_openlibrary(title: str) -> List[Dict]:
     """
     Query the Open Library API for book metadata.
 
