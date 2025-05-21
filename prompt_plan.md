@@ -97,7 +97,7 @@ Write pytest tests in `tests/test_extractor.py` for:
 
 ### Prompt 4: API Tagger & Hints Support  
 ```text
-Create `tagger.py`:
+Create `preprocessing/media_tagger.py`:
 - Load `hints.yaml` for manual overrides.
 - Implement stub functions:
   - `query_tmdb(title: str) -> (canonical_title, metadata, confidence)`
@@ -106,7 +106,7 @@ Create `tagger.py`:
   - Apply hints first, then API calls.
   - Attach `type`, `tags` (genre, platform, mood), and `confidence`.
 
-Write tests in `tests/test_tagger.py` using mocked API responses and hint scenarios.
+Write tests in `tests/test_media_tagger.py` using mocked API responses and hint scenarios.
 ```
 
 ### Prompt 5: JSON Schema & Validation  

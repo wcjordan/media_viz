@@ -66,5 +66,6 @@ tilt_modules/
 .aider*
 repomix-output.xml
 
-# Raw data files
+# Raw & processed data files
+preprocessing/processed_data/
 preprocessing/raw_data/
