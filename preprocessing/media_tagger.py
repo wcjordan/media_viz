@@ -48,8 +48,6 @@ def _load_hints(hints_path: Optional[str] = DEFAULT_HINTS_PATH) -> Dict:
         return {}
 
 
-
-
 def _combine_votes(
     entry: Dict, api_hits: List[Dict], hint: Optional[Dict] = None
 ) -> Dict:

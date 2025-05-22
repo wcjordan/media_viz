@@ -17,10 +17,10 @@ GENRE_MAP_BY_MODE = {}
 def _get_genre_map(mode: str) -> dict:
     """
     Get or cache the genre map for a specific TMDB mode (movie or tv).
-    
+
     Args:
         mode: The mode to get genres for ("movie" or "tv")
-        
+
     Returns:
         Dictionary mapping genre IDs to genre names
     """
