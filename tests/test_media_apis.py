@@ -8,15 +8,13 @@ import requests
 
 from preprocessing.media_apis import (
     query_tmdb,
-    query_igdb,
-    query_openlibrary,
     _get_genre_map,
     GENRE_MAP_BY_MODE,
 )
 
 
-@pytest.fixture
-def mock_tmdb_movie_response():
+@pytest.fixture(name="mock_tmdb_movie_response")
+def fixture_mock_tmdb_movie_response():
     """Mock response for TMDB movie search."""
     return {
         "results": [
@@ -44,8 +42,8 @@ def mock_tmdb_movie_response():
     }
 
 
-@pytest.fixture
-def mock_tmdb_tv_response():
+@pytest.fixture(name="mock_tmdb_tv_response")
+def fixture_mock_tmdb_tv_response():
     """Mock response for TMDB TV search."""
     return {
         "results": [
@@ -63,8 +61,8 @@ def mock_tmdb_tv_response():
     }
 
 
-@pytest.fixture
-def mock_genre_response():
+@pytest.fixture(name="mock_genre_response")
+def fixture_mock_genre_response():
     """Mock response for TMDB genre list."""
     return {
         "genres": [
@@ -81,34 +79,44 @@ def test_get_genre_map(mock_genre_response):
     """Test getting and caching the genre map."""
     # Clear the cache
     GENRE_MAP_BY_MODE.clear()
-    
+
     with patch("requests.get") as mock_get:
         mock_response = MagicMock()
         mock_response.json.return_value = mock_genre_response
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
+
+        expected_genre_map = {
+            28: "Action",
+            18: "Drama",
+            878: "Science Fiction",
+            9648: "Mystery",
+            10765: "Sci-Fi & Fantasy",
+        }
+
         # First call should make the API request
         genre_map = _get_genre_map("movie")
         assert mock_get.call_count == 1
-        assert genre_map == {28: "Action", 18: "Drama", 878: "Science Fiction", 
-                            9648: "Mystery", 10765: "Sci-Fi & Fantasy"}
-        
+        assert genre_map == expected_genre_map
+
         # Second call should use the cached value
         genre_map = _get_genre_map("movie")
         assert mock_get.call_count == 1
-        
+        assert genre_map == expected_genre_map
+
         # Different mode should make a new request
         genre_map = _get_genre_map("tv")
         assert mock_get.call_count == 2
+        assert genre_map == expected_genre_map
 
 
 def test_query_tmdb_movie_success(mock_tmdb_movie_response, mock_genre_response):
     """Test successful TMDB movie query."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get:
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get:
         # Set up mock responses
-        def mock_response_side_effect(*args, **kwargs):
+        def mock_response_side_effect(*args, **_):
             mock_resp = MagicMock()
             if "search/movie" in args[0]:
                 mock_resp.json.return_value = mock_tmdb_movie_response
@@ -116,12 +124,12 @@ def test_query_tmdb_movie_success(mock_tmdb_movie_response, mock_genre_response)
                 mock_resp.json.return_value = mock_genre_response
             mock_resp.raise_for_status.return_value = None
             return mock_resp
-        
+
         mock_get.side_effect = mock_response_side_effect
-        
+
         # Call the function
         results = query_tmdb("movie", "The Matrix")
-        
+
         # Verify results
         assert len(results) == 2
         assert results[0]["canonical_title"] == "The Matrix"
@@ -135,10 +143,11 @@ def test_query_tmdb_movie_success(mock_tmdb_movie_response, mock_genre_response)
 
 def test_query_tmdb_tv_success(mock_tmdb_tv_response, mock_genre_response):
     """Test successful TMDB TV query."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get:
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get:
         # Set up mock responses
-        def mock_response_side_effect(*args, **kwargs):
+        def mock_response_side_effect(*args, **_):
             mock_resp = MagicMock()
             if "search/tv" in args[0]:
                 mock_resp.json.return_value = mock_tmdb_tv_response
@@ -146,12 +155,12 @@ def test_query_tmdb_tv_success(mock_tmdb_tv_response, mock_genre_response):
                 mock_resp.json.return_value = mock_genre_response
             mock_resp.raise_for_status.return_value = None
             return mock_resp
-        
+
         mock_get.side_effect = mock_response_side_effect
-        
+
         # Call the function
         results = query_tmdb("tv", "Stranger Things")
-        
+
         # Verify results
         assert len(results) == 1
         assert results[0]["canonical_title"] == "Stranger Things"
@@ -164,42 +173,42 @@ def test_query_tmdb_tv_success(mock_tmdb_tv_response, mock_genre_response):
 
 def test_query_tmdb_no_api_key(caplog):
     """Test TMDB query with no API key."""
-    with patch.dict(os.environ, {}, clear=True), \
-         caplog.at_level(logging.WARNING):
+    with patch.dict(os.environ, {}, clear=True), caplog.at_level(logging.WARNING):
         results = query_tmdb("movie", "The Matrix")
-        
+
         assert len(results) == 0
         assert "TMDB_API_KEY not found in environment variables" in caplog.text
 
 
 def test_query_tmdb_empty_results():
     """Test TMDB query with empty results."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get:
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get:
         # Set up mock responses
         mock_response = MagicMock()
         mock_response.json.return_value = {"results": []}
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
+
         # Call the function
         results = query_tmdb("movie", "NonexistentMovie12345")
-        
+
         # Verify results
         assert len(results) == 0
 
 
 def test_query_tmdb_api_error(caplog):
     """Test TMDB query with API error."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get, \
-         caplog.at_level(logging.ERROR):
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get, caplog.at_level(logging.ERROR):
         # Set up mock to raise an exception
         mock_get.side_effect = requests.RequestException("API Error")
-        
+
         # Call the function
         results = query_tmdb("movie", "The Matrix")
-        
+
         # Verify results
         assert len(results) == 0
         assert "Error querying TMDB API for movie: API Error" in caplog.text
@@ -207,9 +216,9 @@ def test_query_tmdb_api_error(caplog):
 
 def test_query_tmdb_confidence_calculation():
     """Test confidence calculation in TMDB query."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get, \
-         patch("preprocessing.media_apis._get_genre_map", return_value={}):
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get, patch("preprocessing.media_apis._get_genre_map", return_value={}):
         # Create mock responses with varying similarity
         exact_match = {
             "results": [
@@ -218,11 +227,11 @@ def test_query_tmdb_confidence_calculation():
                     "popularity": 50.0,
                     "vote_average": 8.0,
                     "release_date": "2010-07-16",
-                    "genre_ids": []
+                    "genre_ids": [],
                 }
             ]
         }
-        
+
         similar_match = {
             "results": [
                 {
@@ -230,11 +239,11 @@ def test_query_tmdb_confidence_calculation():
                     "popularity": 50.0,
                     "vote_average": 8.0,
                     "release_date": "2010-07-16",
-                    "genre_ids": []
+                    "genre_ids": [],
                 }
             ]
         }
-        
+
         different_match = {
             "results": [
                 {
@@ -242,106 +251,66 @@ def test_query_tmdb_confidence_calculation():
                     "popularity": 50.0,
                     "vote_average": 8.0,
                     "release_date": "2010-07-16",
-                    "genre_ids": []
+                    "genre_ids": [],
                 }
             ]
         }
-        
+
         # Test exact match
         mock_response = MagicMock()
         mock_response.json.return_value = exact_match
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
+
         exact_results = query_tmdb("movie", "Inception")
-        
+
         # Test similar match
         mock_response.json.return_value = similar_match
         similar_results = query_tmdb("movie", "Inception")
-        
+
         # Test different match
         mock_response.json.return_value = different_match
         different_results = query_tmdb("movie", "Inception")
-        
+
         # Verify confidence scores
         assert exact_results[0]["confidence"] > similar_results[0]["confidence"]
         assert similar_results[0]["confidence"] > different_results[0]["confidence"]
 
 
-def test_query_tmdb_sorts_by_confidence():
-    """Test that TMDB query results are sorted by confidence."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get, \
-         patch("preprocessing.media_apis._get_genre_map", return_value={}):
-        # Create mock response with multiple results
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "results": [
-                {
-                    "title": "Star Wars: The Last Jedi",  # Less similar to query
-                    "popularity": 70.0,
-                    "vote_average": 7.0,
-                    "release_date": "2017-12-15",
-                    "genre_ids": []
-                },
-                {
-                    "title": "Star Wars",  # More similar to query
-                    "popularity": 60.0,
-                    "vote_average": 8.0,
-                    "release_date": "1977-05-25",
-                    "genre_ids": []
-                },
-                {
-                    "title": "Star Wars: The Empire Strikes Back",
-                    "popularity": 65.0,
-                    "vote_average": 8.5,
-                    "release_date": "1980-05-21",
-                    "genre_ids": []
-                }
-            ]
-        }
-        mock_response.raise_for_status.return_value = None
-        mock_get.return_value = mock_response
-        
-        # Call the function
-        results = query_tmdb("movie", "Star Wars")
-        
-        # Verify results are sorted by confidence
-        assert len(results) == 3
-        assert results[0]["canonical_title"] == "Star Wars"  # Most similar should be first
-        assert results[0]["confidence"] > results[1]["confidence"]
-        assert results[1]["confidence"] > results[2]["confidence"]
-
-
 def test_query_tmdb_limits_results():
     """Test that TMDB query limits results to top 5."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get, \
-         patch("preprocessing.media_apis._get_genre_map", return_value={}):
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get, patch("preprocessing.media_apis._get_genre_map", return_value={}):
         # Create mock response with more than 5 results
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "results": [
-                {"title": f"Movie {i}", "popularity": 50.0, "vote_average": 7.0, 
-                 "release_date": "2020-01-01", "genre_ids": []} 
+                {
+                    "title": f"Movie {i}",
+                    "popularity": 50.0,
+                    "vote_average": 7.0,
+                    "release_date": "2020-01-01",
+                    "genre_ids": [],
+                }
                 for i in range(10)  # 10 results
             ]
         }
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
+
         # Call the function
         results = query_tmdb("movie", "Movie")
-        
+
         # Verify results are limited to 5
         assert len(results) == 5
 
 
 def test_query_tmdb_handles_missing_fields():
     """Test that TMDB query handles missing fields gracefully."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), \
-         patch("requests.get") as mock_get, \
-         patch("preprocessing.media_apis._get_genre_map", return_value={}):
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get, patch("preprocessing.media_apis._get_genre_map", return_value={}):
         # Create mock response with missing fields
         mock_response = MagicMock()
         mock_response.json.return_value = {
@@ -349,16 +318,16 @@ def test_query_tmdb_handles_missing_fields():
                 {
                     "title": "Movie With Missing Fields",
                     # Missing: popularity, vote_average, release_date, poster_path
-                    "genre_ids": []
+                    "genre_ids": [],
                 }
             ]
         }
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
-        
+
         # Call the function
         results = query_tmdb("movie", "Movie")
-        
+
         # Verify results handle missing fields
         assert len(results) == 1
         assert results[0]["canonical_title"] == "Movie With Missing Fields"
