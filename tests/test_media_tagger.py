@@ -87,7 +87,7 @@ def test_load_hints_invalid_yaml():
 def test_query_tmdb():
     """Test querying TMDB API."""
     with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
-        api_hits = _query_tmdb("The Matrix")
+        api_hits = _query_tmdb("movie", "The Matrix")
 
     # Since this is a stub, we're just checking the structure
     assert api_hits is not None
@@ -99,7 +99,7 @@ def test_query_tmdb():
 def test_query_tmdb_no_api_key(caplog):
     """Test querying TMDB API with no API key."""
     with caplog.at_level(logging.WARNING), patch.dict(os.environ, {}, clear=True):
-        api_hits = _query_tmdb("The Matrix")
+        api_hits = _query_tmdb("movie", "The Matrix")
 
     assert "TMDB_API_KEY not found in environment variables" in caplog.text
     assert not api_hits
@@ -367,15 +367,23 @@ def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
                 "type": "Movie",
             }
         }
-        mock_tmdb.return_value = [
-            {
-                "canonical_title": "The Hobbit: An Unexpected Journey",
-                "type": "Movie",
-                "tags": {"genre": ["Adventure"]},
-                "confidence": 0.9,
-                "source": "tmdb",
-            }
-        ]
+
+        def tmdb_return_value(mode, _):
+            return (
+                [
+                    {
+                        "canonical_title": "The Hobbit: An Unexpected Journey",
+                        "type": "Movie",
+                        "tags": {"genre": ["Adventure"]},
+                        "confidence": 0.9,
+                        "source": "tmdb",
+                    }
+                ]
+                if mode == "movie"
+                else []
+            )
+
+        mock_tmdb.side_effect = tmdb_return_value
         mock_openlibrary.return_value = [
             {
                 "canonical_title": "The Hobbit",

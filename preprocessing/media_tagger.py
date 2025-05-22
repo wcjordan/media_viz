@@ -6,14 +6,18 @@ This module includes functions to load hints from YAML and query external APIs.
 import operator
 import os
 import logging
-import requests
 from typing import Dict, List, Optional
+import requests
+
+import nltk
 import yaml
 
 logger = logging.getLogger(__name__)
 
 # Default paths
 DEFAULT_HINTS_PATH = os.path.join(os.path.dirname(__file__), "hints.yaml")
+TMDB_BASE_URL = "https://api.themoviedb.org/3"
+GENRE_MAP_BY_MODE = {}
 
 
 def _load_hints(hints_path: Optional[str] = DEFAULT_HINTS_PATH) -> Dict:
@@ -47,35 +51,53 @@ def _load_hints(hints_path: Optional[str] = DEFAULT_HINTS_PATH) -> Dict:
         return {}
 
 
-def _query_tmdb(title: str) -> List[Dict]:
+def _get_genre_map(mode: str) -> Dict[int, str]:
+    if mode in GENRE_MAP_BY_MODE:
+        return GENRE_MAP_BY_MODE[mode]
+
+    api_key = os.environ.get("TMDB_API_KEY")
+    genre_response = requests.get(
+        f"{TMDB_BASE_URL}/genre/{mode}/list",
+        params={"api_key": api_key, "language": "en-US"},
+        timeout=10,
+    )
+    genre_response.raise_for_status()
+    genre_data = genre_response.json()
+    genre_map = {g["id"]: g["name"] for g in genre_data.get("genres", [])}
+    GENRE_MAP_BY_MODE[mode] = genre_map
+    return genre_map
+
+
+def _query_tmdb(mode: str, title: str) -> List[Dict]:
     """
-    Query The Movie Database (TMDB) API for movie and TV show metadata.
+    Query The Movie Database (TMDB) API for TV shows or Movie metadata.
 
     Args:
+        mode: The mode of media to query (e.g., "movie" or "tv").
         title: The title of the media to query.
 
     Returns:
         List of dictionaries with metadata for each entry:
             - canonical_title is the official title from TMDB
+            - poster_path is the URL to the media's poster image
             - type is the type of media (Movie, TV Show, etc.)
             - tags is a dictionary containing tags for genre, mood, etc.
             - confidence is a float between 0 and 1 indicating match confidence
             - source is the source of the metadata (e.g., "tmdb")
     """
-    logger.info("Querying TMDB for title: %s", title)
+    logger.info("Querying TMDB for %s w/ title: %s", mode, title)
 
     api_key = os.environ.get("TMDB_API_KEY")
     if not api_key:
         logger.warning("TMDB_API_KEY not found in environment variables")
         return []
 
-    base_url = "https://api.themoviedb.org/3"
     results = []
 
-    # Search for movies
+    # Search for TV shows or Movies
     try:
-        movie_response = requests.get(
-            f"{base_url}/search/movie",
+        tmdb_response = requests.get(
+            f"{TMDB_BASE_URL}/search/{mode}",
             params={
                 "api_key": api_key,
                 "query": title,
@@ -85,96 +107,63 @@ def _query_tmdb(title: str) -> List[Dict]:
             },
             timeout=10,
         )
-        movie_response.raise_for_status()
-        movie_data = movie_response.json()
+        tmdb_response.raise_for_status()
+        tmdb_data = tmdb_response.json()
+        genre_map = _get_genre_map(mode)
 
-        # Process movie results
-        for movie in movie_data.get("results", [])[:3]:  # Get top 3 movie matches
+        # Process TMDB results
+        for entry in tmdb_data.get("results", [])[
+            :5
+        ]:  # Get top 5 TV show or Movie matches
             # Calculate confidence based on popularity and title similarity
-            title_similarity = 1.0 - min(1.0, abs(len(title) - len(movie.get("title", ""))) / max(len(title), 1))
-            popularity = min(1.0, movie.get("popularity", 0) / 100)  # Normalize popularity
-            confidence = 0.5 * title_similarity + 0.3 * popularity + 0.2 * min(1.0, movie.get("vote_average", 0) / 10)
+            canonical_title = (
+                entry.get("name", "") if mode == "tv" else entry.get("title", "")
+            )
+
+            title_similarity = 1.0 - (
+                nltk.edit_distance(title.lower(), canonical_title.lower())
+                / max(len(title), len(canonical_title))
+            )
+            popularity = entry.get("popularity", 0) / 100  # Normalize popularity
+            confidence = (
+                0.7 * title_similarity
+                + 0.2 * popularity
+                + 0.1 * min(1.0, entry.get("vote_average", 0) / 10)
+            )
 
             # Get genre information
             genres = []
-            if "genre_ids" in movie:
-                genre_response = requests.get(
-                    f"{base_url}/genre/movie/list",
-                    params={"api_key": api_key, "language": "en-US"},
-                    timeout=10,
-                )
-                genre_response.raise_for_status()
-                genre_data = genre_response.json()
-                genre_map = {g["id"]: g["name"] for g in genre_data.get("genres", [])}
-                genres = [genre_map.get(gid) for gid in movie.get("genre_ids", []) if gid in genre_map]
+            if "genre_ids" in entry:
+                genres = [
+                    genre_map.get(gid)
+                    for gid in entry.get("genre_ids", [])
+                    if gid in genre_map
+                ]
 
             # Create result entry
-            results.append({
-                "canonical_title": movie.get("title", title),
-                "type": "Movie",
-                "tags": {
-                    "genre": genres,
-                    "release_year": movie.get("release_date", "")[:4] if movie.get("release_date") else "",
-                    "overview": movie.get("overview", "")[:100] + "..." if len(movie.get("overview", "")) > 100 else movie.get("overview", ""),
-                },
-                "confidence": confidence,
-                "source": "tmdb",
-            })
-
-        # Search for TV shows
-        tv_response = requests.get(
-            f"{base_url}/search/tv",
-            params={
-                "api_key": api_key,
-                "query": title,
-                "language": "en-US",
-                "page": 1,
-                "include_adult": "false",
-            },
-            timeout=10,
-        )
-        tv_response.raise_for_status()
-        tv_data = tv_response.json()
-
-        # Process TV show results
-        for show in tv_data.get("results", [])[:2]:  # Get top 2 TV show matches
-            # Calculate confidence based on popularity and title similarity
-            title_similarity = 1.0 - min(1.0, abs(len(title) - len(show.get("name", ""))) / max(len(title), 1))
-            popularity = min(1.0, show.get("popularity", 0) / 100)  # Normalize popularity
-            confidence = 0.5 * title_similarity + 0.3 * popularity + 0.2 * min(1.0, show.get("vote_average", 0) / 10)
-
-            # Get genre information
-            genres = []
-            if "genre_ids" in show:
-                genre_response = requests.get(
-                    f"{base_url}/genre/tv/list",
-                    params={"api_key": api_key, "language": "en-US"},
-                    timeout=10,
-                )
-                genre_response.raise_for_status()
-                genre_data = genre_response.json()
-                genre_map = {g["id"]: g["name"] for g in genre_data.get("genres", [])}
-                genres = [genre_map.get(gid) for gid in show.get("genre_ids", []) if gid in genre_map]
-
-            # Create result entry
-            results.append({
-                "canonical_title": show.get("name", title),
-                "type": "TV",
-                "tags": {
-                    "genre": genres,
-                    "first_air_date": show.get("first_air_date", "")[:4] if show.get("first_air_date") else "",
-                    "overview": show.get("overview", "")[:100] + "..." if len(show.get("overview", "")) > 100 else show.get("overview", ""),
-                },
-                "confidence": confidence,
-                "source": "tmdb",
-            })
+            date_key = "first_air_date" if mode == "tv" else "release_date"
+            results.append(
+                {
+                    "canonical_title": canonical_title,
+                    "poster_path": f"https://image.tmdb.org/t/p/w600_and_h900_bestv2/{entry.get("poster_path", "")}",
+                    "type": "TV" if mode == "tv" else "Movie",
+                    "tags": {
+                        "genre": genres,
+                        "release_year": (
+                            entry.get(date_key, "")[:4] if entry.get(date_key) else ""
+                        ),
+                    },
+                    "confidence": confidence,
+                    "source": "tmdb",
+                }
+            )
 
         # Sort results by confidence
         results.sort(key=lambda x: x["confidence"], reverse=True)
         return results[:5]  # Return top 5 results overall
 
     except requests.RequestException as e:
-        logger.error("Error querying TMDB API: %s", e)
+        logger.error("Error querying TMDB API for %s: %s", mode, e)
         return []
 
 
@@ -188,6 +177,7 @@ def _query_igdb(title: str) -> List[Dict]:
     Returns:
         List of dictionaries with metadata for each entry:
             - canonical_title is the official title from IGDB
+            - poster_path is the URL to the media's poster image
             - type is the type of media (Movie, TV Show, etc.)
             - tags is a dictionary containing tags for genre, mood, etc.
             - confidence is a float between 0 and 1 indicating match confidence
@@ -225,6 +215,7 @@ def _query_openlibrary(title: str) -> List[Dict]:
     Returns:
         List of dictionaries with metadata for each entry:
             - canonical_title is the official title from Open Library
+            - poster_path is the URL to the media's poster image
             - type is the type of media (Movie, TV Show, etc.)
             - tags is a dictionary containing tags for genre, mood, etc.
             - confidence is a float between 0 and 1 indicating match confidence
@@ -265,6 +256,7 @@ def _combine_votes(
         Dictionary copied from the past in entry and modified with the highest confidence API data and hints.
         Includes fields:
         - canonical_title: The official title from the API
+        - poster_path is the URL to the media's poster image
         - type: The type of media (Movie, TV Show, etc.)
         - tags: A dictionary containing tags for genre, mood, etc.
         - confidence: A float between 0 and 1 indicating match confidence
@@ -316,6 +308,7 @@ def _combine_votes(
         **tagged_entry.get("tags", {}),
     }
     tagged_entry["confidence"] = best_api_hit.get("confidence")
+    tagged_entry["poster_path"] = best_api_hit.get("poster_path")
     tagged_entry["source"] = best_api_hit.get("source")
     return tagged_entry
 
@@ -349,7 +342,8 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
                 break
 
         api_hits = []
-        api_hits.extend(_query_tmdb(title))
+        api_hits.extend(_query_tmdb("movie", title))
+        api_hits.extend(_query_tmdb("tv", title))
         api_hits.extend(_query_igdb(title))
         api_hits.extend(_query_openlibrary(title))
 
