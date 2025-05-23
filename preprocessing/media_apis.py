@@ -131,9 +131,7 @@ def query_tmdb(mode: str, title: str) -> list:
                 }
             )
 
-        # Sort results by confidence
-        results.sort(key=lambda x: x["confidence"], reverse=True)
-        return results[:5]  # Return top 5 results overall
+        return results
 
     except requests.RequestException as e:
         logger.error("Error querying TMDB API for %s: %s", mode, e)
@@ -161,17 +159,19 @@ def query_igdb(title: str) -> list:
     # IGDB requires a Client ID and Client Secret from Twitch
     client_id = os.environ.get("IGDB_CLIENT_ID")
     client_secret = os.environ.get("IGDB_CLIENT_SECRET")
-    
+
     if not client_id or not client_secret:
-        logger.warning("IGDB_CLIENT_ID or IGDB_CLIENT_SECRET not found in environment variables")
+        logger.warning(
+            "IGDB_CLIENT_ID or IGDB_CLIENT_SECRET not found in environment variables"
+        )
         return []
-    
+
     # IGDB API endpoints
     auth_url = "https://id.twitch.tv/oauth2/token"
     api_url = "https://api.igdb.com/v4/games"
-    
+
     results = []
-    
+
     try:
         # Step 1: Get access token from Twitch
         auth_response = requests.post(
@@ -179,23 +179,20 @@ def query_igdb(title: str) -> list:
             params={
                 "client_id": client_id,
                 "client_secret": client_secret,
-                "grant_type": "client_credentials"
+                "grant_type": "client_credentials",
             },
-            timeout=10
+            timeout=10,
         )
         auth_response.raise_for_status()
         access_token = auth_response.json().get("access_token")
-        
+
         if not access_token:
             logger.error("Failed to obtain access token from Twitch")
             return []
-        
+
         # Step 2: Query IGDB API for games
-        headers = {
-            "Client-ID": client_id,
-            "Authorization": f"Bearer {access_token}"
-        }
-        
+        headers = {"Client-ID": client_id, "Authorization": f"Bearer {access_token}"}
+
         # Use the Apicalypse query format that IGDB requires
         # Search for games with name similar to the title
         # Include relevant fields for metadata
@@ -205,16 +202,11 @@ def query_igdb(title: str) -> list:
             where version_parent = null;
             limit 5;
         """
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            data=query,
-            timeout=10
-        )
+
+        response = requests.post(api_url, headers=headers, data=query, timeout=10)
         response.raise_for_status()
         games = response.json()
-        
+
         # Step 3: Process results
         for game in games:
             # Calculate confidence based on name similarity and ratings
@@ -223,24 +215,36 @@ def query_igdb(title: str) -> list:
                 nltk.edit_distance(title.lower(), game_title.lower())
                 / max(len(title), len(game_title), 1)
             )
-            
+
             # Normalize ratings (they're on a scale of 0-100)
             user_rating = game.get("rating", 0) / 100 if game.get("rating") else 0
-            critic_rating = game.get("aggregated_rating", 0) / 100 if game.get("aggregated_rating") else 0
-            
+            critic_rating = (
+                game.get("aggregated_rating", 0) / 100
+                if game.get("aggregated_rating")
+                else 0
+            )
+
             # Calculate overall confidence
-            confidence = 0.7 * title_similarity + 0.15 * user_rating + 0.15 * critic_rating
-            
+            confidence = (
+                0.7 * title_similarity + 0.15 * user_rating + 0.15 * critic_rating
+            )
+
             # Extract genres
             genres = []
             if "genres" in game and game["genres"]:
-                genres = [genre.get("name") for genre in game["genres"] if genre.get("name")]
-            
+                genres = [
+                    genre.get("name") for genre in game["genres"] if genre.get("name")
+                ]
+
             # Extract platforms
             platforms = []
             if "platforms" in game and game["platforms"]:
-                platforms = [platform.get("name") for platform in game["platforms"] if platform.get("name")]
-            
+                platforms = [
+                    platform.get("name")
+                    for platform in game["platforms"]
+                    if platform.get("name")
+                ]
+
             # Get cover image URL
             cover_url = ""
             if "cover" in game and game["cover"] and "url" in game["cover"]:
@@ -251,32 +255,38 @@ def query_igdb(title: str) -> list:
                     cover_url = f"https:{cover_url}"
                 # Get the larger image by replacing thumb with 720p
                 cover_url = cover_url.replace("thumb", "720p")
-            
+
             # Get release year
             release_year = ""
             if "first_release_date" in game and game["first_release_date"]:
                 # IGDB uses Unix timestamps
-                release_year = time.strftime("%Y", time.gmtime(game["first_release_date"]))
-            
+                release_year = time.strftime(
+                    "%Y", time.gmtime(game["first_release_date"])
+                )
+
             # Create result entry
-            results.append({
-                "canonical_title": game_title,
-                "poster_path": cover_url,
-                "type": "Game",
-                "tags": {
-                    "genre": genres,
-                    "platform": platforms,
-                    "release_year": release_year,
-                    "summary": game.get("summary", "")[:100] + "..." if len(game.get("summary", "")) > 100 else game.get("summary", "")
-                },
-                "confidence": confidence,
-                "source": "igdb"
-            })
-        
-        # Sort results by confidence
-        results.sort(key=lambda x: x["confidence"], reverse=True)
+            results.append(
+                {
+                    "canonical_title": game_title,
+                    "poster_path": cover_url,
+                    "type": "Game",
+                    "tags": {
+                        "genre": genres,
+                        "platform": platforms,
+                        "release_year": release_year,
+                        "summary": (
+                            game.get("summary", "")[:100] + "..."
+                            if len(game.get("summary", "")) > 100
+                            else game.get("summary", "")
+                        ),
+                    },
+                    "confidence": confidence,
+                    "source": "igdb",
+                }
+            )
+
         return results
-        
+
     except requests.RequestException as e:
         logger.error("Error querying IGDB API: %s", e)
         return []
