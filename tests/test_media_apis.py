@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import requests
 
+from preprocessing import media_apis
 from preprocessing.media_apis import (
     query_tmdb,
     query_igdb,
@@ -417,6 +418,8 @@ def test_calculate_title_similarity():
 
 def test_get_igdb_token_success(mock_igdb_auth_response):
     """Test successful IGDB token retrieval."""
+    media_apis.IGDB_TOKEN = None  # Reset token for the test
+
     with patch.dict(
         os.environ,
         {
@@ -439,6 +442,8 @@ def test_get_igdb_token_success(mock_igdb_auth_response):
 
 def test_get_igdb_token_missing_credentials(caplog):
     """Test IGDB token retrieval with missing credentials."""
+    media_apis.IGDB_TOKEN = None  # Reset token for the test
+
     with patch.dict(os.environ, {}, clear=True), caplog.at_level(logging.WARNING):
         token = _get_igdb_token()
 
@@ -448,6 +453,8 @@ def test_get_igdb_token_missing_credentials(caplog):
 
 def test_get_igdb_token_api_error(caplog):
     """Test IGDB token retrieval with API error."""
+    media_apis.IGDB_TOKEN = None  # Reset token for the test
+
     with patch.dict(
         os.environ,
         {
