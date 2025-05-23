@@ -8,7 +8,11 @@ import requests
 
 from preprocessing.media_apis import (
     query_tmdb,
+    query_igdb,
     _get_genre_map,
+    _get_igdb_token,
+    _format_igdb_entry,
+    _calculate_title_similarity,
     GENRE_MAP_BY_MODE,
 )
 
@@ -334,3 +338,264 @@ def test_query_tmdb_handles_missing_fields():
         assert results[0]["tags"]["release_year"] == ""  # Empty string for missing date
         assert "poster_path" in results[0]  # Should still have the field
         assert results[0]["confidence"] > 0  # Should still calculate confidence
+
+
+@pytest.fixture(name="mock_igdb_auth_response")
+def fixture_mock_igdb_auth_response():
+    """Mock response for IGDB authentication."""
+    return {
+        "access_token": "mock_access_token",
+        "expires_in": 14400,
+        "token_type": "bearer",
+    }
+
+
+@pytest.fixture(name="mock_igdb_games_response")
+def fixture_mock_igdb_games_response():
+    """Mock response for IGDB games search."""
+    return [
+        {
+            "id": 1942,
+            "name": "The Witcher 3: Wild Hunt",
+            "first_release_date": 1431993600,  # May 19, 2015
+            "rating": 93.4,
+            "aggregated_rating": 91.2,
+            "cover": {
+                "id": 89386,
+                "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyy.jpg",
+            },
+            "genres": [
+                {"id": 12, "name": "Role-playing (RPG)"},
+                {"id": 31, "name": "Adventure"},
+            ],
+            "platforms": [
+                {"id": 6, "name": "PC"},
+                {"id": 48, "name": "PlayStation 4"},
+                {"id": 49, "name": "Xbox One"},
+                {"id": 130, "name": "Nintendo Switch"},
+            ],
+        },
+        {
+            "id": 1943,
+            "name": "The Witcher 3: Wild Hunt - Hearts of Stone",
+            "first_release_date": 1444694400,  # October 13, 2015
+            "rating": 87.5,
+            "cover": {
+                "id": 89387,
+                "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyz.jpg",
+            },
+            "genres": [
+                {"id": 12, "name": "Role-playing (RPG)"},
+                {"id": 31, "name": "Adventure"},
+            ],
+            "platforms": [
+                {"id": 6, "name": "PC"},
+                {"id": 48, "name": "PlayStation 4"},
+                {"id": 49, "name": "Xbox One"},
+            ],
+        },
+    ]
+
+
+def test_calculate_title_similarity():
+    """Test the title similarity calculation function."""
+    # Identical titles
+    assert _calculate_title_similarity("The Witcher 3", "The Witcher 3") == 1.0
+
+    # Similar titles
+    similarity = _calculate_title_similarity("The Witcher 3", "The Witcher III")
+    assert 0.7 < similarity < 1.0
+
+    # Different titles
+    similarity = _calculate_title_similarity("The Witcher 3", "Cyberpunk 2077")
+    assert similarity < 0.5
+
+    # Empty titles
+    assert _calculate_title_similarity("", "") == 1.0
+    assert _calculate_title_similarity("Title", "") < 1.0
+
+
+def test_get_igdb_token_success(mock_igdb_auth_response):
+    """Test successful IGDB token retrieval."""
+    with patch.dict(
+        os.environ,
+        {
+            "IGDB_CLIENT_ID": "fake_client_id",
+            "IGDB_CLIENT_SECRET": "fake_client_secret",
+        },
+    ), patch("requests.post") as mock_post:
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_igdb_auth_response
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        token = _get_igdb_token()
+
+        assert token == "mock_access_token"
+        mock_post.assert_called_once()
+        assert "'client_id': 'fake_client_id'" in str(mock_post.call_args)
+        assert "'client_secret': 'fake_client_secret'" in str(mock_post.call_args)
+
+
+def test_get_igdb_token_missing_credentials(caplog):
+    """Test IGDB token retrieval with missing credentials."""
+    with patch.dict(os.environ, {}, clear=True), caplog.at_level(logging.WARNING):
+        token = _get_igdb_token()
+
+        assert token is None
+        assert "IGDB_CLIENT_ID or IGDB_CLIENT_SECRET not found" in caplog.text
+
+
+def test_get_igdb_token_api_error(caplog):
+    """Test IGDB token retrieval with API error."""
+    with patch.dict(
+        os.environ,
+        {
+            "IGDB_CLIENT_ID": "fake_client_id",
+            "IGDB_CLIENT_SECRET": "fake_client_secret",
+        },
+    ), patch("requests.post") as mock_post, caplog.at_level(logging.ERROR):
+        mock_post.side_effect = requests.RequestException("API Error")
+
+        token = _get_igdb_token()
+
+        assert token is None
+        assert mock_post.called
+
+
+def test_format_igdb_entry():
+    """Test formatting an IGDB game entry."""
+    game = {
+        "name": "The Witcher 3",
+        "first_release_date": 1431993600,  # May 19, 2015
+        "rating": 93.4,
+        "aggregated_rating": 91.2,
+        "cover": {"url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyy.jpg"},
+        "genres": [{"name": "Role-playing (RPG)"}, {"name": "Adventure"}],
+        "platforms": [{"name": "PC"}, {"name": "PlayStation 4"}],
+    }
+
+    result = _format_igdb_entry("The Witcher 3", game)
+
+    assert result["canonical_title"] == "The Witcher 3"
+    assert result["type"] == "Game"
+    assert result["tags"]["genre"] == ["Role-playing (RPG)", "Adventure"]
+    assert result["tags"]["platform"] == ["PC", "PlayStation 4"]
+    assert result["tags"]["release_year"] == "2015"
+    assert result["confidence"] > 0.9  # Should be high for exact match
+    assert result["source"] == "igdb"
+    assert "https:" in result["poster_path"]
+    assert "720p" in result["poster_path"]  # Should upgrade image quality
+
+
+def test_format_igdb_entry_missing_fields():
+    """Test formatting an IGDB game entry with missing fields."""
+    game = {
+        "name": "Minimal Game",
+        # Missing most fields
+    }
+
+    result = _format_igdb_entry("Minimal Game", game)
+
+    assert result["canonical_title"] == "Minimal Game"
+    assert result["type"] == "Game"
+    assert result["tags"]["genre"] == []
+    assert result["tags"]["platform"] == []
+    assert result["tags"]["release_year"] == ""
+    assert result["confidence"] > 0  # Should still calculate confidence
+    assert result["source"] == "igdb"
+    assert result["poster_path"] == ""
+
+
+def test_format_igdb_entry_partial_fields():
+    """Test formatting an IGDB game entry with partial fields."""
+    game = {
+        "name": "Partial Game",
+        "first_release_date": 1577836800,  # January 1, 2020
+        "genres": [],  # Empty list
+        "platforms": [{"name": "PC"}],
+        "cover": {"url": "thumb/image.jpg"},  # Malformed URL
+    }
+
+    result = _format_igdb_entry("Partial Game", game)
+
+    assert result["canonical_title"] == "Partial Game"
+    assert result["type"] == "Game"
+    assert result["tags"]["genre"] == []
+    assert result["tags"]["platform"] == ["PC"]
+    assert result["tags"]["release_year"] == "2020"
+    assert (
+        result["poster_path"] == "720p/image.jpg"
+    )  # If not starting with //, it should not add https:
+
+
+def test_query_igdb_success(mock_igdb_games_response):
+    """Test successful IGDB query."""
+    with patch.dict(
+        os.environ,
+        {
+            "IGDB_CLIENT_ID": "fake_client_id",
+            "IGDB_CLIENT_SECRET": "fake_client_secret",
+        },
+    ), patch(
+        "preprocessing.media_apis._get_igdb_token", return_value="mock_token"
+    ), patch(
+        "requests.post"
+    ) as mock_post:
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_igdb_games_response
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        results = query_igdb("The Witcher 3")
+
+        assert len(results) == 2
+        assert results[0]["canonical_title"] == "The Witcher 3: Wild Hunt"
+        assert results[0]["type"] == "Game"
+        assert "Role-playing (RPG)" in results[0]["tags"]["genre"]
+        assert "PC" in results[0]["tags"]["platform"]
+        assert results[0]["tags"]["release_year"] == "2015"
+        assert results[0]["confidence"] > 0.6
+        assert results[0]["source"] == "igdb"
+        assert "https:" in results[0]["poster_path"]
+
+        # Verify API call
+        mock_post.assert_called_once()
+        assert "Bearer mock_token" in str(mock_post.call_args)
+        assert "The Witcher 3" in str(mock_post.call_args)
+
+
+def test_query_igdb_no_token():
+    """Test IGDB query with no token."""
+    with patch("preprocessing.media_apis._get_igdb_token", return_value=""):
+        results = query_igdb("The Witcher 3")
+
+        assert len(results) == 0
+
+
+def test_query_igdb_api_error(caplog):
+    """Test IGDB query with API error."""
+    with patch(
+        "preprocessing.media_apis._get_igdb_token", return_value="mock_token"
+    ), patch("requests.post") as mock_post, caplog.at_level(logging.ERROR):
+        mock_post.side_effect = requests.RequestException("API Error")
+
+        results = query_igdb("The Witcher 3")
+
+        assert len(results) == 0
+        assert "Error querying IGDB API: API Error" in caplog.text
+
+
+def test_query_igdb_empty_results():
+    """Test IGDB query with empty results."""
+    with patch(
+        "preprocessing.media_apis._get_igdb_token", return_value="mock_token"
+    ), patch("requests.post") as mock_post:
+        mock_response = MagicMock()
+        mock_response.json.return_value = []  # Empty results
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        results = query_igdb("NonexistentGame12345")
+
+        assert len(results) == 0

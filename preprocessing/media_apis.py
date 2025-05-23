@@ -4,6 +4,7 @@ API client functions for querying external media databases.
 
 import os
 import logging
+import time
 import requests
 import nltk
 
@@ -12,6 +13,24 @@ logger = logging.getLogger(__name__)
 # Default paths
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 GENRE_MAP_BY_MODE = {}
+IGDB_TOKEN = None
+
+
+def _calculate_title_similarity(title1: str, title2: str) -> float:
+    """
+    Calculate similarity between two titles using edit distance.
+
+    Args:
+        title1: First title string
+        title2: Second title string
+
+    Returns:
+        Float between 0.0 and 1.0 representing similarity (1.0 = identical)
+    """
+    return 1.0 - (
+        nltk.edit_distance(title1.lower(), title2.lower())
+        / max(len(title1), len(title2), 1)
+    )
 
 
 def _get_genre_map(mode: str) -> dict:
@@ -92,10 +111,7 @@ def query_tmdb(mode: str, title: str) -> list:
                 entry.get("name", "") if mode == "tv" else entry.get("title", "")
             )
 
-            title_similarity = 1.0 - (
-                nltk.edit_distance(title.lower(), canonical_title.lower())
-                / max(len(title), len(canonical_title))
-            )
+            title_similarity = _calculate_title_similarity(title, canonical_title)
             popularity = entry.get("popularity", 0) / 100  # Normalize popularity
             confidence = (
                 0.7 * title_similarity
@@ -130,13 +146,126 @@ def query_tmdb(mode: str, title: str) -> list:
                 }
             )
 
-        # Sort results by confidence
-        results.sort(key=lambda x: x["confidence"], reverse=True)
-        return results[:5]  # Return top 5 results overall
+        return results
 
     except requests.RequestException as e:
         logger.error("Error querying TMDB API for %s: %s", mode, e)
         return []
+
+
+def _get_igdb_token() -> str:
+    """
+    Get an access token for IGDB API using Twitch credentials.
+
+    Returns:
+        Access token string
+    """
+    global IGDB_TOKEN  # pylint: disable=global-statement
+    if IGDB_TOKEN:
+        return IGDB_TOKEN
+
+    # IGDB requires a Client ID and Client Secret from Twitch
+    client_id = os.environ.get("IGDB_CLIENT_ID")
+    client_secret = os.environ.get("IGDB_CLIENT_SECRET")
+
+    if not client_id or not client_secret:
+        logger.warning(
+            "IGDB_CLIENT_ID or IGDB_CLIENT_SECRET not found in environment variables"
+        )
+        return None
+
+    try:
+        auth_response = requests.post(
+            "https://id.twitch.tv/oauth2/token",
+            params={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "grant_type": "client_credentials",
+            },
+            timeout=10,
+        )
+        auth_response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error("Error querying IGDB API: %s", e)
+        return None
+
+    token = auth_response.json().get("access_token", "")
+    if token:
+        IGDB_TOKEN = token
+    return token
+
+
+def _format_igdb_entry(search_title: str, game: dict) -> dict:
+    """
+    Format a single IGDB game entry into a standardized dictionary.
+    Args:
+        search_title: The search title.  Used to calculate confidence.
+        game: A dictionary containing game metadata from IGDB.
+    Returns:
+        A dictionary with the following keys
+            - canonical_title: The official title from IGDB
+            - poster_path: The URL to the media's poster image
+            - type: The type of media (Game)
+            - tags: A dictionary containing tags for genre, platform, etc.
+            - confidence: A float between 0 and 1 indicating match confidence
+            - source: The source of the metadata (e.g., "igdb")
+    """
+    # Calculate confidence based on name similarity and ratings
+    game_title = game.get("name", "")
+    title_similarity = _calculate_title_similarity(search_title, game_title)
+
+    # Normalize ratings (they're on a scale of 0-100)
+    user_rating = game.get("rating", 0) / 100 if game.get("rating") else 0
+    critic_rating = (
+        game.get("aggregated_rating", 0) / 100 if game.get("aggregated_rating") else 0
+    )
+
+    # Calculate overall confidence
+    confidence = 0.7 * title_similarity + 0.15 * user_rating + 0.15 * critic_rating
+
+    # Extract genres
+    genres = []
+    if "genres" in game and game["genres"]:
+        genres = [genre.get("name") for genre in game["genres"] if genre.get("name")]
+
+    # Extract platforms
+    platforms = []
+    if "platforms" in game and game["platforms"]:
+        platforms = [
+            platform.get("name")
+            for platform in game["platforms"]
+            if platform.get("name")
+        ]
+
+    # Get cover image URL
+    cover_url = ""
+    if "cover" in game and game["cover"] and "url" in game["cover"]:
+        # IGDB returns URLs like "//images.igdb.com/..."
+        # Convert to https://images.igdb.com/...
+        cover_url = game["cover"]["url"]
+        if cover_url.startswith("//"):
+            cover_url = f"https:{cover_url}"
+        # Get the larger image by replacing thumb with 720p
+        cover_url = cover_url.replace("thumb", "720p")
+
+    # Get release year
+    release_year = ""
+    if "first_release_date" in game and game["first_release_date"]:
+        # IGDB uses Unix timestamps
+        release_year = time.strftime("%Y", time.gmtime(game["first_release_date"]))
+
+    return {
+        "canonical_title": game_title,
+        "poster_path": cover_url,
+        "type": "Game",
+        "tags": {
+            "genre": genres,
+            "platform": platforms,
+            "release_year": release_year,
+        },
+        "confidence": confidence,
+        "source": "igdb",
+    }
 
 
 def query_igdb(title: str) -> list:
@@ -155,26 +284,40 @@ def query_igdb(title: str) -> list:
             - confidence is a float between 0 and 1 indicating match confidence
             - source is the source of the metadata (e.g., "igdb")
     """
-    # This is a stub implementation
-    # In a real implementation, this would make API calls to IGDB
     logger.info("Querying IGDB for title: %s", title)
 
-    # Simulate API call
-    api_key = os.environ.get("IGDB_API_KEY")
-    if not api_key:
-        logger.warning("IGDB_API_KEY not found in environment variables")
+    access_token = _get_igdb_token()
+    if not access_token:
+        logger.warning("Failed to obtain IGDB access token")
         return []
 
-    # Mock response - would be replaced with actual API call
-    return [
-        {
-            "canonical_title": title,
-            "type": "Game",
-            "tags": {"platform": ["PC"], "genre": ["RPG"]},
-            "confidence": 0.7,
-            "source": "igdb",
-        }
-    ]
+    client_id = os.environ.get("IGDB_CLIENT_ID")
+    headers = {"Client-ID": client_id, "Authorization": f"Bearer {access_token}"}
+    try:
+        # Step 2: Query IGDB API for games
+
+        # Use the Apicalypse query format that IGDB requires
+        # Search for games with name similar to the title
+        # Include relevant fields for metadata
+        query = f"""
+            search "{title}";
+            fields name, cover.url, first_release_date, genres.name, platforms.name, rating, aggregated_rating;
+            where version_parent = null;
+            limit 5;
+        """
+
+        response = requests.post(
+            "https://api.igdb.com/v4/games", headers=headers, data=query, timeout=10
+        )
+        response.raise_for_status()
+        games = response.json()
+
+        # Step 3: Process results
+        return [_format_igdb_entry(title, game) for game in games]
+
+    except requests.RequestException as e:
+        logger.error("Error querying IGDB API: %s", e)
+        return []
 
 
 def query_openlibrary(title: str) -> list:
