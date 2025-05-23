@@ -117,16 +117,9 @@ We've stubbed out the query_tmdb method in `media_tagger.py`.  Please implement 
  We've stubbed out the `query_igdb` method in `media_apis.py`.  Please implement the method to search IGDB to fetch the top 5 matching entries.  Try to minimize the data fetch but do ensure we collect any metadata which would help w/ providing the `tags`, `type`, and `canonical_title`.
 ```
 
-IN PROGRESS BELOW
 ```text
  We've stubbed out the `query_openlibrary` method in `media_apis.py`.  Please implement the method to search OpenLibrary DB to fetch the top 5 matching entries.  Try to minimize the data fetch but do ensure we collect any metadata which would help w/ providing the `tags`, `type`, and `canonical_title`.
 ```
-
-Needs prompts:
-- Batch titles to minimize requests to the APIs
-- Trim seasons
-- Handle titles with an "&" or "," in the name
-- Use hints limit the DBs queried for a title
 
 ### Prompt 5: JSON Schema & Validation  
 ```text
