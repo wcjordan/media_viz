@@ -10,6 +10,7 @@ from preprocessing import media_apis
 from preprocessing.media_apis import (
     query_tmdb,
     query_igdb,
+    query_openlibrary,
     _get_genre_map,
     _get_igdb_token,
     _format_igdb_entry,
