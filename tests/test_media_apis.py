@@ -607,3 +607,207 @@ def test_query_igdb_empty_results():
         results = query_igdb("NonexistentGame12345")
 
         assert len(results) == 0
+
+
+@pytest.fixture(name="mock_openlibrary_response")
+def fixture_mock_openlibrary_response():
+    """Mock response for OpenLibrary search."""
+    return {
+        "numFound": 2,
+        "start": 0,
+        "docs": [
+            {
+                "key": "/works/OL45883W",
+                "title": "The Hobbit",
+                "author_name": ["J.R.R. Tolkien"],
+                "first_publish_year": 1937,
+                "subject": ["Fantasy", "Fiction", "Adventure"],
+                "cover_i": 12345,
+                "edition_count": 150
+            },
+            {
+                "key": "/works/OL12345W",
+                "title": "The Hobbit: An Unexpected Journey",
+                "author_name": ["J.R.R. Tolkien", "Peter Jackson"],
+                "first_publish_year": 2012,
+                "subject": ["Fantasy", "Film Adaptation"],
+                "cover_i": 67890,
+                "edition_count": 5
+            }
+        ]
+    }
+
+
+def test_query_openlibrary_success(mock_openlibrary_response):
+    """Test successful OpenLibrary query."""
+    with patch("requests.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_openlibrary_response
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        results = query_openlibrary("The Hobbit")
+        
+        # Verify results
+        assert len(results) == 2
+        assert results[0]["canonical_title"] == "The Hobbit"
+        assert results[0]["type"] == "Book"
+        assert "Fantasy" in results[0]["tags"]["genre"]
+        assert "J.R.R. Tolkien" in results[0]["tags"]["author"]
+        assert results[0]["tags"]["release_year"] == "1937"
+        assert results[0]["confidence"] > 0.8  # High confidence for exact match
+        assert results[0]["source"] == "openlibrary"
+        assert "covers.openlibrary.org" in results[0]["poster_path"]
+        
+        # Verify API call
+        mock_get.assert_called_once()
+        assert "title=The+Hobbit" in str(mock_get.call_args)
+
+
+def test_query_openlibrary_empty_results():
+    """Test OpenLibrary query with empty results."""
+    with patch("requests.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"numFound": 0, "start": 0, "docs": []}
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        results = query_openlibrary("NonexistentBook12345")
+        
+        assert len(results) == 0
+
+
+def test_query_openlibrary_api_error(caplog):
+    """Test OpenLibrary query with API error."""
+    with patch("requests.get") as mock_get, caplog.at_level(logging.ERROR):
+        mock_get.side_effect = requests.RequestException("API Error")
+        
+        results = query_openlibrary("The Hobbit")
+        
+        assert len(results) == 0
+        assert "Error querying Open Library API: API Error" in caplog.text
+
+
+def test_query_openlibrary_missing_fields():
+    """Test OpenLibrary query with missing fields in response."""
+    with patch("requests.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "numFound": 1,
+            "start": 0,
+            "docs": [
+                {
+                    "key": "/works/OL12345W",
+                    "title": "Book With Missing Fields"
+                    # Missing: author_name, first_publish_year, subject, cover_i
+                }
+            ]
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        results = query_openlibrary("Book")
+        
+        # Verify results handle missing fields
+        assert len(results) == 1
+        assert results[0]["canonical_title"] == "Book With Missing Fields"
+        assert results[0]["type"] == "Book"
+        assert results[0]["tags"]["genre"] == []
+        assert results[0]["tags"]["author"] == []
+        assert results[0]["tags"]["release_year"] == ""
+        assert results[0]["poster_path"] == ""
+        assert results[0]["confidence"] > 0  # Should still calculate confidence
+
+
+def test_query_openlibrary_malformed_response(caplog):
+    """Test OpenLibrary query with malformed response."""
+    with patch("requests.get") as mock_get, caplog.at_level(logging.ERROR):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"malformed": "response"}  # Missing 'docs' key
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        results = query_openlibrary("The Hobbit")
+        
+        assert len(results) == 0
+
+
+def test_query_openlibrary_confidence_calculation():
+    """Test confidence calculation in OpenLibrary query."""
+    with patch("requests.get") as mock_get:
+        # Create mock responses with varying similarity
+        exact_match = {
+            "numFound": 1,
+            "docs": [
+                {
+                    "title": "Lord of the Rings",
+                    "edition_count": 100
+                }
+            ]
+        }
+        
+        similar_match = {
+            "numFound": 1,
+            "docs": [
+                {
+                    "title": "The Lord of the Rings",  # Slightly different
+                    "edition_count": 100
+                }
+            ]
+        }
+        
+        different_match = {
+            "numFound": 1,
+            "docs": [
+                {
+                    "title": "Completely Different Title",
+                    "edition_count": 100
+                }
+            ]
+        }
+        
+        # Test exact match
+        mock_response = MagicMock()
+        mock_response.json.return_value = exact_match
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        exact_results = query_openlibrary("Lord of the Rings")
+        
+        # Test similar match
+        mock_response.json.return_value = similar_match
+        similar_results = query_openlibrary("Lord of the Rings")
+        
+        # Test different match
+        mock_response.json.return_value = different_match
+        different_results = query_openlibrary("Lord of the Rings")
+        
+        # Verify confidence scores
+        assert exact_results[0]["confidence"] > similar_results[0]["confidence"]
+        assert similar_results[0]["confidence"] > different_results[0]["confidence"]
+
+
+def test_query_openlibrary_limits_results():
+    """Test that OpenLibrary query limits results."""
+    with patch("requests.get") as mock_get:
+        # Create mock response with more than 5 results
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "numFound": 10,
+            "docs": [
+                {
+                    "title": f"Book {i}",
+                    "author_name": ["Author"],
+                    "first_publish_year": 2000 + i
+                }
+                for i in range(10)  # 10 results
+            ]
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+        
+        # Call the function
+        results = query_openlibrary("Book")
+        
+        # Verify results are limited to 5
+        assert len(results) <= 5
