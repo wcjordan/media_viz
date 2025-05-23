@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 import requests
 
+from preprocessing import media_apis
 from preprocessing.media_apis import (
     query_tmdb,
     query_igdb,
@@ -15,6 +16,13 @@ from preprocessing.media_apis import (
     _calculate_title_similarity,
     GENRE_MAP_BY_MODE,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_igdb_token():
+    """Reset IGDB token before each test to ensure consistent state."""
+    media_apis.IGDB_TOKEN = None
+    yield
 
 
 @pytest.fixture(name="mock_tmdb_movie_response")
