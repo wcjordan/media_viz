@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 # Default paths
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 GENRE_MAP_BY_MODE = {}
+IGDB_TOKEN = None
 
 
 def _calculate_title_similarity(title1: str, title2: str) -> float:
@@ -159,6 +160,10 @@ def _get_igdb_token() -> str:
     Returns:
         Access token string
     """
+    global IGDB_TOKEN  # pylint: disable=global-statement
+    if IGDB_TOKEN:
+        return IGDB_TOKEN
+
     # IGDB requires a Client ID and Client Secret from Twitch
     client_id = os.environ.get("IGDB_CLIENT_ID")
     client_secret = os.environ.get("IGDB_CLIENT_SECRET")
@@ -167,19 +172,27 @@ def _get_igdb_token() -> str:
         logger.warning(
             "IGDB_CLIENT_ID or IGDB_CLIENT_SECRET not found in environment variables"
         )
-        return ""
+        return None
 
-    auth_response = requests.post(
-        "https://id.twitch.tv/oauth2/token",
-        params={
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "grant_type": "client_credentials",
-        },
-        timeout=10,
-    )
-    auth_response.raise_for_status()
-    return auth_response.json().get("access_token", "")
+    try:
+        auth_response = requests.post(
+            "https://id.twitch.tv/oauth2/token",
+            params={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "grant_type": "client_credentials",
+            },
+            timeout=10,
+        )
+        auth_response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error("Error querying IGDB API: %s", e)
+        return None
+
+    token = auth_response.json().get("access_token", "")
+    if IGDB_TOKEN:
+        IGDB_TOKEN = token
+    return token
 
 
 def _format_igdb_entry(search_title: str, game: dict) -> dict:
@@ -249,11 +262,6 @@ def _format_igdb_entry(search_title: str, game: dict) -> dict:
             "genre": genres,
             "platform": platforms,
             "release_year": release_year,
-            "summary": (
-                game.get("summary", "")[:100] + "..."
-                if len(game.get("summary", "")) > 100
-                else game.get("summary", "")
-            ),
         },
         "confidence": confidence,
         "source": "igdb",
@@ -293,7 +301,7 @@ def query_igdb(title: str) -> list:
         # Include relevant fields for metadata
         query = f"""
             search "{title}";
-            fields name, cover.url, first_release_date, genres.name, platforms.name, summary, rating, aggregated_rating;
+            fields name, cover.url, first_release_date, genres.name, platforms.name, rating, aggregated_rating;
             where version_parent = null;
             limit 5;
         """
