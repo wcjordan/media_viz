@@ -18,6 +18,13 @@ from preprocessing.media_apis import (
 )
 
 
+@pytest.fixture(autouse=True)
+def reset_igdb_token():
+    """Reset IGDB token before each test to ensure consistent state."""
+    media_apis.IGDB_TOKEN = None
+    yield
+
+
 @pytest.fixture(name="mock_tmdb_movie_response")
 def fixture_mock_tmdb_movie_response():
     """Mock response for TMDB movie search."""
@@ -418,8 +425,6 @@ def test_calculate_title_similarity():
 
 def test_get_igdb_token_success(mock_igdb_auth_response):
     """Test successful IGDB token retrieval."""
-    media_apis.IGDB_TOKEN = None  # Reset token for the test
-
     with patch.dict(
         os.environ,
         {
@@ -442,8 +447,6 @@ def test_get_igdb_token_success(mock_igdb_auth_response):
 
 def test_get_igdb_token_missing_credentials(caplog):
     """Test IGDB token retrieval with missing credentials."""
-    media_apis.IGDB_TOKEN = None  # Reset token for the test
-
     with patch.dict(os.environ, {}, clear=True), caplog.at_level(logging.WARNING):
         token = _get_igdb_token()
 
@@ -453,8 +456,6 @@ def test_get_igdb_token_missing_credentials(caplog):
 
 def test_get_igdb_token_api_error(caplog):
     """Test IGDB token retrieval with API error."""
-    media_apis.IGDB_TOKEN = None  # Reset token for the test
-
     with patch.dict(
         os.environ,
         {
