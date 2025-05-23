@@ -190,7 +190,7 @@ def _get_igdb_token() -> str:
         return None
 
     token = auth_response.json().get("access_token", "")
-    if IGDB_TOKEN:
+    if token:
         IGDB_TOKEN = token
     return token
 
