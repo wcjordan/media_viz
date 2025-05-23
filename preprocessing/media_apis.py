@@ -336,23 +336,109 @@ def query_openlibrary(title: str) -> list:
             - confidence is a float between 0 and 1 indicating match confidence
             - source is the source of the metadata (e.g., "openlibrary")
     """
-    # This is a stub implementation
-    # In a real implementation, this would make API calls to Open Library
     logger.info("Querying Open Library for title: %s", title)
 
-    # Simulate API call
+    # Note: OpenLibrary doesn't require an API key for basic search
+    # But we'll check for it in case it's needed for rate limiting or future features
     api_key = os.environ.get("OPENLIBRARY_API_KEY")
     if not api_key:
-        logger.warning("OPENLIBRARY_API_KEY not found in environment variables")
+        logger.warning("OPENLIBRARY_API_KEY not found in environment variables, using public access")
+    
+    results = []
+    
+    try:
+        # Search for books by title
+        search_url = "https://openlibrary.org/search.json"
+        response = requests.get(
+            search_url,
+            params={
+                "title": title,
+                "limit": 5,
+                "fields": "key,title,author_name,first_publish_year,subject,cover_i,edition_count"
+            },
+            timeout=10
+        )
+        response.raise_for_status()
+        search_data = response.json()
+        
+        # Process search results
+        for book in search_data.get("docs", [])[:5]:
+            # Calculate confidence based on title similarity and edition count
+            book_title = book.get("title", "")
+            title_similarity = _calculate_title_similarity(title, book_title)
+            
+            # Normalize edition count (more editions usually means more popular/canonical)
+            edition_factor = min(1.0, book.get("edition_count", 1) / 20)
+            
+            # Calculate overall confidence
+            confidence = 0.8 * title_similarity + 0.2 * edition_factor
+            
+            # Get cover image URL if available
+            cover_id = book.get("cover_i")
+            cover_url = ""
+            if cover_id:
+                cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+            
+            # Get authors
+            authors = book.get("author_name", [])
+            
+            # Get subjects/genres (limited to first 5)
+            subjects = book.get("subject", [])[:5] if book.get("subject") else []
+            
+            # Get first publication year
+            publish_year = str(book.get("first_publish_year", "")) if book.get("first_publish_year") else ""
+            
+            # Create result entry
+            results.append({
+                "canonical_title": book_title,
+                "poster_path": cover_url,
+                "type": "Book",
+                "tags": {
+                    "genre": subjects,
+                    "author": authors,
+                    "release_year": publish_year,
+                },
+                "confidence": confidence,
+                "source": "openlibrary"
+            })
+        
+        # If we have results but want more details, we could fetch work details
+        # for each book using the key from search results
+        for i, book in enumerate(results[:5]):
+            if i >= len(search_data.get("docs", [])):
+                break
+                
+            book_key = search_data["docs"][i].get("key")
+            if not book_key:
+                continue
+                
+            # Get more detailed information about the book
+            work_url = f"https://openlibrary.org{book_key}.json"
+            work_response = requests.get(work_url, timeout=10)
+            
+            if work_response.status_code == 200:
+                work_data = work_response.json()
+                
+                # Get description if available
+                description = ""
+                if "description" in work_data:
+                    if isinstance(work_data["description"], dict):
+                        description = work_data["description"].get("value", "")
+                    else:
+                        description = work_data["description"]
+                
+                # Truncate long descriptions
+                if description and len(description) > 200:
+                    description = description[:197] + "..."
+                
+                # Add description to tags
+                if description:
+                    book["tags"]["description"] = description
+        
+        # Sort results by confidence
+        results.sort(key=lambda x: x["confidence"], reverse=True)
+        return results
+        
+    except requests.RequestException as e:
+        logger.error("Error querying Open Library API: %s", e)
         return []
-
-    # Mock response - would be replaced with actual API call
-    return [
-        {
-            "canonical_title": title,
-            "type": "Book",
-            "tags": {"genre": ["Fiction"]},
-            "confidence": 0.6,
-            "source": "openlibrary",
-        }
-    ]
