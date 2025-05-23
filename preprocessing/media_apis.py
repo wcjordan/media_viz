@@ -10,6 +10,23 @@ import nltk
 
 logger = logging.getLogger(__name__)
 
+
+def _calculate_title_similarity(title1: str, title2: str) -> float:
+    """
+    Calculate similarity between two titles using edit distance.
+    
+    Args:
+        title1: First title string
+        title2: Second title string
+        
+    Returns:
+        Float between 0.0 and 1.0 representing similarity (1.0 = identical)
+    """
+    return 1.0 - (
+        nltk.edit_distance(title1.lower(), title2.lower())
+        / max(len(title1), len(title2), 1)
+    )
+
 # Default paths
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 GENRE_MAP_BY_MODE = {}
@@ -93,10 +110,7 @@ def query_tmdb(mode: str, title: str) -> list:
                 entry.get("name", "") if mode == "tv" else entry.get("title", "")
             )
 
-            title_similarity = 1.0 - (
-                nltk.edit_distance(title.lower(), canonical_title.lower())
-                / max(len(title), len(canonical_title))
-            )
+            title_similarity = _calculate_title_similarity(title, canonical_title)
             popularity = entry.get("popularity", 0) / 100  # Normalize popularity
             confidence = (
                 0.7 * title_similarity
@@ -211,10 +225,7 @@ def query_igdb(title: str) -> list:
         for game in games:
             # Calculate confidence based on name similarity and ratings
             game_title = game.get("name", "")
-            title_similarity = 1.0 - (
-                nltk.edit_distance(title.lower(), game_title.lower())
-                / max(len(title), len(game_title), 1)
-            )
+            title_similarity = _calculate_title_similarity(title, game_title)
 
             # Normalize ratings (they're on a scale of 0-100)
             user_rating = game.get("rating", 0) / 100 if game.get("rating") else 0
