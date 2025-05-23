@@ -1,3 +1,4 @@
+nltk==3.9.1
 PyYAML==6.0.2
 pydantic==2.11.4
 requests==2.32.3

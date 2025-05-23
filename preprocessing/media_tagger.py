@@ -1,6 +1,6 @@
 """
 Preprocessing stage to tag media entries with metadata from external APIs.
-This module includes functions to load hints from YAML and query external APIs.
+This module includes functions to load hints from YAML and apply tagging.
 """
 
 import operator
@@ -8,6 +8,8 @@ import os
 import logging
 from typing import Dict, List, Optional
 import yaml
+
+from preprocessing.media_apis import query_tmdb, query_igdb, query_openlibrary
 
 logger = logging.getLogger(__name__)
 
@@ -46,117 +48,6 @@ def _load_hints(hints_path: Optional[str] = DEFAULT_HINTS_PATH) -> Dict:
         return {}
 
 
-def _query_tmdb(title: str) -> List[Dict]:
-    """
-    Query The Movie Database (TMDB) API for movie and TV show metadata.
-
-    Args:
-        title: The title of the media to query.
-
-    Returns:
-        List of dictionaries with metadata for each entry:
-            - canonical_title is the official title from TMDB
-            - type is the type of media (Movie, TV Show, etc.)
-            - tags is a dictionary containing tags for genre, mood, etc.
-            - confidence is a float between 0 and 1 indicating match confidence
-            - source is the source of the metadata (e.g., "tmdb")
-    """
-    # This is a stub implementation
-    # In a real implementation, this would make API calls to TMDB
-    logger.info("Querying TMDB for title: %s", title)
-
-    # Simulate API call
-    api_key = os.environ.get("TMDB_API_KEY")
-    if not api_key:
-        logger.warning("TMDB_API_KEY not found in environment variables")
-        return []
-
-    # Mock response - would be replaced with actual API call
-    return [
-        {
-            "canonical_title": title,
-            "type": "Movie",
-            "tags": {"genre": ["Drama"]},
-            "confidence": 0.8,
-            "source": "tmdb",
-        }
-    ]
-
-
-def _query_igdb(title: str) -> List[Dict]:
-    """
-    Query the Internet Game Database (IGDB) API for video game metadata.
-
-    Args:
-        title: The title of the game to query.
-
-    Returns:
-        List of dictionaries with metadata for each entry:
-            - canonical_title is the official title from IGDB
-            - type is the type of media (Movie, TV Show, etc.)
-            - tags is a dictionary containing tags for genre, mood, etc.
-            - confidence is a float between 0 and 1 indicating match confidence
-            - source is the source of the metadata (e.g., "igdb")
-    """
-    # This is a stub implementation
-    # In a real implementation, this would make API calls to IGDB
-    logger.info("Querying IGDB for title: %s", title)
-
-    # Simulate API call
-    api_key = os.environ.get("IGDB_API_KEY")
-    if not api_key:
-        logger.warning("IGDB_API_KEY not found in environment variables")
-        return []
-
-    # Mock response - would be replaced with actual API call
-    return [
-        {
-            "canonical_title": title,
-            "type": "Game",
-            "tags": {"platform": ["PC"], "genre": ["RPG"]},
-            "confidence": 0.7,
-            "source": "igdb",
-        }
-    ]
-
-
-def _query_openlibrary(title: str) -> List[Dict]:
-    """
-    Query the Open Library API for book metadata.
-
-    Args:
-        title: The title of the book to query.
-
-    Returns:
-        List of dictionaries with metadata for each entry:
-            - canonical_title is the official title from Open Library
-            - type is the type of media (Movie, TV Show, etc.)
-            - tags is a dictionary containing tags for genre, mood, etc.
-            - confidence is a float between 0 and 1 indicating match confidence
-            - source is the source of the metadata (e.g., "openlibrary")
-    """
-    # This is a stub implementation
-    # In a real implementation, this would make API calls to Open Library
-    logger.info("Querying Open Library for title: %s", title)
-
-    # Simulate API call
-    api_key = os.environ.get("OPENLIBRARY_API_KEY")
-    if not api_key:
-        logger.warning("OPENLIBRARY_API_KEY not found in environment variables")
-        return []
-
-    # Mock response - would be replaced with actual API call
-    return [
-        {
-            "canonical_title": title,
-            "type": "Book",
-            "tags": {"genre": ["Fiction"]},
-            "confidence": 0.6,
-            "source": "openlibrary",
-        }
-    ]
-
-
 def _combine_votes(
     entry: Dict, api_hits: List[Dict], hint: Optional[Dict] = None
 ) -> Dict:
@@ -170,6 +61,7 @@ def _combine_votes(
         Dictionary copied from the past in entry and modified with the highest confidence API data and hints.
         Includes fields:
         - canonical_title: The official title from the API
+        - poster_path is the URL to the media's poster image
         - type: The type of media (Movie, TV Show, etc.)
         - tags: A dictionary containing tags for genre, mood, etc.
         - confidence: A float between 0 and 1 indicating match confidence
@@ -221,6 +113,7 @@ def _combine_votes(
         **tagged_entry.get("tags", {}),
     }
     tagged_entry["confidence"] = best_api_hit.get("confidence")
+    tagged_entry["poster_path"] = best_api_hit.get("poster_path")
     tagged_entry["source"] = best_api_hit.get("source")
     return tagged_entry
 
@@ -254,9 +147,10 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
                 break
 
         api_hits = []
-        api_hits.extend(_query_tmdb(title))
-        api_hits.extend(_query_igdb(title))
-        api_hits.extend(_query_openlibrary(title))
+        api_hits.extend(query_tmdb("movie", title))
+        api_hits.extend(query_tmdb("tv", title))
+        api_hits.extend(query_igdb(title))
+        api_hits.extend(query_openlibrary(title))
 
         # Combine votes from hints and API hits
         tagged_entry = _combine_votes(entry, api_hits, hint)

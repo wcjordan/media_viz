@@ -9,10 +9,12 @@ import pytest
 
 from preprocessing.media_tagger import (
     _load_hints,
-    _query_tmdb,
-    _query_igdb,
-    _query_openlibrary,
     apply_tagging,
+)
+from preprocessing.media_apis import (
+    query_tmdb,
+    query_igdb,
+    query_openlibrary,
 )
 
 
@@ -87,7 +89,7 @@ def test_load_hints_invalid_yaml():
 def test_query_tmdb():
     """Test querying TMDB API."""
     with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
-        api_hits = _query_tmdb("The Matrix")
+        api_hits = query_tmdb("movie", "The Matrix")
 
     # Since this is a stub, we're just checking the structure
     assert api_hits is not None
@@ -99,7 +101,7 @@ def test_query_tmdb():
 def test_query_tmdb_no_api_key(caplog):
     """Test querying TMDB API with no API key."""
     with caplog.at_level(logging.WARNING), patch.dict(os.environ, {}, clear=True):
-        api_hits = _query_tmdb("The Matrix")
+        api_hits = query_tmdb("movie", "The Matrix")
 
     assert "TMDB_API_KEY not found in environment variables" in caplog.text
     assert not api_hits
@@ -108,7 +110,7 @@ def test_query_tmdb_no_api_key(caplog):
 def test_query_igdb():
     """Test querying IGDB API."""
     with patch.dict(os.environ, {"IGDB_API_KEY": "fake_key"}):
-        api_hits = _query_igdb("Elden Ring")
+        api_hits = query_igdb("Elden Ring")
 
     # Since this is a stub, we're just checking the structure
     assert api_hits is not None
@@ -120,7 +122,7 @@ def test_query_igdb():
 def test_query_openlibrary():
     """Test querying Open Library API."""
     with patch.dict(os.environ, {"OPENLIBRARY_API_KEY": "fake_key"}):
-        api_hits = _query_openlibrary("The Hobbit")
+        api_hits = query_openlibrary("The Hobbit")
 
     # Since this is a stub, we're just checking the structure
     assert api_hits is not None
@@ -148,10 +150,10 @@ def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
 
     with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
         "os.path.exists", return_value=True
-    ), patch("preprocessing.media_tagger._query_tmdb"), patch(
-        "preprocessing.media_tagger._query_igdb"
+    ), patch("preprocessing.media_tagger.query_tmdb"), patch(
+        "preprocessing.media_tagger.query_igdb"
     ), patch(
-        "preprocessing.media_tagger._query_openlibrary"
+        "preprocessing.media_tagger.query_openlibrary"
     ):
         tagged_entries = apply_tagging(sample_entries, "fake_path.yaml")
 
@@ -171,9 +173,9 @@ def test_apply_tagging_with_api_calls(sample_entries):
         entry for entry in sample_entries if entry["title"] == "Succesion"
     ]
     with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
-        "preprocessing.media_tagger._query_tmdb"
-    ) as mock_tmdb, patch("preprocessing.media_tagger._query_igdb") as mock_igdb, patch(
-        "preprocessing.media_tagger._query_openlibrary"
+        "preprocessing.media_tagger.query_tmdb"
+    ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
+        "preprocessing.media_tagger.query_openlibrary"
     ) as mock_openlibrary:
         # Set up mock returns
         mock_tmdb.return_value = [
@@ -225,10 +227,10 @@ def test_apply_tagging_api_failure(sample_entries, caplog):
 
     with caplog.at_level(logging.WARNING), patch(
         "preprocessing.media_tagger._load_hints", return_value={}
-    ), patch("preprocessing.media_tagger._query_tmdb", return_value=[]), patch(
-        "preprocessing.media_tagger._query_igdb", return_value=[]
+    ), patch("preprocessing.media_tagger.query_tmdb", return_value=[]), patch(
+        "preprocessing.media_tagger.query_igdb", return_value=[]
     ), patch(
-        "preprocessing.media_tagger._query_openlibrary",
+        "preprocessing.media_tagger.query_openlibrary",
         return_value=[],
     ):
         tagged_entries = apply_tagging(ff7_entry)
@@ -250,9 +252,9 @@ def test_apply_tagging_with_api_calls_and_hints(sample_entries):
     # Mock the API calls
     succession_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
     with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
-        "preprocessing.media_tagger._query_tmdb"
-    ) as mock_tmdb, patch("preprocessing.media_tagger._query_igdb") as mock_igdb, patch(
-        "preprocessing.media_tagger._query_openlibrary"
+        "preprocessing.media_tagger.query_tmdb"
+    ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
+        "preprocessing.media_tagger.query_openlibrary"
     ) as mock_openlibrary:
         # Set up mock returns
         mock_tmdb.return_value = [
@@ -302,10 +304,10 @@ def test_apply_tagging_with_narrow_confidence(sample_entries, caplog):
     hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
     with caplog.at_level(logging.WARNING), patch(
         "preprocessing.media_tagger._load_hints", return_value={}
-    ), patch("preprocessing.media_tagger._query_tmdb") as mock_tmdb, patch(
-        "preprocessing.media_tagger._query_igdb"
+    ), patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(
-        "preprocessing.media_tagger._query_openlibrary"
+        "preprocessing.media_tagger.query_openlibrary"
     ) as mock_openlibrary:
         # Set up mock returns
         mock_tmdb.return_value = [
@@ -354,12 +356,10 @@ def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
     hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
     with caplog.at_level(logging.WARNING), patch(
         "preprocessing.media_tagger._load_hints"
-    ) as mock_hints, patch(
-        "preprocessing.media_tagger._query_tmdb"
-    ) as mock_tmdb, patch(
-        "preprocessing.media_tagger._query_igdb"
+    ) as mock_hints, patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(
-        "preprocessing.media_tagger._query_openlibrary"
+        "preprocessing.media_tagger.query_openlibrary"
     ) as mock_openlibrary:
         # Set up mock returns
         mock_hints.return_value = {
@@ -367,15 +367,23 @@ def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
                 "type": "Movie",
             }
         }
-        mock_tmdb.return_value = [
-            {
-                "canonical_title": "The Hobbit: An Unexpected Journey",
-                "type": "Movie",
-                "tags": {"genre": ["Adventure"]},
-                "confidence": 0.9,
-                "source": "tmdb",
-            }
-        ]
+
+        def tmdb_return_value(mode, _):
+            return (
+                [
+                    {
+                        "canonical_title": "The Hobbit: An Unexpected Journey",
+                        "type": "Movie",
+                        "tags": {"genre": ["Adventure"]},
+                        "confidence": 0.9,
+                        "source": "tmdb",
+                    }
+                ]
+                if mode == "movie"
+                else []
+            )
+
+        mock_tmdb.side_effect = tmdb_return_value
         mock_openlibrary.return_value = [
             {
                 "canonical_title": "The Hobbit",
@@ -410,10 +418,10 @@ def test_apply_tagging_with_low_confidence(sample_entries, caplog):
     ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
     with caplog.at_level(logging.WARNING), patch(
         "preprocessing.media_tagger._load_hints", return_value={}
-    ), patch("preprocessing.media_tagger._query_tmdb") as mock_tmdb, patch(
-        "preprocessing.media_tagger._query_igdb"
+    ), patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(
-        "preprocessing.media_tagger._query_openlibrary"
+        "preprocessing.media_tagger.query_openlibrary"
     ) as mock_openlibrary:
         # Set up mock returns
         mock_tmdb.return_value = []

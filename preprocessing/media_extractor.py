@@ -4,7 +4,7 @@ Preprocessing stage to extract media entries from the Notes column of a weekly r
 
 import logging
 import re
-from typing import List, Dict
+from typing import Any, Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def _get_entries(title: str, action: str, start_date: str) -> List[Dict]:
         start_date: The start date of the week.
 
     Returns:
-        entries: A list of dictionaries representing a media entry with the
+        entries: A list of dictionaries where each entry represents a media entry with the
                  following keys:
                     - "action": The action performed (e.g., "finished", "started").
                     - "title": The title of the media item.
@@ -134,7 +134,7 @@ def _get_entries(title: str, action: str, start_date: str) -> List[Dict]:
 
 def _extract_entries_from_line(
     line: str, start_date: str, last_action: str = None
-) -> List[Dict]:
+) -> Tuple[List[Dict[str, Any]], str]:
     """
     Extract media entries from a single line of a weekly record's raw notes.
 
@@ -150,12 +150,13 @@ def _extract_entries_from_line(
         last_action: The action from the previous line, if any.
                      This is used to handle cases where the action is not explicitly stated in the line.
     Returns:
-        entries: A list of dictionaries representing a media entry with the
-                 following keys:
-                    - "action": The action performed (e.g., "finished", "started").
-                    - "title": The title of the media item.
-                    - "date": The start date of the week.
-        action: The action from the current line, which may be used for the next line.
+        Returns a Tuple of entries list and action string
+            - entries: A list of dictionaries representing a media entry with the
+                       following keys:
+                        - "action": The action performed (e.g., "finished", "started").
+                        - "title": The title of the media item.
+                        - "date": The start date of the week.
+            - action: The action from the current line, which may be used for the next line.
     """
     entries = []
     if line in IGNORED_ENTRIES:
