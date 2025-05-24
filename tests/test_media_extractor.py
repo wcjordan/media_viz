@@ -212,13 +212,9 @@ def test_protected_titles_from_hints():
         mock_hints.return_value = {
             "Dungeons & Dragons": {
                 "canonical_title": "Dungeons & Dragons",
-                "type": "Game",
-                "tags": {"genre": ["RPG"]},
             },
-            "Command & Conquer": {
-                "canonical_title": "Command & Conquer",
-                "type": "Game",
-                "tags": {"genre": ["Strategy"]},
+            "Me, myself & I": {
+                "canonical_title": "Me, myself & I",
             },
         }
 
@@ -226,7 +222,7 @@ def test_protected_titles_from_hints():
         record = {
             "start_date": "2023-07-01",
             "end_date": "2023-07-07",
-            "raw_notes": "Started Dungeons & Dragons & Command & Conquer",
+            "raw_notes": "Started Dungeons & Dragons & Me, myself & I",
         }
 
         entries = extract_entries(record)
@@ -234,4 +230,4 @@ def test_protected_titles_from_hints():
         # Should have 2 entries, not 4 (which would happen if & in titles were split)
         assert len(entries) == 2
         assert entries[0]["title"] == "Dungeons & Dragons"
-        assert entries[1]["title"] == "Command & Conquer"
+        assert entries[1]["title"] == "Me, myself & I"

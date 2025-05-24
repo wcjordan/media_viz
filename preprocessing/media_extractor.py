@@ -139,7 +139,7 @@ def _get_entries(title: str, action: str, start_date: str) -> List[Dict]:
     return entries
 
 
-def _split_titles(protected_titles: List[str], titles_str: str) -> List[str]:
+def _split_titles(protected_titles: Optional[List[str]], titles_str: str) -> List[str]:
     """
     Split the titles string into a list of titles, handling protected titles.
 
@@ -180,7 +180,7 @@ def _extract_entries_from_line(
     line: str,
     start_date: str,
     last_action: str = None,
-    protected_titles: List[str] = None,
+    protected_titles: Optional[List[str]] = None,
 ) -> Tuple[List[Dict[str, Any]], str]:
     """
     Extract media entries from a single line of a weekly record's raw notes.

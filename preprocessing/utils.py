@@ -9,6 +9,7 @@ import yaml
 
 logger = logging.getLogger(__name__)
 DEFAULT_HINTS_PATH = os.path.join(os.path.dirname(__file__), "hints.yaml")
+hints_cache = {}
 
 
 def load_hints(hints_path: Optional[str] = None) -> Dict:
@@ -21,6 +22,10 @@ def load_hints(hints_path: Optional[str] = None) -> Dict:
     Returns:
         Dictionary containing hints for media entries.
     """
+    global hints_cache  # pylint: disable=global-statement
+    if hints_cache:
+        return hints_cache
+
     if hints_path is None:
         hints_path = DEFAULT_HINTS_PATH
 
@@ -37,6 +42,7 @@ def load_hints(hints_path: Optional[str] = None) -> Dict:
             if not hints:
                 return {}
             logger.info("Loaded %d hints from %s", len(hints), hints_path)
+            hints_cache = hints
             return hints
     except (yaml.YAMLError, IOError, FileNotFoundError) as e:
         logger.warning("Failed to load hints file: %s", e)
