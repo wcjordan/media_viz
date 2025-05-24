@@ -1,5 +1,7 @@
 """Unit tests for the media entry extraction functionality."""
 
+from unittest.mock import patch
+
 from preprocessing.media_extractor import extract_entries, IGNORED_ENTRIES
 
 
@@ -11,7 +13,7 @@ def test_extract_single_entry():
         "raw_notes": "Started The Hobbit",
     }
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
 
     assert len(entries) == 1
     assert entries[0]["action"] == "started"
@@ -27,7 +29,7 @@ def test_extract_multiple_entries():
         "raw_notes": "Started Elden Ring & Cyberpunk 2077",
     }
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
 
     assert len(entries) == 2
 
@@ -48,7 +50,7 @@ def test_extract_entries_with_newlines():
         "raw_notes": "Finished The Last of Us\nStarted Hogwarts Legacy",
     }
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
 
     assert len(entries) == 2
 
@@ -77,7 +79,7 @@ def test_single_week_action_phrasings():
             "raw_notes": raw_text,
         }
 
-        entries = extract_entries(record, hints_path=None)
+        entries = extract_entries(record)
 
         assert len(entries) == 2
         assert entries[0]["title"] == expected_title
@@ -93,13 +95,13 @@ def test_empty_or_invalid_record():
     # Empty raw_notes
     record = {"start_date": "2023-06-01", "end_date": "2023-06-07", "raw_notes": ""}
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
     assert len(entries) == 0
 
     # Missing dates
     record = {"raw_notes": "Started Final Fantasy XVI"}
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
     assert len(entries) == 0
 
 
@@ -113,7 +115,7 @@ def test_ignored_actions():
             "raw_notes": f"{verb}",
         }
 
-        entries = extract_entries(record, hints_path=None)
+        entries = extract_entries(record)
 
     assert len(entries) == 0
 
@@ -126,7 +128,7 @@ def test_lower_case_titles_before_2025(caplog):
         "raw_notes": "Watched the Clone Wars",
     }
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
 
     assert (
         f"Title not capitalized.  This may indicate we missed part of the verb: {record['raw_notes']}"
@@ -143,7 +145,7 @@ def test_lower_case_titles_after_2025(caplog):
         "raw_notes": "Watched the Clone Wars",
     }
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
 
     assert (
         f"Title not capitalized.  This may indicate we missed part of the verb: {record['raw_notes']}"
@@ -160,7 +162,7 @@ def test_action_mapping_typo():
         "raw_notes": "Finshed The Witcher 3",
     }
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
 
     assert len(entries) == 1
     assert entries[0]["action"] == "finished"
@@ -177,7 +179,7 @@ def test_action_mapping_restarted():
             "raw_notes": f"{verb} The Witcher 3",
         }
 
-        entries = extract_entries(record, hints_path=None)
+        entries = extract_entries(record)
 
         assert len(entries) == 1
         assert entries[0]["action"] == "started"
@@ -193,7 +195,7 @@ def test_action_continuing_line():
         "raw_notes": "Finished The Witcher 3\n& Frostpunk",
     }
 
-    entries = extract_entries(record, hints_path=None)
+    entries = extract_entries(record)
 
     assert len(entries) == 2
     assert entries[0]["action"] == "finished"
@@ -206,14 +208,8 @@ def test_action_continuing_line():
 
 def test_protected_titles_from_hints():
     """Test that titles from hints.yaml with & or , are not split."""
-    # Create a temporary hints file with a title containing &
-    import tempfile
-    import yaml
-
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".yaml", delete=False
-    ) as temp_file:
-        hints_data = {
+    with patch("preprocessing.media_extractor.load_hints") as mock_hints:
+        mock_hints.return_value = {
             "Dungeons & Dragons": {
                 "canonical_title": "Dungeons & Dragons",
                 "type": "Game",
@@ -225,25 +221,17 @@ def test_protected_titles_from_hints():
                 "tags": {"genre": ["Strategy"]},
             },
         }
-        yaml.dump(hints_data, temp_file)
-        temp_hints_path = temp_file.name
 
-    try:
         # Test with a title that contains &
         record = {
             "start_date": "2023-07-01",
             "end_date": "2023-07-07",
-            "raw_notes": "Played Dungeons & Dragons & Command & Conquer",
+            "raw_notes": "Started Dungeons & Dragons & Command & Conquer",
         }
 
-        entries = extract_entries(record, hints_path=temp_hints_path)
+        entries = extract_entries(record)
 
         # Should have 2 entries, not 4 (which would happen if & in titles were split)
         assert len(entries) == 2
         assert entries[0]["title"] == "Dungeons & Dragons"
         assert entries[1]["title"] == "Command & Conquer"
-    finally:
-        # Clean up the temporary file
-        import os
-
-        os.unlink(temp_hints_path)
