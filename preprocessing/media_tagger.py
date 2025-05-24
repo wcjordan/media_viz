@@ -102,9 +102,7 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
         return None
 
     # Remove and re-add any season data.
-    print(f"Original title: {title}")
     season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
-    print(f"season_match: {season_match}")
     if season_match:
         title = season_match.group(1).strip()
         entry["season"] = season_match.group(2).lower()
@@ -120,7 +118,7 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
             break
 
     api_hits = []
-    types_to_query = ["Movie", "TV Show ", "Game", "Book"]
+    types_to_query = ["Movie", "TV Show", "Game", "Book"]
     # If hint specifies the type, only query the appropriate database
     if "type" in entry:
         types_to_query = [entry["type"]]
