@@ -389,3 +389,88 @@ def test_apply_tagging_with_low_confidence(sample_entries, caplog):
     assert tagged_entry["type"] == "Game"
     assert tagged_entry["confidence"] == 0.2
     assert tagged_entry["source"] == "igdb"
+
+
+def test_apply_tagging_only_queries_specified_type(sample_entries):
+    """Test that only the appropriate API is queried when hint specifies the type."""
+    # Create entries for each media type
+    movie_entry = [{"title": "Matrix", "action": "watched", "date": "2023-01-01"}]
+    tv_entry = [{"title": "Succession", "action": "watched", "date": "2023-01-01"}]
+    game_entry = [{"title": "Elden", "action": "played", "date": "2023-01-01"}]
+    book_entry = [{"title": "LOTR", "action": "read", "date": "2023-01-01"}]
+    
+    # Test Movie type
+    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
+        "preprocessing.media_tagger.query_tmdb"
+    ) as mock_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger.query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock hint for Movie
+        mock_hints.return_value = {"Matrix": {"type": "Movie"}}
+        mock_tmdb.return_value = [{"canonical_title": "The Matrix", "type": "Movie", "confidence": 0.9, "source": "tmdb", "tags": {}}]
+        
+        apply_tagging(movie_entry)
+        
+        # Verify only movie API was called
+        mock_tmdb.assert_called_once_with("movie", "Matrix")
+        mock_igdb.assert_not_called()
+        mock_openlibrary.assert_not_called()
+    
+    # Test TV type
+    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
+        "preprocessing.media_tagger.query_tmdb"
+    ) as mock_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger.query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock hint for TV
+        mock_hints.return_value = {"Succession": {"type": "TV"}}
+        mock_tmdb.return_value = [{"canonical_title": "Succession", "type": "TV", "confidence": 0.9, "source": "tmdb", "tags": {}}]
+        
+        apply_tagging(tv_entry)
+        
+        # Verify only TV API was called
+        mock_tmdb.assert_called_once_with("tv", "Succession")
+        mock_igdb.assert_not_called()
+        mock_openlibrary.assert_not_called()
+    
+    # Test Game type
+    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
+        "preprocessing.media_tagger.query_tmdb"
+    ) as mock_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger.query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock hint for Game
+        mock_hints.return_value = {"Elden": {"type": "Game"}}
+        mock_igdb.return_value = [{"canonical_title": "Elden Ring", "type": "Game", "confidence": 0.9, "source": "igdb", "tags": {}}]
+        
+        apply_tagging(game_entry)
+        
+        # Verify only game API was called
+        mock_tmdb.assert_not_called()
+        mock_igdb.assert_called_once_with("Elden")
+        mock_openlibrary.assert_not_called()
+    
+    # Test Book type
+    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
+        "preprocessing.media_tagger.query_tmdb"
+    ) as mock_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_tagger.query_openlibrary"
+    ) as mock_openlibrary:
+        # Set up mock hint for Book
+        mock_hints.return_value = {"LOTR": {"type": "Book"}}
+        mock_openlibrary.return_value = [{"canonical_title": "The Lord of the Rings", "type": "Book", "confidence": 0.9, "source": "openlibrary", "tags": {}}]
+        
+        apply_tagging(book_entry)
+        
+        # Verify only book API was called
+        mock_tmdb.assert_not_called()
+        mock_igdb.assert_not_called()
+        mock_openlibrary.assert_called_once_with("LOTR")
