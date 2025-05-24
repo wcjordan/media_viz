@@ -7,10 +7,8 @@ import yaml
 
 import pytest
 
-from preprocessing.media_tagger import (
-    _load_hints,
-    apply_tagging,
-)
+from preprocessing.media_tagger import apply_tagging
+from preprocessing.utils import load_hints
 from preprocessing.media_apis import (
     query_tmdb,
     query_igdb,
@@ -59,7 +57,7 @@ def test_load_hints_success(sample_hints):
     with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
         "os.path.exists", return_value=True
     ):
-        hints = _load_hints("fake_path.yaml")
+        hints = load_hints("fake_path.yaml")
 
     assert hints == sample_hints
     assert "FF7" in hints
@@ -69,7 +67,7 @@ def test_load_hints_success(sample_hints):
 def test_load_hints_file_not_found():
     """Test handling when hints file is not found."""
     with patch("os.path.exists", return_value=False):
-        hints = _load_hints("nonexistent_file.yaml")
+        hints = load_hints("nonexistent_file.yaml")
 
     assert hints == {}
 
@@ -81,7 +79,7 @@ def test_load_hints_invalid_yaml():
     with patch("builtins.open", mock_open(read_data=invalid_yaml)), patch(
         "os.path.exists", return_value=True
     ):
-        hints = _load_hints("invalid.yaml")
+        hints = load_hints("invalid.yaml")
 
     assert hints == {}
 
@@ -172,7 +170,7 @@ def test_apply_tagging_with_api_calls(sample_entries):
     succession_entry = [
         entry for entry in sample_entries if entry["title"] == "Succesion"
     ]
-    with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
+    with patch("preprocessing.utils.load_hints", return_value={}), patch(
         "preprocessing.media_tagger.query_tmdb"
     ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
         "preprocessing.media_tagger.query_openlibrary"
@@ -251,7 +249,7 @@ def test_apply_tagging_with_api_calls_and_hints(sample_entries):
     """Test applying tagging with API hits and hints."""
     # Mock the API calls
     succession_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
-    with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
+    with patch("preprocessing.utils.load_hints", return_value={}), patch(
         "preprocessing.media_tagger.query_tmdb"
     ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
         "preprocessing.media_tagger.query_openlibrary"

@@ -3,10 +3,10 @@ Preprocessing stage to extract media entries from the Notes column of a weekly r
 """
 
 import logging
-import os
 import re
-import yaml
 from typing import Any, Dict, List, Optional, Tuple
+
+from preprocessing.utils import load_hints
 
 logger = logging.getLogger(__name__)
 
@@ -60,25 +60,6 @@ ALL_VERBS = (
 )
 
 
-def _load_hints(hints_path: Optional[str] = None) -> Dict:
-    """
-    Load hints from YAML file.
-    
-    Args:
-        hints_path: Path to the hints YAML file. If None, uses default path.
-        
-    Returns:
-        Dictionary of hints.
-    """
-    if not hints_path:
-        hints_path = os.path.join(os.path.dirname(__file__), "hints.yaml")
-    
-    try:
-        with open(hints_path, "r") as f:
-            return yaml.safe_load(f) or {}
-    except (FileNotFoundError, yaml.YAMLError) as e:
-        logger.warning("Failed to load hints file: %s", e)
-        return {}
 
 
 def extract_entries(record: Dict, hints_path: Optional[str] = None) -> List[Dict]:
@@ -104,7 +85,7 @@ def extract_entries(record: Dict, hints_path: Optional[str] = None) -> List[Dict
         return entries
 
     # Load hints to avoid splitting titles that contain & or ,
-    hints = _load_hints(hints_path)
+    hints = load_hints(hints_path)
     
     # Get all hint titles and aliases that might contain & or ,
     protected_titles = []
