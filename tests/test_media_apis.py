@@ -22,6 +22,18 @@ from preprocessing.media_apis import (
 
 
 @pytest.fixture(autouse=True)
+def mock_http_requests():
+    """
+    Prevent real HTTP requests during tests by mocking requests.get and requests.post.
+    This fixture runs automatically for all tests.
+    """
+    with patch("requests.get") as mock_get, patch("requests.post") as mock_post:
+        # Set default behavior to raise an exception if called without specific mocking
+        mock_get.side_effect = RuntimeError("Unmocked HTTP GET request attempted")
+        mock_post.side_effect = RuntimeError("Unmocked HTTP POST request attempted")
+        yield mock_get, mock_post
+
+@pytest.fixture(autouse=True)
 def reset_api_state():
     """Reset API state before each test to ensure consistent state."""
     # Reset IGDB token
@@ -93,43 +105,45 @@ def mock_tmdb_responses():
     }
 
 
-def test_get_genre_map(mock_tmdb_responses, mock_api_response):
+def test_get_genre_map(mock_tmdb_responses, mock_api_response, mock_http_requests):
     """Test getting and caching the genre map."""
-    with patch("requests.get") as mock_get:
-        mock_api_response.json.return_value = mock_tmdb_responses["genres"]
-        mock_get.return_value = mock_api_response
+    mock_get, _ = mock_http_requests
+    mock_api_response.json.return_value = mock_tmdb_responses["genres"]
+    mock_get.return_value = mock_api_response
+    mock_get.side_effect = None  # Override the default side_effect
 
-        expected_genre_map = {
-            28: "Action",
-            18: "Drama",
-            878: "Science Fiction",
-            9648: "Mystery",
-            10765: "Sci-Fi & Fantasy",
-        }
+    expected_genre_map = {
+        28: "Action",
+        18: "Drama",
+        878: "Science Fiction",
+        9648: "Mystery",
+        10765: "Sci-Fi & Fantasy",
+    }
 
-        # First call should make the API request
-        genre_map = _get_genre_map("movie")
-        assert mock_get.call_count == 1
-        assert genre_map == expected_genre_map
+    # First call should make the API request
+    genre_map = _get_genre_map("movie")
+    assert mock_get.call_count == 1
+    assert genre_map == expected_genre_map
 
-        # Second call should use the cached value
-        genre_map = _get_genre_map("movie")
-        assert mock_get.call_count == 1
-        assert genre_map == expected_genre_map
+    # Second call should use the cached value
+    genre_map = _get_genre_map("movie")
+    assert mock_get.call_count == 1
+    assert genre_map == expected_genre_map
 
-        # Different mode should make a new request
-        genre_map = _get_genre_map("tv")
-        assert mock_get.call_count == 2
-        assert genre_map == expected_genre_map
+    # Different mode should make a new request
+    genre_map = _get_genre_map("tv")
+    assert mock_get.call_count == 2
+    assert genre_map == expected_genre_map
 
 
 @pytest.fixture
-def setup_tmdb_mocks(mock_tmdb_responses, mock_api_response):
+def setup_tmdb_mocks(mock_tmdb_responses, mock_api_response, mock_http_requests):
     """Setup mocks for TMDB API tests."""
     def _setup_mocks(mode):
-        with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
-            "requests.get"
-        ) as mock_get:
+        mock_get, _ = mock_http_requests
+        
+        # Set up environment variables
+        with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
             # Set up mock responses
             def mock_response_side_effect(*args, **_):
                 mock_resp = mock_api_response
@@ -180,12 +194,12 @@ def test_query_tmdb_tv_success(setup_tmdb_mocks):
 
 
 @pytest.fixture
-def setup_tmdb_error_tests():
+def setup_tmdb_error_tests(mock_http_requests):
     """Setup for TMDB error test cases."""
     def _setup(error_type, mock_response=None):
-        with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
-            "requests.get"
-        ) as mock_get:
+        mock_get, _ = mock_http_requests
+        
+        with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
             if error_type == "no_api_key":
                 # Clear environment
                 os.environ.clear()
@@ -195,12 +209,14 @@ def setup_tmdb_error_tests():
                 mock_response.json.return_value = {"results": []}
                 mock_response.raise_for_status.return_value = None
                 mock_get.return_value = mock_response
+                mock_get.side_effect = None
             elif error_type == "api_error":
                 # Set up mock to raise an exception
                 mock_get.side_effect = requests.RequestException("API Error")
             else:
                 # Custom mock response
                 mock_get.return_value = mock_response
+                mock_get.side_effect = None
                 
             return mock_get
     return _setup
@@ -298,14 +314,15 @@ def tmdb_confidence_test_data():
     }
 
 
-def test_query_tmdb_confidence_calculation(tmdb_confidence_test_data, mock_api_response):
+def test_query_tmdb_confidence_calculation(tmdb_confidence_test_data, mock_api_response, mock_http_requests):
     """Test confidence calculation in TMDB query."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
-        "requests.get"
-    ) as mock_get, patch("preprocessing.media_apis._get_genre_map", return_value={}):
+    mock_get, _ = mock_http_requests
+    mock_get.side_effect = None
+    mock_get.return_value = mock_api_response
+    
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch("preprocessing.media_apis._get_genre_map", return_value={}):
         # Test exact match
         mock_api_response.json.return_value = tmdb_confidence_test_data["exact_match"]
-        mock_get.return_value = mock_api_response
         exact_results = query_tmdb("movie", "Inception")
 
         # Test similar match
@@ -321,14 +338,15 @@ def test_query_tmdb_confidence_calculation(tmdb_confidence_test_data, mock_api_r
         assert similar_results[0]["confidence"] > different_results[0]["confidence"]
 
 
-def test_query_tmdb_limits_results(tmdb_confidence_test_data, mock_api_response):
+def test_query_tmdb_limits_results(tmdb_confidence_test_data, mock_api_response, mock_http_requests):
     """Test that TMDB query limits results to top 5."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
-        "requests.get"
-    ) as mock_get, patch("preprocessing.media_apis._get_genre_map", return_value={}):
+    mock_get, _ = mock_http_requests
+    mock_get.side_effect = None
+    mock_get.return_value = mock_api_response
+    
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch("preprocessing.media_apis._get_genre_map", return_value={}):
         # Create mock response with more than 5 results
         mock_api_response.json.return_value = tmdb_confidence_test_data["many_results"]
-        mock_get.return_value = mock_api_response
 
         # Call the function
         results = query_tmdb("movie", "Movie")
@@ -337,14 +355,15 @@ def test_query_tmdb_limits_results(tmdb_confidence_test_data, mock_api_response)
         assert len(results) == 5
 
 
-def test_query_tmdb_handles_missing_fields(tmdb_confidence_test_data, mock_api_response):
+def test_query_tmdb_handles_missing_fields(tmdb_confidence_test_data, mock_api_response, mock_http_requests):
     """Test that TMDB query handles missing fields gracefully."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
-        "requests.get"
-    ) as mock_get, patch("preprocessing.media_apis._get_genre_map", return_value={}):
+    mock_get, _ = mock_http_requests
+    mock_get.side_effect = None
+    mock_get.return_value = mock_api_response
+    
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch("preprocessing.media_apis._get_genre_map", return_value={}):
         # Create mock response with missing fields
         mock_api_response.json.return_value = tmdb_confidence_test_data["missing_fields"]
-        mock_get.return_value = mock_api_response
 
         # Call the function
         results = query_tmdb("movie", "Movie")
@@ -409,9 +428,11 @@ def mock_igdb_responses():
 
 
 @pytest.fixture
-def setup_igdb_mocks(mock_igdb_responses, mock_api_response):
+def setup_igdb_mocks(mock_igdb_responses, mock_api_response, mock_http_requests):
     """Setup mocks for IGDB API tests."""
     def _setup_mocks(response_type="games", error_type=None):
+        _, mock_post = mock_http_requests
+        
         with patch.dict(
             os.environ,
             {
@@ -424,14 +445,13 @@ def setup_igdb_mocks(mock_igdb_responses, mock_api_response):
                 return None
                 
             if error_type == "api_error":
-                with patch("requests.post") as mock_post:
-                    mock_post.side_effect = requests.RequestException("API Error")
-                    return mock_post
-            
-            with patch("requests.post") as mock_post:
-                mock_api_response.json.return_value = mock_igdb_responses[response_type]
-                mock_post.return_value = mock_api_response
+                mock_post.side_effect = requests.RequestException("API Error")
                 return mock_post
+            
+            mock_api_response.json.return_value = mock_igdb_responses[response_type]
+            mock_post.return_value = mock_api_response
+            mock_post.side_effect = None
+            return mock_post
     return _setup_mocks
 
 
@@ -656,17 +676,19 @@ def mock_openlibrary_responses():
 
 
 @pytest.fixture
-def setup_openlibrary_mocks(mock_openlibrary_responses, mock_api_response):
+def setup_openlibrary_mocks(mock_openlibrary_responses, mock_api_response, mock_http_requests):
     """Setup mocks for OpenLibrary API tests."""
     def _setup_mocks(response_type="success", error_type=None):
-        with patch("requests.get") as mock_get:
-            if error_type == "api_error":
-                mock_get.side_effect = requests.RequestException("API Error")
-                return mock_get
-                
-            mock_api_response.json.return_value = mock_openlibrary_responses[response_type]
-            mock_get.return_value = mock_api_response
+        mock_get, _ = mock_http_requests
+        
+        if error_type == "api_error":
+            mock_get.side_effect = requests.RequestException("API Error")
             return mock_get
+            
+        mock_api_response.json.return_value = mock_openlibrary_responses[response_type]
+        mock_get.return_value = mock_api_response
+        mock_get.side_effect = None
+        return mock_get
     return _setup_mocks
 
 
