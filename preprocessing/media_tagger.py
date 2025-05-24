@@ -112,10 +112,18 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
                 break
 
         api_hits = []
-        api_hits.extend(query_tmdb("movie", title))
-        api_hits.extend(query_tmdb("tv", title))
-        api_hits.extend(query_igdb(title))
-        api_hits.extend(query_openlibrary(title))
+        types_to_query = ["Movie", "TV", "Game", "Book"]
+        # If hint specifies the type, only query the appropriate database
+        if hint and "type" in hint:
+            types_to_query = [hint["type"]]
+        if "Movie" in types_to_query:
+            api_hits.extend(query_tmdb("movie", title))
+        if "TV" in types_to_query:
+            api_hits.extend(query_tmdb("tv", title))
+        if "Game" in types_to_query:
+            api_hits.extend(query_igdb(title))
+        if "Book" in types_to_query:
+            api_hits.extend(query_openlibrary(title))
 
         # Combine votes from hints and API hits
         tagged_entry = _combine_votes(entry, api_hits, hint)
