@@ -133,9 +133,6 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
     tagged_entries = []
 
     for entry in entries:
-        if entry.get("date") > "2022":
-            continue
-
         title = entry.get("title", "")
         if not title:
             logger.warning("Entry missing title, skipping tagging: %s", entry)
