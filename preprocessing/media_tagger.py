@@ -102,7 +102,9 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
         return None
 
     # Remove and re-add any season data.
-    season_match = re.search(r"(.*)(s\d{1,2})\s+(e\d{1,2})?\s+", title, re.IGNORECASE)
+    print(f"Original title: {title}")
+    season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
+    print(f"season_match: {season_match}")
     if season_match:
         title = season_match.group(1).strip()
         entry["season"] = season_match.group(2).lower()
@@ -118,13 +120,15 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
             break
 
     api_hits = []
-    types_to_query = ["Movie", "TV", "Game", "Book"]
+    types_to_query = ["Movie", "TV Show ", "Game", "Book"]
     # If hint specifies the type, only query the appropriate database
-    if hint and "type" in hint:
+    if "type" in entry:
+        types_to_query = [entry["type"]]
+    elif hint and "type" in hint:
         types_to_query = [hint["type"]]
     if "Movie" in types_to_query:
         api_hits.extend(query_tmdb("movie", title))
-    if "TV" in types_to_query:
+    if "TV Show" in types_to_query:
         api_hits.extend(query_tmdb("tv", title))
     if "Game" in types_to_query:
         api_hits.extend(query_igdb(title))

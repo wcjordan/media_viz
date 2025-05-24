@@ -134,7 +134,7 @@ def query_tmdb(mode: str, title: str) -> list:
                 {
                     "canonical_title": canonical_title,
                     "poster_path": f"https://image.tmdb.org/t/p/w600_and_h900_bestv2/{entry.get('poster_path', '')}",
-                    "type": "TV" if mode == "tv" else "Movie",
+                    "type": "TV Show" if mode == "tv" else "Movie",
                     "tags": {
                         "genre": genres,
                         "release_year": (

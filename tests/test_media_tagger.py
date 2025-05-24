@@ -120,7 +120,7 @@ def test_apply_tagging_with_api_calls(sample_entries):
         mock_tmdb.return_value = [
             {
                 "canonical_title": "Succession",
-                "type": "TV",
+                "type": "TV Show",
                 "tags": {"genre": ["Drama"]},
                 "confidence": 0.9,
                 "source": "tmdb",
@@ -153,7 +153,7 @@ def test_apply_tagging_with_api_calls(sample_entries):
     assert tagged_entry["title"] == "Succesion"
     assert tagged_entry["action"] == "started"
     assert tagged_entry["canonical_title"] == "Succession"
-    assert tagged_entry["type"] == "TV"
+    assert tagged_entry["type"] == "TV Show"
     assert tagged_entry["tags"]["genre"] == ["Drama"]
     assert tagged_entry["confidence"] == 0.9
     assert tagged_entry["source"] == "tmdb"
@@ -434,11 +434,11 @@ def test_apply_tagging_only_queries_specified_type():
 
         # Test TV type
         reset_mocks()
-        mock_hints.return_value = {"Succession": {"type": "TV"}}
+        mock_hints.return_value = {"Succession": {"type": "TV Show"}}
         mock_tmdb.return_value = [
             {
                 "canonical_title": "Succession",
-                "type": "TV",
+                "type": "TV Show",
                 "confidence": 0.9,
                 "source": "tmdb",
                 "tags": {},
@@ -496,16 +496,29 @@ def test_apply_tagging_only_queries_specified_type():
 def test_season_extraction_in_tagging():
     """Test that season information is correctly extracted and added back to canonical title."""
     # Test cases for different season formats
+    expected_title = "Game of Thrones"
     test_cases = [
-        {"title": "Game of Thrones s1", "expected_title": "Game of Thrones", "expected_season": "s1"},
-        {"title": "Game of Thrones s01e02", "expected_title": "Game of Thrones", "expected_season": "s01"},
-        {"title": "Game of Thrones s1 e2", "expected_title": "Game of Thrones", "expected_season": "s1"},
-        {"title": "Game of Thrones S1E1 ", "expected_title": "Game of Thrones", "expected_season": "s1"},
+        {
+            "title": "Game of Thrones s1",
+            "expected_season": "s1",
+        },
+        {
+            "title": "Game of Thrones s01e02",
+            "expected_season": "s01",
+        },
+        {
+            "title": "Game of Thrones s1 e2",
+            "expected_season": "s1",
+        },
+        {
+            "title": "Game of Thrones S1E1 ",
+            "expected_season": "s1",
+        },
     ]
-    
+
     for test_case in test_cases:
-        entry = {"title": test_case["title"], "action": "watched", "date": "2023-01-01"}
-        
+        entry = {"title": test_case["title"], "action": "started", "date": "2023-01-01"}
+
         with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
             "preprocessing.media_tagger.query_tmdb"
         ) as mock_tmdb:
@@ -513,21 +526,23 @@ def test_season_extraction_in_tagging():
             mock_tmdb.return_value = [
                 {
                     "canonical_title": "Game of Thrones",
-                    "type": "TV",
+                    "type": "TV Show",
                     "confidence": 0.9,
                     "source": "tmdb",
                     "tags": {"genre": ["Drama", "Fantasy"]},
                 }
             ]
-            
+
             tagged_entries = apply_tagging([entry])
-            
+
             # Verify season extraction and canonical title
             assert len(tagged_entries) == 1
             tagged_entry = tagged_entries[0]
-            assert tagged_entry["season"] == test_case["expected_season"]
-            assert tagged_entry["canonical_title"] == f"Game of Thrones {test_case['expected_season']}"
-            assert tagged_entry["type"] == "TV"
-            
+            assert (
+                tagged_entry["canonical_title"]
+                == f"Game of Thrones {test_case['expected_season']}"
+            )
+            assert tagged_entry["type"] == "TV Show"
+
             # Verify API was called with the title without season information
-            mock_tmdb.assert_called_with("tv", test_case["expected_title"])
+            mock_tmdb.assert_called_with("tv", expected_title)

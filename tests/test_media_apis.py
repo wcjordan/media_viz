@@ -177,7 +177,7 @@ def test_query_tmdb_tv_success(mock_tmdb_tv_response, mock_genre_response):
         # Verify results
         assert len(results) == 1
         assert results[0]["canonical_title"] == "Stranger Things"
-        assert results[0]["type"] == "TV"
+        assert results[0]["type"] == "TV Show"
         assert "Drama" in results[0]["tags"]["genre"]
         assert results[0]["tags"]["release_year"] == "2016"
         assert results[0]["confidence"] > 0.7  # High confidence for exact match
