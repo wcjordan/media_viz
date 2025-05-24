@@ -392,7 +392,10 @@ def test_apply_tagging_with_low_confidence(sample_entries, caplog):
 
 
 def test_apply_tagging_only_queries_specified_type():
-    """Test that only the appropriate API is queried when hint specifies the type."""
+    """
+    Test that only the appropriate API is queried when hint specifies the type.
+    This minimizes unnecessary API calls and improves performance.
+    """
     # Create entries for each media type
     movie_entry = [{"title": "Matrix", "action": "watched", "date": "2023-01-01"}]
     tv_entry = [{"title": "Succession", "action": "watched", "date": "2023-01-01"}]
