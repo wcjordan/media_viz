@@ -5,12 +5,15 @@ This module includes functions to apply tagging with metadata from APIs and hint
 
 import logging
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from preprocessing.media_apis import query_tmdb, query_igdb, query_openlibrary
 from preprocessing.utils import load_hints
 
 logger = logging.getLogger(__name__)
+
+# Cache for API query results to avoid redundant calls
+QUERY_CACHE = {}
 
 
 def _combine_votes(
@@ -86,6 +89,38 @@ def _combine_votes(
     return tagged_entry
 
 
+def _query_with_cache(media_type: str, title: str) -> List[Dict]:
+    """
+    Query the appropriate API with caching to avoid redundant calls.
+    
+    Args:
+        media_type: The type of media to query ("movie", "tv", "game", "book")
+        title: The title to search for
+        
+    Returns:
+        List of API hits
+    """
+    cache_key = (title.lower(), media_type)
+    if cache_key in QUERY_CACHE:
+        logger.info("Using cached result for %s: %s", media_type, title)
+        return QUERY_CACHE[cache_key]
+    
+    # Query the appropriate API
+    results = []
+    if media_type == "movie":
+        results = query_tmdb("movie", title)
+    elif media_type == "tv":
+        results = query_tmdb("tv", title)
+    elif media_type == "game":
+        results = query_igdb(title)
+    elif media_type == "book":
+        results = query_openlibrary(title)
+    
+    # Cache the results
+    QUERY_CACHE[cache_key] = results
+    return results
+
+
 def _tag_entry(entry: Dict, hints: Dict) -> Dict:
     """
     Process a single media entry to extract relevant information.
@@ -127,14 +162,16 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
         types_to_query = [entry["type"]]
     elif hint and "type" in hint:
         types_to_query = [hint["type"]]
+        
+    # Query APIs with caching
     if "Movie" in types_to_query:
-        api_hits.extend(query_tmdb("movie", title))
+        api_hits.extend(_query_with_cache("movie", title))
     if "TV Show" in types_to_query:
-        api_hits.extend(query_tmdb("tv", title))
+        api_hits.extend(_query_with_cache("tv", title))
     if "Game" in types_to_query:
-        api_hits.extend(query_igdb(title))
+        api_hits.extend(_query_with_cache("game", title))
     if "Book" in types_to_query:
-        api_hits.extend(query_openlibrary(title))
+        api_hits.extend(_query_with_cache("book", title))
 
     # Combine votes from hints and API hits
     tagged_entry = _combine_votes(entry, api_hits, hint)
@@ -163,12 +200,107 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
     Returns:
         List of dictionaries with added metadata: canonical_title, type, tags, confidence.
     """
+    # Clear the query cache at the start of each tagging session
+    global QUERY_CACHE
+    QUERY_CACHE = {}
+    
     hints = load_hints(hints_path)
-    tagged_entries = [_tag_entry(entry, hints) for entry in entries]
-    tagged_entries = [entry for entry in tagged_entries if entry is not None]
+    
+    # First pass: Group entries by title
+    title_groups = {}
+    for entry in entries:
+        title = entry.get("title", "")
+        if not title:
+            logger.warning("Entry missing title, skipping: %s", entry)
+            continue
+            
+        if title not in title_groups:
+            title_groups[title] = {
+                "title": title,
+                "started_dates": [],
+                "finished_dates": [],
+                "original_entries": []
+            }
+            
+        # Add dates to the appropriate list
+        action = entry.get("action", "")
+        date = entry.get("date", "")
+        if action == "started" and date not in title_groups[title]["started_dates"]:
+            title_groups[title]["started_dates"].append(date)
+        elif action == "finished" and date not in title_groups[title]["finished_dates"]:
+            title_groups[title]["finished_dates"].append(date)
+            
+        # Store original entry for reference
+        title_groups[title]["original_entries"].append(entry)
+    
+    # Second pass: Tag each unique title
+    tagged_entries = []
+    for title_data in title_groups.values():
+        # Create a representative entry for tagging
+        entry_to_tag = {
+            "title": title_data["title"],
+            "started_dates": sorted(title_data["started_dates"]),
+            "finished_dates": sorted(title_data["finished_dates"]),
+        }
+        
+        # Extract season information if present in any of the original entries
+        for orig_entry in title_data["original_entries"]:
+            if "season" in orig_entry:
+                entry_to_tag["season"] = orig_entry["season"]
+                entry_to_tag["type"] = "TV Show"
+                break
+                
+        # Tag the entry
+        tagged_entry = _tag_entry(entry_to_tag, hints)
+        if tagged_entry:
+            tagged_entries.append(tagged_entry)
+    
+    # Final pass: Combine identical entries and warn about inconsistencies
+    canonical_groups = {}
+    for entry in tagged_entries:
+        key = (entry.get("canonical_title", ""), entry.get("type", ""))
+        if key not in canonical_groups:
+            canonical_groups[key] = []
+        canonical_groups[key].append(entry)
+    
+    final_entries = []
+    for key, entries in canonical_groups.items():
+        if len(entries) == 1:
+            final_entries.append(entries[0])
+        else:
+            # Multiple entries with the same canonical title and type
+            base_entry = entries[0]
+            combined_entry = base_entry.copy()
+            combined_entry["original_titles"] = [e.get("title", "") for e in entries]
+            
+            # Combine started and finished dates
+            started_dates = set()
+            finished_dates = set()
+            for e in entries:
+                started_dates.update(e.get("started_dates", []))
+                finished_dates.update(e.get("finished_dates", []))
+            
+            combined_entry["started_dates"] = sorted(list(started_dates))
+            combined_entry["finished_dates"] = sorted(list(finished_dates))
+            
+            # Check for inconsistencies in tags or poster_path
+            inconsistent = False
+            for e in entries[1:]:
+                if e.get("tags") != base_entry.get("tags") or e.get("poster_path") != base_entry.get("poster_path"):
+                    inconsistent = True
+                    logger.warning(
+                        "Inconsistent metadata for entries with canonical_title '%s' and type '%s'. "
+                        "Original titles: %s",
+                        key[0], key[1], combined_entry["original_titles"]
+                    )
+                    break
+            
+            final_entries.append(combined_entry)
 
-    logger.info("Tagged %d entries with metadata", len(tagged_entries))
-    return tagged_entries
+    logger.info("Tagged %d entries with metadata (from %d original entries)", 
+                len(final_entries), len(entries))
+    logger.info("Made %d unique API queries", len(QUERY_CACHE))
+    return final_entries
 
 
 if __name__ == "__main__":
