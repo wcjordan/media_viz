@@ -61,6 +61,7 @@ def process_and_save(
         input_csv: Path to the input CSV file.
         output_json: Path to the output JSON file.
         hints_path: Path to the hints YAML file. Optional.
+        limit: Maximum number of entries to process. Optional.
 
     Returns:
         Dictionary with statistics about the processing.
