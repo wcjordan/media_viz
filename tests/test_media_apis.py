@@ -624,7 +624,6 @@ def fixture_mock_openlibrary_response():
                 "first_publish_year": 1937,
                 "subject": ["Fantasy", "Fiction", "Adventure"],
                 "cover_i": 12345,
-                "edition_count": 150,
             },
             {
                 "key": "/works/OL12345W",
@@ -633,7 +632,6 @@ def fixture_mock_openlibrary_response():
                 "first_publish_year": 2012,
                 "subject": ["Fantasy", "Film Adaptation"],
                 "cover_i": 67890,
-                "edition_count": 5,
             },
         ],
     }
@@ -741,7 +739,7 @@ def test_query_openlibrary_confidence_calculation():
         # Create mock responses with varying similarity
         response = {
             "numFound": 1,
-            "docs": [{"title": "Lord of the Rings", "edition_count": 100}],
+            "docs": [{"title": "Lord of the Rings"}],
         }
 
         # Test exact match

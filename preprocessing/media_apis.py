@@ -346,7 +346,7 @@ def query_openlibrary(title: str) -> list:
             params={
                 "title": title,
                 "limit": 5,
-                "fields": "key,title,author_name,first_publish_year,subject,cover_i,edition_count",
+                "fields": "key,title,author_name,first_publish_year,subject,cover_i",
             },
             timeout=10,
         )
@@ -356,7 +356,7 @@ def query_openlibrary(title: str) -> list:
         # Process search results
         results = []
         for book in search_data.get("docs", []):
-            # Calculate confidence based on title similarity and edition count
+            # Calculate confidence based on title similarity
             book_title = book.get("title", "")
             confidence = _calculate_title_similarity(title, book_title)
 
