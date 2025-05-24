@@ -51,7 +51,9 @@ def load_weekly_records(path: str) -> List[Dict]:
     return records
 
 
-def process_and_save(input_csv: str, output_json: str, hints_path: str = None) -> Dict:
+def process_and_save(
+    input_csv: str, output_json: str, hints_path: str = None, limit: int = None
+) -> Dict:
     """
     Process the input CSV file and save the results to a JSON file.
 
@@ -59,6 +61,7 @@ def process_and_save(input_csv: str, output_json: str, hints_path: str = None) -
         input_csv: Path to the input CSV file.
         output_json: Path to the output JSON file.
         hints_path: Path to the hints YAML file. Optional.
+        limit: Maximum number of entries to process. Optional.
 
     Returns:
         Dictionary with statistics about the processing.
@@ -74,6 +77,9 @@ def process_and_save(input_csv: str, output_json: str, hints_path: str = None) -
     logger.info("Extracted %d media entries", len(all_entries))
 
     # Apply tagging
+    if limit is not None:
+        all_entries = all_entries[:limit]
+        logger.warning("Limited to %d entries", limit)
     tagged_entries = apply_tagging(all_entries, hints_path)
     logger.info("Tagged %d media entries", len(tagged_entries))
 
@@ -133,6 +139,7 @@ if __name__ == "__main__":
     final_stats = process_and_save(
         "preprocessing/raw_data/media_enjoyed.csv",
         "preprocessing/processed_data/media_entries.json",
+        limit=100,
     )
 
     # Print statistics

@@ -336,23 +336,67 @@ def query_openlibrary(title: str) -> list:
             - confidence is a float between 0 and 1 indicating match confidence
             - source is the source of the metadata (e.g., "openlibrary")
     """
-    # This is a stub implementation
-    # In a real implementation, this would make API calls to Open Library
     logger.info("Querying Open Library for title: %s", title)
 
-    # Simulate API call
-    api_key = os.environ.get("OPENLIBRARY_API_KEY")
-    if not api_key:
-        logger.warning("OPENLIBRARY_API_KEY not found in environment variables")
-        return []
+    try:
+        # Search for books by title
+        search_url = "https://openlibrary.org/search.json"
+        response = requests.get(
+            search_url,
+            params={
+                "title": title,
+                "limit": 5,
+                "fields": "key,title,author_name,first_publish_year,subject,cover_i",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        search_data = response.json()
 
-    # Mock response - would be replaced with actual API call
-    return [
-        {
-            "canonical_title": title,
-            "type": "Book",
-            "tags": {"genre": ["Fiction"]},
-            "confidence": 0.6,
-            "source": "openlibrary",
-        }
-    ]
+        # Process search results
+        results = []
+        for book in search_data.get("docs", []):
+            # Calculate confidence based on title similarity
+            book_title = book.get("title", "")
+            confidence = _calculate_title_similarity(title, book_title)
+
+            # Get cover image URL if available
+            cover_id = book.get("cover_i")
+            cover_url = ""
+            if cover_id:
+                cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+
+            # Get authors
+            authors = book.get("author_name", [])
+
+            # Get subjects/genres
+            subjects = book.get("subject", []) if book.get("subject") else []
+
+            # Get first publication year
+            publish_year = (
+                str(book.get("first_publish_year", ""))
+                if book.get("first_publish_year")
+                else ""
+            )
+
+            # Create result entry
+            results.append(
+                {
+                    "canonical_title": book_title,
+                    "poster_path": cover_url,
+                    "type": "Book",
+                    "tags": {
+                        "genre": subjects,
+                        "author": authors,
+                        "release_year": publish_year,
+                    },
+                    "confidence": confidence,
+                    "source": "openlibrary",
+                }
+            )
+
+        return results
+
+    except requests.RequestException as e:
+        logger.error("Error querying Open Library API: %s", e)
+        return []
