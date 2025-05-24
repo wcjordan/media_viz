@@ -660,7 +660,7 @@ def test_query_openlibrary_success(mock_openlibrary_response):
 
         # Verify API call
         mock_get.assert_called_once()
-        assert mock_get.call_args.kwargs['params']['title'] == 'The Hobbit'
+        assert mock_get.call_args.kwargs["params"]["title"] == "The Hobbit"
 
 
 def test_query_openlibrary_empty_results():
