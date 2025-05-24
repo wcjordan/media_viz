@@ -1,51 +1,16 @@
 """
 Preprocessing stage to tag media entries with metadata from external APIs.
-This module includes functions to load hints from YAML and apply tagging.
+This module includes functions to apply tagging with metadata from APIs and hints.
 """
 
 import operator
-import os
 import logging
 from typing import Dict, List, Optional
-import yaml
 
 from preprocessing.media_apis import query_tmdb, query_igdb, query_openlibrary
+from preprocessing.utils import load_hints
 
 logger = logging.getLogger(__name__)
-
-# Default paths
-DEFAULT_HINTS_PATH = os.path.join(os.path.dirname(__file__), "hints.yaml")
-
-
-def _load_hints(hints_path: Optional[str] = DEFAULT_HINTS_PATH) -> Dict:
-    """
-    Load hints from a YAML file for manual overrides.
-
-    Args:
-        hints_path: Path to the hints YAML file.
-
-    Returns:
-        Dictionary containing hints for media entries.
-    """
-    if hints_path is None:
-        hints_path = DEFAULT_HINTS_PATH
-    if not os.path.exists(hints_path):
-        logger.warning(
-            "Hints file not found at %s. No manual overrides will be applied.",
-            hints_path,
-        )
-        return {}
-
-    try:
-        with open(hints_path, "r", encoding="utf-8") as file:
-            hints = yaml.safe_load(file)
-            if not hints:
-                return {}
-            logger.info("Loaded %d hints from %s", len(hints), hints_path)
-            return hints
-    except (yaml.YAMLError, IOError) as e:
-        logger.error("Error loading hints file: %s", e)
-        return {}
 
 
 def _combine_votes(
@@ -129,7 +94,7 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
     Returns:
         List of dictionaries with added metadata: canonical_title, type, tags, confidence.
     """
-    hints = _load_hints(hints_path)
+    hints = load_hints(hints_path)
     tagged_entries = []
 
     for entry in entries:

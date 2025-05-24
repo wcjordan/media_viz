@@ -22,7 +22,7 @@
 - [x] Detect actions (`started`, `finished`, `watched`) using regex or spaCy
 - [x] Return entries with `title`, `action`, and `date`
 - [x] Write tests in `tests/test_media_extractor.py` covering various phrasings
-- [ ] Handle titles with an "&" or "," in the name
+- [x] Handle titles with an "&" or "," in the name
 
 ## 4. API Tagger & Hints Support
 - [x] Create `preprocessing/media_tagger.py`
@@ -34,7 +34,7 @@
 - [x] Write tests in `tests/test_media_tagger.py` with mocked API responses and hint overrides
 - [x] Implement `query_tmdb`
 - [x] Implement `query_igdb`
-- [ ] Implement `query_openlibrary`
+- [x] Implement `query_openlibrary`
 - [ ] Batch titles to minimize requests to the APIs
 - [ ] Trim seasons
 - [ ] Use hints to limit the DBs queried for a title

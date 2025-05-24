@@ -7,39 +7,12 @@ import yaml
 
 import pytest
 
-from preprocessing.media_tagger import (
-    _load_hints,
-    apply_tagging,
-)
+from preprocessing.media_tagger import apply_tagging
 from preprocessing.media_apis import (
     query_tmdb,
     query_igdb,
     query_openlibrary,
 )
-
-
-@pytest.fixture(name="sample_hints")
-def fixture_sample_hints():
-    """Sample hints data for testing."""
-    return {
-        "FF7": {
-            "canonical_title": "Final Fantasy VII Remake",
-            "type": "Game",
-            "tags": {
-                "platform": ["PS5"],
-                "genre": ["JRPG", "Adventure"],
-                "mood": ["Epic"],
-            },
-        },
-        "LOTR": {
-            "canonical_title": "The Lord of the Rings",
-            "type": "Book",
-            "tags": {
-                "genre": ["Fantasy"],
-                "mood": ["Epic"],
-            },
-        },
-    }
 
 
 @pytest.fixture(name="sample_entries")
@@ -50,40 +23,6 @@ def fixture_sample_entries():
         {"title": "The Hobbit", "action": "finished", "date": "2023-02-15"},
         {"title": "Succesion", "action": "started", "date": "2023-03-10"},
     ]
-
-
-def test_load_hints_success(sample_hints):
-    """Test loading hints from a YAML file successfully."""
-    mock_yaml_content = yaml.dump(sample_hints)
-
-    with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
-        "os.path.exists", return_value=True
-    ):
-        hints = _load_hints("fake_path.yaml")
-
-    assert hints == sample_hints
-    assert "FF7" in hints
-    assert hints["FF7"]["canonical_title"] == "Final Fantasy VII Remake"
-
-
-def test_load_hints_file_not_found():
-    """Test handling when hints file is not found."""
-    with patch("os.path.exists", return_value=False):
-        hints = _load_hints("nonexistent_file.yaml")
-
-    assert hints == {}
-
-
-def test_load_hints_invalid_yaml():
-    """Test handling invalid YAML content."""
-    invalid_yaml = "invalid: yaml: content: - ["
-
-    with patch("builtins.open", mock_open(read_data=invalid_yaml)), patch(
-        "os.path.exists", return_value=True
-    ):
-        hints = _load_hints("invalid.yaml")
-
-    assert hints == {}
 
 
 def test_query_tmdb():
@@ -136,7 +75,7 @@ def test_apply_tagging_missing_title(caplog):
     entries = [{"action": "started", "date": "2023-01-01"}]  # Missing title
 
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints", return_value={}
+        "preprocessing.media_tagger.load_hints", return_value={}
     ):
         tagged_entries = apply_tagging(entries)
 
@@ -172,7 +111,7 @@ def test_apply_tagging_with_api_calls(sample_entries):
     succession_entry = [
         entry for entry in sample_entries if entry["title"] == "Succesion"
     ]
-    with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
+    with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
         "preprocessing.media_tagger.query_tmdb"
     ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
         "preprocessing.media_tagger.query_openlibrary"
@@ -226,7 +165,7 @@ def test_apply_tagging_api_failure(sample_entries, caplog):
     ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
 
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints", return_value={}
+        "preprocessing.media_tagger.load_hints", return_value={}
     ), patch("preprocessing.media_tagger.query_tmdb", return_value=[]), patch(
         "preprocessing.media_tagger.query_igdb", return_value=[]
     ), patch(
@@ -251,7 +190,7 @@ def test_apply_tagging_with_api_calls_and_hints(sample_entries):
     """Test applying tagging with API hits and hints."""
     # Mock the API calls
     succession_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
-    with patch("preprocessing.media_tagger._load_hints", return_value={}), patch(
+    with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
         "preprocessing.media_tagger.query_tmdb"
     ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
         "preprocessing.media_tagger.query_openlibrary"
@@ -303,7 +242,7 @@ def test_apply_tagging_with_narrow_confidence(sample_entries, caplog):
     # Mock the API calls
     hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints", return_value={}
+        "preprocessing.media_tagger.load_hints", return_value={}
     ), patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
         "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(
@@ -355,7 +294,7 @@ def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
     # Mock the API calls
     hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints"
+        "preprocessing.media_tagger.load_hints"
     ) as mock_hints, patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
         "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(
@@ -417,7 +356,7 @@ def test_apply_tagging_with_low_confidence(sample_entries, caplog):
     # Mock the API calls
     ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints", return_value={}
+        "preprocessing.media_tagger.load_hints", return_value={}
     ), patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
         "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(

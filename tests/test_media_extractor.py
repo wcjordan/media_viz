@@ -1,5 +1,7 @@
 """Unit tests for the media entry extraction functionality."""
 
+from unittest.mock import patch
+
 from preprocessing.media_extractor import extract_entries, IGNORED_ENTRIES
 
 
@@ -202,3 +204,30 @@ def test_action_continuing_line():
     assert entries[1]["action"] == "finished"
     assert entries[1]["title"] == "Frostpunk"
     assert entries[1]["date"] == "2023-06-01"
+
+
+def test_protected_titles_from_hints():
+    """Test that titles from hints.yaml with & or , are not split."""
+    with patch("preprocessing.media_extractor.load_hints") as mock_hints:
+        mock_hints.return_value = {
+            "Dungeons & Dragons": {
+                "canonical_title": "Dungeons & Dragons",
+            },
+            "Me, myself & I": {
+                "canonical_title": "Me, myself & I",
+            },
+        }
+
+        # Test with a title that contains &
+        record = {
+            "start_date": "2023-07-01",
+            "end_date": "2023-07-07",
+            "raw_notes": "Started Dungeons & Dragons & Me, myself & I",
+        }
+
+        entries = extract_entries(record)
+
+        # Should have 2 entries, not 4 (which would happen if & in titles were split)
+        assert len(entries) == 2
+        assert entries[0]["title"] == "Dungeons & Dragons"
+        assert entries[1]["title"] == "Me, myself & I"
