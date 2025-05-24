@@ -5,6 +5,7 @@ This module includes functions to apply tagging with metadata from APIs and hint
 
 import operator
 import logging
+import re
 from typing import Dict, List, Optional
 
 from preprocessing.media_apis import query_tmdb, query_igdb, query_openlibrary
@@ -83,6 +84,71 @@ def _combine_votes(
     return tagged_entry
 
 
+def _tag_entry(entry: Dict, hints: Dict) -> Dict:
+    """
+    Process a single media entry to extract relevant information.
+
+    Args:
+        entry: A dictionary representing a media entry.
+        hints: A dictionary containing hints for tagging.
+
+    Returns:
+        A dictionary with the entry tagged with additional metadata: canonical_title, type, tags, confidence.
+        Returns None if the entry is not valid.
+    """
+    title = entry.get("title", "")
+    if not title:
+        logger.warning("Entry missing title, skipping tagging: %s", entry)
+        return None
+
+    # Remove and re-add any season data.
+    season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
+    if season_match:
+        title = season_match.group(1).strip()
+        entry["season"] = season_match.group(2).lower()
+        entry["type"] = "TV Show"
+        logger.info("Extracted season from title: %s", entry)
+
+    # Apply hints if available
+    hint = None
+    for hint_key, hint_data in hints.items():
+        if hint_key == title:
+            logger.info("Applying hint for '%s' to entry '%s'", hint_key, entry)
+            hint = hint_data
+            break
+
+    api_hits = []
+    types_to_query = ["Movie", "TV Show", "Game", "Book"]
+    # If hint specifies the type, only query the appropriate database
+    if "type" in entry:
+        types_to_query = [entry["type"]]
+    elif hint and "type" in hint:
+        types_to_query = [hint["type"]]
+    if "Movie" in types_to_query:
+        api_hits.extend(query_tmdb("movie", title))
+    if "TV Show" in types_to_query:
+        api_hits.extend(query_tmdb("tv", title))
+    if "Game" in types_to_query:
+        api_hits.extend(query_igdb(title))
+    if "Book" in types_to_query:
+        api_hits.extend(query_openlibrary(title))
+
+    # Combine votes from hints and API hits
+    tagged_entry = _combine_votes(entry, api_hits, hint)
+    if tagged_entry["confidence"] < 0.5:
+        logger.warning("Low confidence match for entry: %s", tagged_entry)
+
+    if entry.get("season"):
+        # If we have a season, add it to the canonical title
+        tagged_entry["canonical_title"] = (
+            f"{tagged_entry['canonical_title']} {entry['season']}"
+        )
+        logger.info(
+            "Added season to canonical title: %s", tagged_entry["canonical_title"]
+        )
+    return tagged_entry
+
+
 def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List[Dict]:
     """
     Apply tagging to media entries using hints and API calls.
@@ -95,41 +161,8 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
         List of dictionaries with added metadata: canonical_title, type, tags, confidence.
     """
     hints = load_hints(hints_path)
-    tagged_entries = []
-
-    for entry in entries:
-        title = entry.get("title", "")
-        if not title:
-            logger.warning("Entry missing title, skipping tagging: %s", entry)
-            continue
-
-        # Apply hints if available
-        hint = None
-        for hint_key, hint_data in hints.items():
-            if hint_key == title:
-                logger.info("Applying hint for '%s' to entry '%s'", hint_key, entry)
-                hint = hint_data
-                break
-
-        api_hits = []
-        types_to_query = ["Movie", "TV", "Game", "Book"]
-        # If hint specifies the type, only query the appropriate database
-        if hint and "type" in hint:
-            types_to_query = [hint["type"]]
-        if "Movie" in types_to_query:
-            api_hits.extend(query_tmdb("movie", title))
-        if "TV" in types_to_query:
-            api_hits.extend(query_tmdb("tv", title))
-        if "Game" in types_to_query:
-            api_hits.extend(query_igdb(title))
-        if "Book" in types_to_query:
-            api_hits.extend(query_openlibrary(title))
-
-        # Combine votes from hints and API hits
-        tagged_entry = _combine_votes(entry, api_hits, hint)
-        if tagged_entry["confidence"] < 0.5:
-            logger.warning("Low confidence match for entry: %s", tagged_entry)
-        tagged_entries.append(tagged_entry)
+    tagged_entries = [_tag_entry(entry, hints) for entry in entries]
+    tagged_entries = [entry for entry in tagged_entries if entry is not None]
 
     logger.info("Tagged %d entries with metadata", len(tagged_entries))
     return tagged_entries

@@ -43,7 +43,7 @@ Hobbit:
 # TV Shows
 Succession:
   canonical_title: "Succession"
-  type: "TV"
+  type: "TV Show"
   tags:
     genre: ["Drama"]
     platform: ["HBO"]
