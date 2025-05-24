@@ -202,3 +202,45 @@ def test_action_continuing_line():
     assert entries[1]["action"] == "finished"
     assert entries[1]["title"] == "Frostpunk"
     assert entries[1]["date"] == "2023-06-01"
+
+
+def test_protected_titles_from_hints():
+    """Test that titles from hints.yaml with & or , are not split."""
+    # Create a temporary hints file with a title containing &
+    import tempfile
+    import yaml
+    
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as temp_file:
+        hints_data = {
+            "Dungeons & Dragons": {
+                "canonical_title": "Dungeons & Dragons",
+                "type": "Game",
+                "tags": {"genre": ["RPG"]}
+            },
+            "Command & Conquer": {
+                "canonical_title": "Command & Conquer",
+                "type": "Game",
+                "tags": {"genre": ["Strategy"]}
+            }
+        }
+        yaml.dump(hints_data, temp_file)
+        temp_hints_path = temp_file.name
+    
+    try:
+        # Test with a title that contains &
+        record = {
+            "start_date": "2023-07-01",
+            "end_date": "2023-07-07",
+            "raw_notes": "Played Dungeons & Dragons & Command & Conquer",
+        }
+
+        entries = extract_entries(record, hints_path=temp_hints_path)
+        
+        # Should have 2 entries, not 4 (which would happen if & in titles were split)
+        assert len(entries) == 2
+        assert entries[0]["title"] == "Dungeons & Dragons"
+        assert entries[1]["title"] == "Command & Conquer"
+    finally:
+        # Clean up the temporary file
+        import os
+        os.unlink(temp_hints_path)
