@@ -3,7 +3,6 @@ Preprocessing stage to tag media entries with metadata from external APIs.
 This module includes functions to apply tagging with metadata from APIs and hints.
 """
 
-import operator
 import logging
 import re
 from typing import Dict, List, Optional
@@ -117,7 +116,7 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
     for hint_key, hint_data in hints.items():
         if hint_key == title:
             logger.info("Applying hint for '%s' to entry '%s'", hint_key, entry)
-            title = hint_data["canonical_title"]
+            title = hint_data.get("canonical_title", title)
             hint = hint_data
             break
 

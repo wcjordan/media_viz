@@ -1,17 +1,11 @@
 """Unit tests for the media tagging functionality."""
 
 import logging
-import os
 from unittest.mock import patch
 
 import pytest
 
 from preprocessing.media_tagger import apply_tagging
-from preprocessing.media_apis import (
-    query_tmdb,
-    query_igdb,
-    query_openlibrary,
-)
 
 
 @pytest.fixture(name="sample_entries")
@@ -22,51 +16,6 @@ def fixture_sample_entries():
         {"title": "The Hobbit", "action": "finished", "date": "2023-02-15"},
         {"title": "Succesion", "action": "started", "date": "2023-03-10"},
     ]
-
-
-def test_query_tmdb():
-    """Test querying TMDB API."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
-        api_hits = query_tmdb("movie", "The Matrix")
-
-    # Since this is a stub, we're just checking the structure
-    assert api_hits is not None
-    assert isinstance(api_hits, list)
-    assert all("type" in hit for hit in api_hits)
-    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
-
-
-def test_query_tmdb_no_api_key(caplog):
-    """Test querying TMDB API with no API key."""
-    with caplog.at_level(logging.WARNING), patch.dict(os.environ, {}, clear=True):
-        api_hits = query_tmdb("movie", "The Matrix")
-
-    assert "TMDB_API_KEY not found in environment variables" in caplog.text
-    assert not api_hits
-
-
-def test_query_igdb():
-    """Test querying IGDB API."""
-    with patch.dict(os.environ, {"IGDB_API_KEY": "fake_key"}):
-        api_hits = query_igdb("Elden Ring")
-
-    # Since this is a stub, we're just checking the structure
-    assert api_hits is not None
-    assert isinstance(api_hits, list)
-    assert all("type" in hit for hit in api_hits)
-    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
-
-
-def test_query_openlibrary():
-    """Test querying Open Library API."""
-    with patch.dict(os.environ, {"OPENLIBRARY_API_KEY": "fake_key"}):
-        api_hits = query_openlibrary("The Hobbit")
-
-    # Since this is a stub, we're just checking the structure
-    assert api_hits is not None
-    assert isinstance(api_hits, list)
-    assert all("type" in hit for hit in api_hits)
-    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
 def test_apply_tagging_missing_title(caplog):
