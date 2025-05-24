@@ -36,7 +36,7 @@
 - [x] Implement `query_igdb`
 - [x] Implement `query_openlibrary`
 - [ ] Batch titles to minimize requests to the APIs
-- [ ] Trim seasons
+- [x] Trim seasons
 - [x] Use hints to limit the DBs queried for a title
 
 ## 5. JSON Schema & Validation
