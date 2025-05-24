@@ -112,24 +112,17 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
                 break
 
         api_hits = []
+        types_to_query = ["Movie", "TV", "Game", "Book"]
         # If hint specifies the type, only query the appropriate database
         if hint and "type" in hint:
-            media_type = hint["type"]
-            if media_type == "Movie":
-                api_hits.extend(query_tmdb("movie", title))
-            elif media_type == "TV":
-                api_hits.extend(query_tmdb("tv", title))
-            elif media_type == "Game":
-                api_hits.extend(query_igdb(title))
-            elif media_type == "Book":
-                api_hits.extend(query_openlibrary(title))
-            else:
-                logger.warning("Unknown media type in hint: %s", media_type)
-        else:
-            # No hint or no type specified, query all databases
+            types_to_query = [hint["type"]]
+        if "Movie" in types_to_query:
             api_hits.extend(query_tmdb("movie", title))
+        if "TV" in types_to_query:
             api_hits.extend(query_tmdb("tv", title))
+        if "Game" in types_to_query:
             api_hits.extend(query_igdb(title))
+        if "Book" in types_to_query:
             api_hits.extend(query_openlibrary(title))
 
         # Combine votes from hints and API hits

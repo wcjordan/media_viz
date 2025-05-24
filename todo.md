@@ -37,7 +37,7 @@
 - [x] Implement `query_openlibrary`
 - [ ] Batch titles to minimize requests to the APIs
 - [ ] Trim seasons
-- [ ] Use hints to limit the DBs queried for a title
+- [x] Use hints to limit the DBs queried for a title
 
 ## 5. JSON Schema & Validation
 - [ ] Define `MediaEntry` Pydantic model in `models.py`
