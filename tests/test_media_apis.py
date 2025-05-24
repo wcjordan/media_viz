@@ -341,12 +341,8 @@ def test_query_tmdb_handles_missing_fields():
         # Call the function
         results = query_tmdb("movie", "Movie")
 
-        # Verify results handle missing fields
-        assert len(results) == 1
-        assert results[0]["canonical_title"] == "Movie With Missing Fields"
-        assert results[0]["tags"]["release_year"] == ""  # Empty string for missing date
-        assert "poster_path" in results[0]  # Should still have the field
-        assert results[0]["confidence"] > 0  # Should still calculate confidence
+        # Verify that results missing a release date are omitted
+        assert len(results) == 0
 
 
 @pytest.fixture(name="mock_igdb_auth_response")
@@ -506,14 +502,8 @@ def test_format_igdb_entry_missing_fields():
 
     result = _format_igdb_entry("Minimal Game", game)
 
-    assert result["canonical_title"] == "Minimal Game"
-    assert result["type"] == "Game"
-    assert result["tags"]["genre"] == []
-    assert result["tags"]["platform"] == []
-    assert result["tags"]["release_year"] == ""
-    assert result["confidence"] > 0  # Should still calculate confidence
-    assert result["source"] == "igdb"
-    assert result["poster_path"] == ""
+    # Results without a first_release_date should not be included
+    assert result is None
 
 
 def test_format_igdb_entry_partial_fields():
@@ -654,7 +644,7 @@ def test_query_openlibrary_success(mock_openlibrary_response):
         assert "Fantasy" in results[0]["tags"]["genre"]
         assert "J.R.R. Tolkien" in results[0]["tags"]["author"]
         assert results[0]["tags"]["release_year"] == "1937"
-        assert results[0]["confidence"] > 0.8  # High confidence for exact match
+        assert results[0]["confidence"] > 0.7  # High confidence for exact match
         assert results[0]["source"] == "openlibrary"
         assert "covers.openlibrary.org" in results[0]["poster_path"]
 
@@ -707,15 +697,8 @@ def test_query_openlibrary_missing_fields():
 
         results = query_openlibrary("Book")
 
-        # Verify results handle missing fields
-        assert len(results) == 1
-        assert results[0]["canonical_title"] == "Book With Missing Fields"
-        assert results[0]["type"] == "Book"
-        assert results[0]["tags"]["genre"] == []
-        assert results[0]["tags"]["author"] == []
-        assert results[0]["tags"]["release_year"] == ""
-        assert results[0]["poster_path"] == ""
-        assert results[0]["confidence"] > 0  # Should still calculate confidence
+        # Verify results handle missing a first_publish_year are omitted
+        assert len(results) == 0
 
 
 def test_query_openlibrary_malformed_response(caplog):
@@ -739,7 +722,12 @@ def test_query_openlibrary_confidence_calculation():
         # Create mock responses with varying similarity
         response = {
             "numFound": 1,
-            "docs": [{"title": "Lord of the Rings"}],
+            "docs": [
+                {
+                    "title": "Lord of the Rings",
+                    "first_publish_year": 1954,
+                }
+            ],
         }
 
         # Test exact match

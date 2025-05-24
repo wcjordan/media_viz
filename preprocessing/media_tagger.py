@@ -38,6 +38,8 @@ def _combine_votes(
     # Apply the hint if available
     if hint:
         tagged_entry.update(hint)
+        tagged_entry["confidence"] = 0.5
+        tagged_entry["source"] = "hint"
         api_hits = [hit for hit in api_hits if hit["type"] == hint["type"]]
 
     # If no API hits were found, fallback as best possible
@@ -45,29 +47,30 @@ def _combine_votes(
         if "canonical_title" not in tagged_entry:
             logger.warning("No API hits found for entry: %s", entry)
             tagged_entry["canonical_title"] = tagged_entry.get("title")
+            tagged_entry["confidence"] = 0.1
+            tagged_entry["source"] = "fallback"
 
         if "type" not in tagged_entry:
             tagged_entry["type"] = "Other / Unknown"
+            tagged_entry["confidence"] = 0.1
+            tagged_entry["source"] = "fallback"
 
         if "tags" not in tagged_entry:
             tagged_entry["tags"] = {}
 
-        tagged_entry["confidence"] = 0.1
-        tagged_entry["source"] = "fallback"
         return tagged_entry
 
     # Sort API hits by confidence so we can check how close the to matches are
-    best_api_hit = api_hits[0]
     if len(api_hits) > 1:
-        confidence_list = sorted([hit["confidence"] for hit in api_hits], reverse=True)
-        if confidence_list[0] - confidence_list[1] < 0.1:
+        api_hits.sort(key=lambda x: x["confidence"], reverse=True)
+        if api_hits[0]["confidence"] - api_hits[1]["confidence"] < 0.1:
             logger.warning(
-                "Multiple API hits with close confidence for %s. %s",
+                "Multiple API hits with close confidence for %s.\n\t%s",
                 entry,
-                ", ".join(str(hit) for hit in api_hits),
+                ",\n\t".join(str(hit) for hit in api_hits),
             )
 
-        best_api_hit = max(api_hits, key=operator.itemgetter("confidence"))
+    best_api_hit = api_hits[0]
 
     # Combine the best API hit with the entry
     if "canonical_title" not in tagged_entry:
@@ -114,6 +117,7 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
     for hint_key, hint_data in hints.items():
         if hint_key == title:
             logger.info("Applying hint for '%s' to entry '%s'", hint_key, entry)
+            title = hint_data["canonical_title"]
             hint = hint_data
             break
 
@@ -135,7 +139,7 @@ def _tag_entry(entry: Dict, hints: Dict) -> Dict:
 
     # Combine votes from hints and API hits
     tagged_entry = _combine_votes(entry, api_hits, hint)
-    if tagged_entry["confidence"] < 0.5:
+    if tagged_entry["confidence"] < 0.5 and not hint:
         logger.warning("Low confidence match for entry: %s", tagged_entry)
 
     if entry.get("season"):

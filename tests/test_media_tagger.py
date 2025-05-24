@@ -2,8 +2,7 @@
 
 import logging
 import os
-from unittest.mock import patch, mock_open
-import yaml
+from unittest.mock import patch
 
 import pytest
 
@@ -85,11 +84,11 @@ def test_apply_tagging_missing_title(caplog):
 
 def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
     """Test applying tagging with only hints and no API hits."""
-    mock_yaml_content = yaml.dump(sample_hints)
-
-    with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
-        "os.path.exists", return_value=True
-    ), patch("preprocessing.media_tagger.query_tmdb"), patch(
+    with patch(
+        "preprocessing.media_tagger.load_hints", return_value=sample_hints
+    ), patch("os.path.exists", return_value=True), patch(
+        "preprocessing.media_tagger.query_tmdb"
+    ), patch(
         "preprocessing.media_tagger.query_igdb"
     ), patch(
         "preprocessing.media_tagger.query_openlibrary"
@@ -101,8 +100,8 @@ def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
     assert ff7_entry["canonical_title"] == "Final Fantasy VII Remake"
     assert ff7_entry["type"] == "Game"
     assert ff7_entry["tags"]["platform"] == ["PS5"]
-    assert ff7_entry["confidence"] == 0.1
-    assert ff7_entry["source"] == "fallback"
+    assert ff7_entry["confidence"] == 0.5
+    assert ff7_entry["source"] == "hint"
 
 
 def test_apply_tagging_with_api_calls(sample_entries):

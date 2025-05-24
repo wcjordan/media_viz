@@ -9,50 +9,67 @@
 #     mood: ["Mood1", "Mood2"]
 
 # Video Games
+BioShock:
+  canonical_title: "BioShock"
+  type: "Game"
+
 FF7:
   canonical_title: "Final Fantasy VII Remake"
   type: "Game"
-  tags:
-    platform: ["PS5"]
-    genre: ["JRPG", "Adventure"]
-    mood: ["Epic"]
 
-Elden:
-  canonical_title: "Elden Ring"
+Hades:
+  canonical_title: "Hades"
   type: "Game"
-  tags:
-    platform: ["PS5", "PC"]
-    genre: ["Action RPG", "Open World"]
-    mood: ["Dark Fantasy"]
+
+The Avengers:
+  canonical_title: "Marvel's Avengers"
+  type: "Game"
+
+The Avengers w/ Danyi:
+  canonical_title: "Marvel's Avengers"
+  type: "Game"
 
 # Books
 LOTR:
   canonical_title: "The Lord of the Rings"
   type: "Book"
-  tags:
-    genre: ["Fantasy"]
-    mood: ["Epic"]
 
 Hobbit:
   canonical_title: "The Hobbit"
   type: "Book"
-  tags:
-    genre: ["Fantasy"]
-    mood: ["Adventure"]
 
 # TV Shows
-Succession:
-  canonical_title: "Succession"
+Captain Falcon & the Winter Soldier:
+  canonical_title: "The Falcon and the Winter Soldier"
   type: "TV Show"
-  tags:
-    genre: ["Drama"]
-    platform: ["HBO"]
-    mood: ["Dark"]
+
+Finished WandaVision:
+  canonical_title: "WandaVision"
+  type: "TV Show"
+
+Snowpiercer:
+  canonical_title: "Snowpiercer"
+  type: "TV Show"
+
+Star Trek Discovery:
+  canonical_title: "Star Trek: Discovery"
+  type: "TV Show"
 
 # Movies
 Matrix:
   canonical_title: "The Matrix"
   type: "Movie"
-  tags:
-    genre: ["Sci-Fi", "Action"]
-    mood: ["Philosophical"]
+
+# Other
+Ant Design:
+  type: "Software Development"
+
+BackstopJS:
+  type: "Software Development"
+
+React Native Paper:
+  type: "Software Development"
+
+Todo App testing:
+  canonical_title: "Chalk Project"
+  type: "Software Development"
