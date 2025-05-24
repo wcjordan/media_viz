@@ -59,6 +59,62 @@ def _get_genre_map(mode: str) -> dict:
     return genre_map
 
 
+def _format_tmdb_entry(
+    search_title: str, entry: dict, mode: str, genre_map: dict
+) -> dict:
+    """
+    Format a single TMDB game entry into a standardized dictionary.
+    Args:
+        search_title: The search title.  Used to calculate confidence.
+        entry: A dictionary containing game metadata from TMDB.
+        mode: The mode of media (e.g., "movie" or "tv").
+        genre_map: A dictionary mapping genre IDs to genre names.
+    Returns:
+        A dictionary with the following keys
+            - canonical_title: The official title from TMDB
+            - poster_path: The URL to the media's poster image
+            - type: The type of media (TV Show, Movie, etc.)
+            - tags: A dictionary containing tags for genre, platform, etc.
+            - confidence: A float between 0 and 1 indicating match confidence
+            - source: The source of the metadata (e.g., "tmdb")
+    """
+    # Calculate confidence based on popularity and title similarity
+    canonical_title = entry.get("name", "") if mode == "tv" else entry.get("title", "")
+
+    title_similarity = _calculate_title_similarity(search_title, canonical_title)
+    popularity = entry.get("popularity", 0) / 100  # Normalize popularity
+    confidence = (
+        0.7 * title_similarity
+        + 0.2 * popularity
+        + 0.1 * min(1.0, entry.get("vote_average", 0) / 10)
+    )
+
+    # Get genre information
+    genres = []
+    if "genre_ids" in entry:
+        genres = [
+            genre_map.get(gid) for gid in entry.get("genre_ids", []) if gid in genre_map
+        ]
+
+    # Create result entry
+    date_key = "first_air_date" if mode == "tv" else "release_date"
+    release_year = entry.get(date_key, "")[:4] if entry.get(date_key) else ""
+    if not release_year:
+        return None
+
+    return {
+        "canonical_title": canonical_title,
+        "poster_path": f"https://image.tmdb.org/t/p/w600_and_h900_bestv2/{entry.get('poster_path', '')}",
+        "type": "TV Show" if mode == "tv" else "Movie",
+        "tags": {
+            "genre": genres,
+            "release_year": release_year,
+        },
+        "confidence": confidence,
+        "source": "tmdb",
+    }
+
+
 def query_tmdb(mode: str, title: str) -> list:
     """
     Query The Movie Database (TMDB) API for TV shows or Movie metadata.
@@ -83,8 +139,6 @@ def query_tmdb(mode: str, title: str) -> list:
         logger.warning("TMDB_API_KEY not found in environment variables")
         return []
 
-    results = []
-
     # Search for TV shows or Movies
     try:
         tmdb_response = requests.get(
@@ -102,51 +156,13 @@ def query_tmdb(mode: str, title: str) -> list:
         tmdb_data = tmdb_response.json()
         genre_map = _get_genre_map(mode)
 
-        # Process TMDB results
-        for entry in tmdb_data.get("results", [])[
-            :5
-        ]:  # Get top 5 TV show or Movie matches
-            # Calculate confidence based on popularity and title similarity
-            canonical_title = (
-                entry.get("name", "") if mode == "tv" else entry.get("title", "")
-            )
-
-            title_similarity = _calculate_title_similarity(title, canonical_title)
-            popularity = entry.get("popularity", 0) / 100  # Normalize popularity
-            confidence = (
-                0.7 * title_similarity
-                + 0.2 * popularity
-                + 0.1 * min(1.0, entry.get("vote_average", 0) / 10)
-            )
-
-            # Get genre information
-            genres = []
-            if "genre_ids" in entry:
-                genres = [
-                    genre_map.get(gid)
-                    for gid in entry.get("genre_ids", [])
-                    if gid in genre_map
-                ]
-
-            # Create result entry
-            date_key = "first_air_date" if mode == "tv" else "release_date"
-            results.append(
-                {
-                    "canonical_title": canonical_title,
-                    "poster_path": f"https://image.tmdb.org/t/p/w600_and_h900_bestv2/{entry.get('poster_path', '')}",
-                    "type": "TV Show" if mode == "tv" else "Movie",
-                    "tags": {
-                        "genre": genres,
-                        "release_year": (
-                            entry.get(date_key, "")[:4] if entry.get(date_key) else ""
-                        ),
-                    },
-                    "confidence": confidence,
-                    "source": "tmdb",
-                }
-            )
-
-        return results
+        # Get top 5 TV show or Movie matches
+        raw_entries = tmdb_data.get("results", [])[:5]
+        entries = [
+            _format_tmdb_entry(title, entry, mode, genre_map) for entry in raw_entries
+        ]
+        entries = [entry for entry in entries if entry is not None]
+        return entries
 
     except requests.RequestException as e:
         logger.error("Error querying TMDB API for %s: %s", mode, e)
@@ -221,7 +237,7 @@ def _format_igdb_entry(search_title: str, game: dict) -> dict:
     )
 
     # Calculate overall confidence
-    confidence = 0.7 * title_similarity + 0.15 * user_rating + 0.15 * critic_rating
+    confidence = 0.8 * title_similarity + 0.1 * user_rating + 0.1 * critic_rating
 
     # Extract genres
     genres = []
@@ -253,6 +269,8 @@ def _format_igdb_entry(search_title: str, game: dict) -> dict:
     if "first_release_date" in game and game["first_release_date"]:
         # IGDB uses Unix timestamps
         release_year = time.strftime("%Y", time.gmtime(game["first_release_date"]))
+    if not release_year:
+        return None
 
     return {
         "canonical_title": game_title,
@@ -313,7 +331,8 @@ def query_igdb(title: str) -> list:
         games = response.json()
 
         # Step 3: Process results
-        return [_format_igdb_entry(title, game) for game in games]
+        tagged_games = [_format_igdb_entry(title, game) for game in games]
+        return [game for game in tagged_games if game is not None]
 
     except requests.RequestException as e:
         logger.error("Error querying IGDB API: %s", e)
@@ -357,8 +376,9 @@ def query_openlibrary(title: str) -> list:
         results = []
         for book in search_data.get("docs", []):
             # Calculate confidence based on title similarity
+            # Note books confidence is handicapped to 0.8 to avoid drowning out games and movies
             book_title = book.get("title", "")
-            confidence = _calculate_title_similarity(title, book_title)
+            confidence = 0.8 * _calculate_title_similarity(title, book_title)
 
             # Get cover image URL if available
             cover_id = book.get("cover_i")
@@ -378,6 +398,8 @@ def query_openlibrary(title: str) -> list:
                 if book.get("first_publish_year")
                 else ""
             )
+            if not publish_year:
+                continue
 
             # Create result entry
             results.append(

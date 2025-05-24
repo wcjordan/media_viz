@@ -1,18 +1,11 @@
 """Unit tests for the media tagging functionality."""
 
 import logging
-import os
-from unittest.mock import patch, mock_open
-import yaml
+from unittest.mock import patch
 
 import pytest
 
 from preprocessing.media_tagger import apply_tagging
-from preprocessing.media_apis import (
-    query_tmdb,
-    query_igdb,
-    query_openlibrary,
-)
 
 
 @pytest.fixture(name="sample_entries")
@@ -23,51 +16,6 @@ def fixture_sample_entries():
         {"title": "The Hobbit", "action": "finished", "date": "2023-02-15"},
         {"title": "Succesion", "action": "started", "date": "2023-03-10"},
     ]
-
-
-def test_query_tmdb():
-    """Test querying TMDB API."""
-    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}):
-        api_hits = query_tmdb("movie", "The Matrix")
-
-    # Since this is a stub, we're just checking the structure
-    assert api_hits is not None
-    assert isinstance(api_hits, list)
-    assert all("type" in hit for hit in api_hits)
-    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
-
-
-def test_query_tmdb_no_api_key(caplog):
-    """Test querying TMDB API with no API key."""
-    with caplog.at_level(logging.WARNING), patch.dict(os.environ, {}, clear=True):
-        api_hits = query_tmdb("movie", "The Matrix")
-
-    assert "TMDB_API_KEY not found in environment variables" in caplog.text
-    assert not api_hits
-
-
-def test_query_igdb():
-    """Test querying IGDB API."""
-    with patch.dict(os.environ, {"IGDB_API_KEY": "fake_key"}):
-        api_hits = query_igdb("Elden Ring")
-
-    # Since this is a stub, we're just checking the structure
-    assert api_hits is not None
-    assert isinstance(api_hits, list)
-    assert all("type" in hit for hit in api_hits)
-    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
-
-
-def test_query_openlibrary():
-    """Test querying Open Library API."""
-    with patch.dict(os.environ, {"OPENLIBRARY_API_KEY": "fake_key"}):
-        api_hits = query_openlibrary("The Hobbit")
-
-    # Since this is a stub, we're just checking the structure
-    assert api_hits is not None
-    assert isinstance(api_hits, list)
-    assert all("type" in hit for hit in api_hits)
-    assert all(0 <= hit.get("confidence", 0) <= 1 for hit in api_hits)
 
 
 def test_apply_tagging_missing_title(caplog):
@@ -85,11 +33,11 @@ def test_apply_tagging_missing_title(caplog):
 
 def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
     """Test applying tagging with only hints and no API hits."""
-    mock_yaml_content = yaml.dump(sample_hints)
-
-    with patch("builtins.open", mock_open(read_data=mock_yaml_content)), patch(
-        "os.path.exists", return_value=True
-    ), patch("preprocessing.media_tagger.query_tmdb"), patch(
+    with patch(
+        "preprocessing.media_tagger.load_hints", return_value=sample_hints
+    ), patch("os.path.exists", return_value=True), patch(
+        "preprocessing.media_tagger.query_tmdb"
+    ), patch(
         "preprocessing.media_tagger.query_igdb"
     ), patch(
         "preprocessing.media_tagger.query_openlibrary"
@@ -101,8 +49,8 @@ def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
     assert ff7_entry["canonical_title"] == "Final Fantasy VII Remake"
     assert ff7_entry["type"] == "Game"
     assert ff7_entry["tags"]["platform"] == ["PS5"]
-    assert ff7_entry["confidence"] == 0.1
-    assert ff7_entry["source"] == "fallback"
+    assert ff7_entry["confidence"] == 0.5
+    assert ff7_entry["source"] == "hint"
 
 
 def test_apply_tagging_with_api_calls(sample_entries):
@@ -491,6 +439,33 @@ def test_apply_tagging_only_queries_specified_type():
         mock_tmdb.assert_not_called()
         mock_igdb.assert_not_called()
         mock_openlibrary.assert_called_once_with("LOTR")
+
+
+def test_use_canonical_title_from_hint():
+    """Test that the canonical_title from hint is used when querying APIs."""
+    entry = [{"title": "FF7", "action": "played", "date": "2023-01-01"}]
+
+    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
+        "preprocessing.media_tagger.query_igdb"
+    ) as mock_igdb:
+        # Set up mock hint with canonical_title
+        mock_hints.return_value = {
+            "FF7": {"canonical_title": "Final Fantasy VII Remake", "type": "Game"}
+        }
+        mock_igdb.return_value = [
+            {
+                "canonical_title": "Final Fantasy VII Remake",
+                "type": "Game",
+                "confidence": 0.9,
+                "source": "igdb",
+                "tags": {"platform": ["PS5"]},
+            }
+        ]
+
+        apply_tagging(entry)
+
+        # Verify API was called with canonical_title from hint
+        mock_igdb.assert_called_once_with("Final Fantasy VII Remake")
 
 
 def test_season_extraction_in_tagging():

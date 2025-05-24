@@ -131,7 +131,7 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.WARN,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        filename="preprocess.log",
+        filename="preprocessing/processed_data/preprocess.log",
         filemode="w",
     )
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     final_stats = process_and_save(
         "preprocessing/raw_data/media_enjoyed.csv",
         "preprocessing/processed_data/media_entries.json",
-        limit=100,
+        limit=20,
     )
 
     # Print statistics
