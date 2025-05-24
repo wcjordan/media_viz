@@ -134,7 +134,7 @@ def test_apply_tagging_missing_title(caplog):
     entries = [{"action": "started", "date": "2023-01-01"}]  # Missing title
 
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints", return_value={}
+        "preprocessing.utils.load_hints", return_value={}
     ):
         tagged_entries = apply_tagging(entries)
 
@@ -353,7 +353,7 @@ def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
     # Mock the API calls
     hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints"
+        "preprocessing.utils.load_hints"
     ) as mock_hints, patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
         "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(
@@ -415,7 +415,7 @@ def test_apply_tagging_with_low_confidence(sample_entries, caplog):
     # Mock the API calls
     ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
     with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger._load_hints", return_value={}
+        "preprocessing.utils.load_hints", return_value={}
     ), patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
         "preprocessing.media_tagger.query_igdb"
     ) as mock_igdb, patch(
