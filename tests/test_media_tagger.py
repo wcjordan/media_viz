@@ -441,6 +441,78 @@ def test_apply_tagging_only_queries_specified_type():
         mock_openlibrary.assert_called_once_with("LOTR")
 
 
+def test_use_canonical_title_from_hint():
+    """Test that the canonical_title from hint is used when querying APIs."""
+    entry = [{"title": "FF7", "action": "played", "date": "2023-01-01"}]
+    
+    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
+        "preprocessing.media_tagger.query_igdb"
+    ) as mock_igdb:
+        # Set up mock hint with canonical_title
+        mock_hints.return_value = {
+            "FF7": {
+                "canonical_title": "Final Fantasy VII Remake",
+                "type": "Game"
+            }
+        }
+        mock_igdb.return_value = [
+            {
+                "canonical_title": "Final Fantasy VII Remake",
+                "type": "Game",
+                "confidence": 0.9,
+                "source": "igdb",
+                "tags": {"platform": ["PS5"]},
+            }
+        ]
+        
+        apply_tagging(entry)
+        
+        # Verify API was called with canonical_title from hint
+        mock_igdb.assert_called_once_with("Final Fantasy VII Remake")
+
+
+def test_skip_entries_without_release_date():
+    """Test that entries without release dates are skipped."""
+    entry = [{"title": "Unreleased Game", "action": "played", "date": "2023-01-01"}]
+    
+    with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
+        "preprocessing.media_apis.query_tmdb"
+    ) as mock_tmdb, patch(
+        "preprocessing.media_apis.query_igdb"
+    ) as mock_igdb, patch(
+        "preprocessing.media_apis.query_openlibrary"
+    ) as mock_openlibrary:
+        
+        # Set up mock returns with missing release dates
+        mock_tmdb.return_value = []
+        mock_openlibrary.return_value = []
+        
+        # Create a response with one entry with release date and one without
+        mock_igdb.side_effect = lambda title: [
+            {
+                "canonical_title": "Released Game",
+                "type": "Game",
+                "confidence": 0.9,
+                "source": "igdb",
+                "tags": {"platform": ["PS5"], "release_year": "2022"},
+            },
+            {
+                "canonical_title": "Unreleased Game",
+                "type": "Game",
+                "confidence": 0.95,  # Higher confidence but no release date
+                "source": "igdb",
+                "tags": {"platform": ["PS5"]},  # No release_year
+            }
+        ]
+        
+        tagged_entries = apply_tagging(entry)
+        
+        # Verify only the entry with release date is used
+        assert len(tagged_entries) == 1
+        assert tagged_entries[0]["canonical_title"] == "Released Game"
+        assert "release_year" in tagged_entries[0]["tags"]
+
+
 def test_season_extraction_in_tagging():
     """Test that season information is correctly extracted and added back to canonical title."""
     # Test cases for different season formats

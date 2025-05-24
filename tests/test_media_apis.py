@@ -2,6 +2,8 @@
 
 import logging
 import os
+import datetime
+import time
 from unittest.mock import patch, MagicMock
 import pytest
 import requests
@@ -345,6 +347,37 @@ def test_query_tmdb_handles_missing_fields():
         assert len(results) == 0
 
 
+def test_query_tmdb_with_future_release():
+    """Test TMDB query with a future release date."""
+    with patch.dict(os.environ, {"TMDB_API_KEY": "fake_key"}), patch(
+        "requests.get"
+    ) as mock_get, patch("preprocessing.media_apis._get_genre_map", return_value={}):
+        # Create mock response with future release date
+        future_date = (datetime.datetime.now() + datetime.timedelta(days=365)).strftime("%Y-%m-%d")
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "results": [
+                {
+                    "title": "Future Movie",
+                    "popularity": 50.0,
+                    "vote_average": 0.0,
+                    "release_date": future_date,
+                    "genre_ids": [28],
+                }
+            ]
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        # Call the function
+        results = query_tmdb("movie", "Future")
+
+        # Verify that results with future release dates are included
+        assert len(results) == 1
+        assert results[0]["canonical_title"] == "Future Movie"
+        assert results[0]["tags"]["release_year"] == future_date[:4]
+
+
 @pytest.fixture(name="mock_igdb_auth_response")
 def fixture_mock_igdb_auth_response():
     """Mock response for IGDB authentication."""
@@ -504,6 +537,26 @@ def test_format_igdb_entry_missing_fields():
 
     # Results without a first_release_date should not be included
     assert result is None
+
+
+def test_format_igdb_entry_future_release():
+    """Test formatting an IGDB game entry with a future release date."""
+    # Use a date far in the future to ensure the test doesn't break over time
+    future_timestamp = int(time.time()) + 31536000  # One year in the future
+    
+    game = {
+        "name": "Future Game",
+        "first_release_date": future_timestamp,
+        "genres": [{"name": "RPG"}],
+        "platforms": [{"name": "PC"}],
+    }
+
+    result = _format_igdb_entry("Future Game", game)
+    
+    # Should still include future releases as long as they have a date
+    assert result is not None
+    assert result["canonical_title"] == "Future Game"
+    assert result["tags"]["release_year"] == time.strftime("%Y", time.gmtime(future_timestamp))
 
 
 def test_format_igdb_entry_partial_fields():
@@ -699,6 +752,36 @@ def test_query_openlibrary_missing_fields():
 
         # Verify results handle missing a first_publish_year are omitted
         assert len(results) == 0
+
+
+def test_query_openlibrary_future_publication():
+    """Test OpenLibrary query with a future publication date."""
+    next_year = datetime.datetime.now().year + 1
+    
+    with patch("requests.get") as mock_get:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "numFound": 1,
+            "start": 0,
+            "docs": [
+                {
+                    "key": "/works/OL12345W",
+                    "title": "Future Book",
+                    "author_name": ["Future Author"],
+                    "first_publish_year": next_year,
+                    "subject": ["Science Fiction"],
+                }
+            ],
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        results = query_openlibrary("Future Book")
+
+        # Verify future publications are included as long as they have a date
+        assert len(results) == 1
+        assert results[0]["canonical_title"] == "Future Book"
+        assert results[0]["tags"]["release_year"] == str(next_year)
 
 
 def test_query_openlibrary_malformed_response(caplog):
