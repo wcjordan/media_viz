@@ -5,30 +5,25 @@ from unittest.mock import patch
 
 import pytest
 
+from preprocessing import media_tagger
 from preprocessing.media_tagger import apply_tagging
+
+
+@pytest.fixture(autouse=True)
+def reset_query_cache():
+    """Reset query cache before each test to ensure consistent state."""
+    media_tagger.QUERY_CACHE = {}
+    yield
 
 
 @pytest.fixture(name="sample_entries")
 def fixture_sample_entries():
     """Sample media entries for testing."""
     return [
-        {"title": "FF7", "action": "started", "date": "2023-01-01"},
-        {"title": "The Hobbit", "action": "finished", "date": "2023-02-15"},
-        {"title": "Succesion", "action": "started", "date": "2023-03-10"},
+        {"title": "FF7", "started_dates": ["2023-01-01"], "finished_dates": []},
+        {"title": "The Hobbit", "started_dates": [], "finished_dates": ["2023-02-15"]},
+        {"title": "Succesion", "started_dates": ["2023-03-10"], "finished_dates": []},
     ]
-
-
-def test_apply_tagging_missing_title(caplog):
-    """Test applying tagging to an entry with a missing title."""
-    entries = [{"action": "started", "date": "2023-01-01"}]  # Missing title
-
-    with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger.load_hints", return_value={}
-    ):
-        tagged_entries = apply_tagging(entries)
-
-    assert len(tagged_entries) == 0
-    assert "Entry missing title, skipping tagging" in caplog.text
 
 
 def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
@@ -45,12 +40,18 @@ def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
         tagged_entries = apply_tagging(sample_entries, "fake_path.yaml")
 
     # Check the entry that should match a hint
-    ff7_entry = next(entry for entry in tagged_entries if "FF7" in entry["title"])
-    assert ff7_entry["canonical_title"] == "Final Fantasy VII Remake"
-    assert ff7_entry["type"] == "Game"
-    assert ff7_entry["tags"]["platform"] == ["PS5"]
-    assert ff7_entry["confidence"] == 0.5
-    assert ff7_entry["source"] == "hint"
+    entry = next(
+        entry for entry in tagged_entries if "FF7" == entry["original_titles"][0]
+    )
+    assert entry["canonical_title"] == "Final Fantasy VII Remake"
+    assert "started_dates" in entry
+    assert "finished_dates" in entry
+
+    tagged_entry = entry["tagged"]
+    assert tagged_entry["type"] == "Game"
+    assert tagged_entry["tags"]["platform"] == ["PS5"]
+    assert tagged_entry["confidence"] == 0.5
+    assert tagged_entry["source"] == "hint"
 
 
 def test_apply_tagging_with_api_calls(sample_entries):
@@ -97,10 +98,13 @@ def test_apply_tagging_with_api_calls(sample_entries):
 
     # Assert entry is tagged correctly
     assert len(tagged_entries) == 1
-    tagged_entry = tagged_entries[0]
-    assert tagged_entry["title"] == "Succesion"
-    assert tagged_entry["action"] == "started"
-    assert tagged_entry["canonical_title"] == "Succession"
+    entry = tagged_entries[0]
+    assert entry["canonical_title"] == "Succession"
+    assert entry["original_titles"][0] == "Succesion"
+    assert "started_dates" in entry
+    assert "finished_dates" in entry
+
+    tagged_entry = entry["tagged"]
     assert tagged_entry["type"] == "TV Show"
     assert tagged_entry["tags"]["genre"] == ["Drama"]
     assert tagged_entry["confidence"] == 0.9
@@ -123,15 +127,16 @@ def test_apply_tagging_api_failure(sample_entries, caplog):
         tagged_entries = apply_tagging(ff7_entry)
 
     # Check that fallback values are used
-    assert "No API hits found for entry: {'title': 'FF7'," in caplog.text
+    assert "No API hits found for entry: {'title': 'FF7'}" in caplog.text
     assert "Low confidence match for entry: {'title': 'FF7'," in caplog.text
     assert len(tagged_entries) == 1
     for entry in tagged_entries:
-        assert entry["canonical_title"] == entry["title"]
-        assert entry["type"] == "Other / Unknown"
-        assert entry["tags"] == {}
-        assert entry["confidence"] == 0.1
-        assert entry["source"] == "fallback"
+        assert entry["canonical_title"] == entry["original_titles"][0]
+        tagged_entry = entry["tagged"]
+        assert tagged_entry["type"] == "Other / Unknown"
+        assert tagged_entry["tags"] == {}
+        assert tagged_entry["confidence"] == 0.1
+        assert tagged_entry["source"] == "fallback"
 
 
 def test_apply_tagging_with_api_calls_and_hints(sample_entries):
@@ -175,10 +180,13 @@ def test_apply_tagging_with_api_calls_and_hints(sample_entries):
 
     # Assert entry is tagged correctly
     assert len(tagged_entries) == 1
-    tagged_entry = tagged_entries[0]
-    assert tagged_entry["title"] == "FF7"
-    assert tagged_entry["action"] == "started"
-    assert tagged_entry["canonical_title"] == "Final Fantasy VII"
+    entry = tagged_entries[0]
+    assert entry["canonical_title"] == "Final Fantasy VII"
+    assert entry["original_titles"][0] == "FF7"
+    assert "started_dates" in entry
+    assert "finished_dates" in entry
+
+    tagged_entry = entry["tagged"]
     assert tagged_entry["type"] == "Game"
     assert tagged_entry["tags"]["platform"] == ["PS1"]
     assert tagged_entry["confidence"] == 0.9
@@ -221,16 +229,19 @@ def test_apply_tagging_with_narrow_confidence(sample_entries, caplog):
 
     # Check for warnings about close confidence scores
     assert (
-        "Multiple API hits with close confidence for {'title': 'The Hobbit',"
+        "Multiple API hits with close confidence for {'title': 'The Hobbit'}"
         in caplog.text
     )
 
     # Assert entry is tagged correctly
     assert len(tagged_entries) == 1
-    tagged_entry = tagged_entries[0]
-    assert tagged_entry["title"] == "The Hobbit"
-    assert tagged_entry["action"] == "finished"
-    assert tagged_entry["canonical_title"] == "The Hobbit"
+    entry = tagged_entries[0]
+    assert entry["canonical_title"] == "The Hobbit"
+    assert entry["original_titles"][0] == "The Hobbit"
+    assert "started_dates" in entry
+    assert "finished_dates" in entry
+
+    tagged_entry = entry["tagged"]
     assert tagged_entry["type"] == "Book"
     assert tagged_entry["tags"]["genre"] == ["Fantasy"]
     assert tagged_entry["confidence"] == 1.0
@@ -289,10 +300,13 @@ def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
 
     # Assert entry is tagged correctly
     assert len(tagged_entries) == 1
-    tagged_entry = tagged_entries[0]
-    assert tagged_entry["title"] == "The Hobbit"
-    assert tagged_entry["action"] == "finished"
-    assert tagged_entry["canonical_title"] == "The Hobbit: An Unexpected Journey"
+    entry = tagged_entries[0]
+    assert entry["canonical_title"] == "The Hobbit: An Unexpected Journey"
+    assert entry["original_titles"][0] == "The Hobbit"
+    assert "started_dates" in entry
+    assert "finished_dates" in entry
+
+    tagged_entry = entry["tagged"]
     assert tagged_entry["type"] == "Movie"
     assert tagged_entry["tags"]["genre"] == ["Adventure"]
     assert tagged_entry["confidence"] == 0.9
@@ -330,10 +344,13 @@ def test_apply_tagging_with_low_confidence(sample_entries, caplog):
 
     # Assert entry is tagged correctly
     assert len(tagged_entries) == 1
-    tagged_entry = tagged_entries[0]
-    assert tagged_entry["title"] == "FF7"
-    assert tagged_entry["action"] == "started"
-    assert tagged_entry["canonical_title"] == "Final Fantasy VII"
+    entry = tagged_entries[0]
+    assert entry["canonical_title"] == "Final Fantasy VII"
+    assert entry["original_titles"][0] == "FF7"
+    assert "started_dates" in entry
+    assert "finished_dates" in entry
+
+    tagged_entry = entry["tagged"]
     assert tagged_entry["type"] == "Game"
     assert tagged_entry["confidence"] == 0.2
     assert tagged_entry["source"] == "igdb"
@@ -492,6 +509,7 @@ def test_season_extraction_in_tagging():
     ]
 
     for test_case in test_cases:
+        media_tagger.QUERY_CACHE = {}
         entry = {"title": test_case["title"], "action": "started", "date": "2023-01-01"}
 
         with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
@@ -517,7 +535,7 @@ def test_season_extraction_in_tagging():
                 tagged_entry["canonical_title"]
                 == f"Game of Thrones {test_case['expected_season']}"
             )
-            assert tagged_entry["type"] == "TV Show"
+            assert tagged_entry["tagged"]["type"] == "TV Show"
 
             # Verify API was called with the title without season information
             mock_tmdb.assert_called_with("tv", expected_title)

@@ -6,7 +6,7 @@ from unittest.mock import mock_open, patch
 
 from preprocessing.preprocess import (
     calculate_statistics,
-    load_weekly_records,
+    _load_weekly_records,
     process_and_save,
 )
 
@@ -27,7 +27,7 @@ def test_year_propagation():
 
     # Mock the open function to return our StringIO object
     with patch("builtins.open", mock_open(read_data=csv_content)):
-        records = load_weekly_records("dummy_path.csv")
+        records = _load_weekly_records("dummy_path.csv")
 
     # Check that years are correctly propagated
     assert records[0]["start_date"].startswith("2023-")  # Assuming current year is 2023
@@ -67,22 +67,26 @@ def test_process_and_save():
 
         mock_tag.return_value = [
             {
-                "title": "The Hobbit",
-                "canonical_title": "The Hobbit",
-                "type": "Book",
-                "action": "started",
-                "date": "2023-01-01",
-                "tags": {"genre": ["Fantasy"]},
-                "confidence": 0.9,
+                "tagged": {
+                    "canonical_title": "The Hobbit",
+                    "type": "Book",
+                    "tags": {"genre": ["Fantasy"]},
+                    "confidence": 0.9,
+                },
+                "original_titles": ["The Hobbit"],
+                "started_dates": ["2023-01-01"],
+                "finished_dates": [],
             },
             {
-                "title": "The Hobbit",
-                "canonical_title": "The Hobbit",
-                "type": "Book",
-                "action": "finished",
-                "date": "2023-02-01",
-                "tags": {"genre": ["Fantasy"]},
-                "confidence": 0.9,
+                "tagged": {
+                    "canonical_title": "The Hobbit",
+                    "type": "Book",
+                    "tags": {"genre": ["Fantasy"]},
+                    "confidence": 0.9,
+                },
+                "original_titles": ["The Hobbit"],
+                "started_dates": [],
+                "finished_dates": ["2023-02-01"],
             },
         ]
 
@@ -98,38 +102,30 @@ def test_process_and_save():
 
 def test_calculate_statistics():
     """Test the statistics calculation function."""
-    entries = [
+    tagged_entries = [
         {
-            "title": "Game A",
+            "canonical_title": "Game A",
             "type": "Game",
-            "action": "started",
-            "date": "2023-01-01",
             "confidence": 0.9,
         },
         {
-            "title": "Game A",
+            "canonical_title": "Game A",
             "type": "Game",
-            "action": "finished",
-            "date": "2023-02-01",
             "confidence": 0.9,
         },
         {
-            "title": "Book B",
+            "canonical_title": "Book B",
             "type": "Book",
-            "action": "started",
-            "date": "2023-03-01",
             "confidence": 0.4,
             "warnings": ["Low confidence match"],
         },
         {
-            "title": "Movie C",
+            "canonical_title": "Movie C",
             "type": "Movie",
-            "action": "finished",
-            "date": "2023-04-01",
             "confidence": 1.0,
         },
     ]
-
+    entries = [{"tagged": entry} for entry in tagged_entries]
     stats = calculate_statistics(entries)
 
     assert stats["total_entries"] == 4

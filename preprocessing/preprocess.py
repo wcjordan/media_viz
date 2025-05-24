@@ -8,15 +8,15 @@ import json
 import logging
 from typing import List, Dict
 
-from .media_extractor import extract_entries
+from .media_extractor import RANGE_VERBS, extract_entries
 from .week_extractor import parse_row
-from .media_tagger import apply_tagging
+from .media_tagger import apply_tagging, get_media_db_api_calls
 
 
 logger = logging.getLogger(__name__)
 
 
-def load_weekly_records(path: str) -> List[Dict]:
+def _load_weekly_records(path: str) -> List[Dict]:
     """
     Load weekly records from a CSV file.
 
@@ -51,6 +51,48 @@ def load_weekly_records(path: str) -> List[Dict]:
     return records
 
 
+def _group_entries(individual_entries):
+    """
+    Group individual media entries by title.
+
+    Args:
+        individual_entries: List of individual media entry dictionaries.
+
+    Returns:
+        Dictionary mapping titles to their grouped entry data.
+    """
+    grouped_entries = {}
+    for entry in individual_entries:
+        title = entry.get("title", "")
+        if not title:
+            logger.warning("Entry missing title, skipping: %s", entry)
+            continue
+
+        if title not in grouped_entries:
+            grouped_entries[title] = {
+                "title": title,
+                "started_dates": [],
+                "finished_dates": [],
+            }
+
+        # Add dates to the appropriate list
+        action = entry.get("action", "")
+        if action not in RANGE_VERBS:
+            logger.warning("Unknown action '%s' for entry: %s", action, entry)
+            continue
+
+        date = entry.get("date", "")
+        if action == "started" and date not in grouped_entries[title]["started_dates"]:
+            grouped_entries[title]["started_dates"].append(date)
+        elif (
+            action == "finished"
+            and date not in grouped_entries[title]["finished_dates"]
+        ):
+            grouped_entries[title]["finished_dates"].append(date)
+
+    return list(grouped_entries.values())
+
+
 def process_and_save(
     input_csv: str, output_json: str, hints_path: str = None, limit: int = None
 ) -> Dict:
@@ -67,20 +109,23 @@ def process_and_save(
         Dictionary with statistics about the processing.
     """
     # Load weekly records
-    weekly_records = load_weekly_records(input_csv)
+    weekly_records = _load_weekly_records(input_csv)
     logger.info("Loaded %d weekly records from %s", len(weekly_records), input_csv)
 
     # Extract media entries
-    all_entries = []
+    individual_entries = []
     for curr_record in weekly_records:
-        all_entries.extend(extract_entries(curr_record))
-    logger.info("Extracted %d media entries", len(all_entries))
+        individual_entries.extend(extract_entries(curr_record))
+    logger.info("Extracted %d media entries", len(individual_entries))
+
+    # Group entries to avoid multiple tagging calls for the same title
+    grouped_entries = _group_entries(individual_entries)
 
     # Apply tagging
     if limit is not None:
-        all_entries = all_entries[:limit]
+        grouped_entries = grouped_entries[:limit]
         logger.warning("Limited to %d entries", limit)
-    tagged_entries = apply_tagging(all_entries, hints_path)
+    tagged_entries = apply_tagging(grouped_entries, hints_path)
     logger.info("Tagged %d media entries", len(tagged_entries))
 
     # Calculate statistics
@@ -115,12 +160,13 @@ def calculate_statistics(entries: List[Dict]) -> Dict:
     }
 
     for entry in entries:
+        tagged_entry = entry.get("tagged", {})
         # Count by media type
-        media_type = entry.get("type", "Unknown")
+        media_type = tagged_entry.get("type", "Unknown")
         stats["by_type"][media_type] = stats["by_type"].get(media_type, 0) + 1
 
         # Count low confidence entries
-        if entry.get("confidence", 0) < 0.5:
+        if tagged_entry.get("confidence", 0) < 0.5:
             stats["low_confidence"] += 1
 
     return stats
@@ -146,3 +192,6 @@ if __name__ == "__main__":
     print(f"Processed {final_stats['total_entries']} media entries:")
     print(f"  By type: {final_stats['by_type']}")
     print(f"  Low confidence: {final_stats['low_confidence']}")
+    print("Count of API calls to the media databases.")
+    for db_api, count in get_media_db_api_calls().items():
+        print(f"  {db_api}: {count} API calls")
