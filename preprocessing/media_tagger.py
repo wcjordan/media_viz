@@ -4,7 +4,6 @@ This module includes functions to apply tagging with metadata from APIs and hint
 """
 
 import operator
-import os
 import logging
 from typing import Dict, List, Optional
 
@@ -12,11 +11,6 @@ from preprocessing.media_apis import query_tmdb, query_igdb, query_openlibrary
 from preprocessing.utils import load_hints
 
 logger = logging.getLogger(__name__)
-
-# Default paths
-DEFAULT_HINTS_PATH = os.path.join(os.path.dirname(__file__), "hints.yaml")
-
-
 
 
 def _combine_votes(

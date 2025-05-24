@@ -60,8 +60,6 @@ ALL_VERBS = (
 )
 
 
-
-
 def extract_entries(record: Dict, hints_path: Optional[str] = None) -> List[Dict]:
     """
     Extract media entries from a weekly record's raw notes.
@@ -84,18 +82,9 @@ def extract_entries(record: Dict, hints_path: Optional[str] = None) -> List[Dict
         logger.warning("Skipping record with missing data: %s", record)
         return entries
 
-    # Load hints to avoid splitting titles that contain & or ,
+    # Get all hint titles that contain & or , to avoid splitting them
     hints = load_hints(hints_path)
-    
-    # Get all hint titles and aliases that might contain & or ,
-    protected_titles = []
-    for key, hint_data in hints.items():
-        if '&' in key or ',' in key:
-            protected_titles.append(key)
-        
-        canonical_title = hint_data.get('canonical_title', '')
-        if canonical_title and ('&' in canonical_title or ',' in canonical_title):
-            protected_titles.append(canonical_title)
+    protected_titles = [key for key in hints if "&" in key or "," in key]
 
     # Split the raw notes on newlines to process each line separately
     last_action = None
@@ -150,8 +139,48 @@ def _get_entries(title: str, action: str, start_date: str) -> List[Dict]:
     return entries
 
 
+def _split_titles(protected_titles: List[str], titles_str: str) -> List[str]:
+    """
+    Split the titles string into a list of titles, handling protected titles.
+
+    Args:
+        protected_titles: List of titles that should not be split.
+        titles_str: The string containing the titles to be split.
+
+    Returns:
+        A list of titles.
+    """
+    # Check if titles_str contains any protected titles
+    placeholders = {}
+    modified_titles_str = titles_str
+    if protected_titles:
+        # Replace protected titles with placeholders to avoid splitting them
+        for i, protected_title in enumerate(protected_titles):
+            if protected_title in titles_str:
+                placeholder = f"__PROTECTED_TITLE_{i}__"
+                modified_titles_str = modified_titles_str.replace(
+                    protected_title, placeholder
+                )
+                placeholders[placeholder] = protected_title
+
+    # Split on & or , that are not in protected titles
+    split_titles = []
+    for title in re.split("&|,", modified_titles_str):
+        title = title.strip()
+        # Restore any protected titles
+        for placeholder, original in placeholders.items():
+            if placeholder in title:
+                title = title.replace(placeholder, original)
+        if title:
+            split_titles.append(title)
+    return split_titles
+
+
 def _extract_entries_from_line(
-    line: str, start_date: str, last_action: str = None, protected_titles: List[str] = None
+    line: str,
+    start_date: str,
+    last_action: str = None,
+    protected_titles: List[str] = None,
 ) -> Tuple[List[Dict[str, Any]], str]:
     """
     Extract media entries from a single line of a weekly record's raw notes.
@@ -218,42 +247,9 @@ def _extract_entries_from_line(
         logger.warning("Skipping line with invalid action '%s': %s", action, line)
         return entries, action
 
-    # Check if titles_str contains any protected titles
-    if protected_titles:
-        # Replace protected titles with placeholders to avoid splitting them
-        placeholders = {}
-        modified_titles_str = titles_str
-        
-        for i, protected_title in enumerate(protected_titles):
-            if protected_title in titles_str:
-                placeholder = f"__PROTECTED_TITLE_{i}__"
-                modified_titles_str = modified_titles_str.replace(protected_title, placeholder)
-                placeholders[placeholder] = protected_title
-        
-        # If we made replacements, use the modified string
-        if placeholders:
-            # Split on & or , that are not in protected titles
-            split_titles = []
-            for part in re.split("&|,", modified_titles_str):
-                part = part.strip()
-                # Restore any protected titles
-                for placeholder, original in placeholders.items():
-                    if placeholder in part:
-                        part = part.replace(placeholder, original)
-                if part:
-                    split_titles.append(part)
-            
-            # Process each title
-            for title in split_titles:
-                if title:
-                    entries.extend(_get_entries(title, action, start_date))
-            return entries, action
-    
-    # If no protected titles or no matches, use the original splitting logic
-    for title in re.split("&|,", titles_str):
-        title = title.strip()
-        if title:
-            entries.extend(_get_entries(title, action, start_date))
+    titles = _split_titles(protected_titles, titles_str)
+    for title in titles:
+        entries.extend(_get_entries(title, action, start_date))
     return entries, action
 
 

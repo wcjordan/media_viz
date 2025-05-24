@@ -8,6 +8,7 @@ from typing import Dict, Optional
 import yaml
 
 logger = logging.getLogger(__name__)
+DEFAULT_HINTS_PATH = os.path.join(os.path.dirname(__file__), "hints.yaml")
 
 
 def load_hints(hints_path: Optional[str] = None) -> Dict:
@@ -21,8 +22,8 @@ def load_hints(hints_path: Optional[str] = None) -> Dict:
         Dictionary containing hints for media entries.
     """
     if hints_path is None:
-        hints_path = os.path.join(os.path.dirname(__file__), "hints.yaml")
-        
+        hints_path = DEFAULT_HINTS_PATH
+
     if not os.path.exists(hints_path):
         logger.warning(
             "Hints file not found at %s. No manual overrides will be applied.",
