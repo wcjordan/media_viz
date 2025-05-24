@@ -13,6 +13,7 @@ from preprocessing.media_tagger import apply_tagging
 def reset_query_cache():
     """Reset query cache before each test to ensure consistent state."""
     media_tagger.QUERY_CACHE = {}
+    media_tagger.MEDIA_DB_API_CALL_COUNTS = {}
     yield
 
 

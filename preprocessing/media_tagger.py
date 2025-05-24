@@ -146,7 +146,6 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
 
     Returns:
         A dictionary with the entry tagged with additional metadata: canonical_title, type, tags, confidence.
-        Returns None if the entry is not valid.
     """
     # Remove and re-add any season data.
     entry = {"title": title}
@@ -254,15 +253,19 @@ def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
             combined_entry["finished_dates"] = sorted(list(finished_dates))
 
             # Check for inconsistencies in tags or poster_path
+            combined_tagged = combined_entry.get("tagged", {})
             for next_entry in entries[1:]:
-                if next_entry.get("tags") != combined_entry.get("tags"):
+                next_tagged_entry = next_entry.get("tagged", {})
+                if next_tagged_entry.get("tags") != combined_tagged.get("tags"):
                     logger.warning(
                         "Inconsistent tags for entries with canonical_title '%s' and type '%s'. Discarding tags: %s",
                         key[0],
                         key[1],
-                        next_entry.get("tags"),
+                        next_tagged_entry.get("tags"),
                     )
-                if next_entry.get("poster_path") != combined_entry.get("poster_path"):
+                if next_tagged_entry.get("poster_path") != combined_tagged.get(
+                    "poster_path"
+                ):
                     logger.warning(
                         (
                             "Inconsistent poster_path for entries with canonical_title '%s' and type '%s'. Discarding "
@@ -270,9 +273,11 @@ def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
                         ),
                         key[0],
                         key[1],
-                        next_entry.get("poster_path"),
+                        next_tagged_entry.get("poster_path"),
                     )
-                if next_entry.get("confidence") != combined_entry.get("confidence"):
+                if next_tagged_entry.get("confidence") != combined_tagged.get(
+                    "confidence"
+                ):
                     logger.warning(
                         (
                             "Inconsistent confidence for entries with canonical_title '%s' and type '%s'. Discarding "
@@ -280,9 +285,9 @@ def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
                         ),
                         key[0],
                         key[1],
-                        next_entry.get("confidence"),
+                        next_tagged_entry.get("confidence"),
                     )
-                if next_entry.get("source") != combined_entry.get("source"):
+                if next_tagged_entry.get("source") != combined_tagged.get("source"):
                     logger.warning(
                         (
                             "Inconsistent source for entries with canonical_title '%s' and type '%s'. Discarding "
@@ -290,7 +295,7 @@ def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
                         ),
                         key[0],
                         key[1],
-                        next_entry.get("source"),
+                        next_tagged_entry.get("source"),
                     )
 
             final_entries.append(combined_entry)
