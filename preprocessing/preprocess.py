@@ -11,6 +11,7 @@ from typing import List, Dict
 from .media_extractor import RANGE_VERBS, extract_entries
 from .week_extractor import parse_row
 from .media_tagger import apply_tagging, get_media_db_api_calls
+from .models import MediaEntry
 
 
 logger = logging.getLogger(__name__)
@@ -131,11 +132,22 @@ def process_and_save(
     # Calculate statistics
     stats = calculate_statistics(tagged_entries)
 
+    # Validate entries against the MediaEntry model
+    validated_entries = []
+    for entry in tagged_entries:
+        try:
+            validated_entry = MediaEntry(**entry)
+            validated_entries.append(validated_entry.dict())
+        except Exception as e:
+            logger.warning("Failed to validate entry %s: %s", entry.get("canonical_title", "Unknown"), str(e))
+    
+    logger.info("Validated %d/%d entries", len(validated_entries), len(tagged_entries))
+    
     # Save to JSON
     try:
         with open(output_json, "w", encoding="utf-8") as f:
-            json.dump(tagged_entries, f, indent=2)
-        logger.info("Saved %d entries to %s", len(tagged_entries), output_json)
+            json.dump(validated_entries, f, indent=2)
+        logger.info("Saved %d entries to %s", len(validated_entries), output_json)
     except IOError as e:
         logger.error("Error saving to JSON file: %s", e)
         raise
