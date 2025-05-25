@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from preprocessing import media_tagger
-from preprocessing.media_tagger import apply_tagging
+from preprocessing.media_tagger import _combine_similar_entries, apply_tagging
 
 
 @pytest.fixture(autouse=True, name="mock_dependencies")
@@ -556,3 +556,126 @@ def test_season_extraction_in_tagging(
 
         # Verify API was called with the title without season information
         mock_tmdb.assert_called_once_with("tv", expected_title)
+
+
+def test_combine_similar_entries():
+    """Test the _combine_similar_entries function that combines entries with the same canonical title."""
+    # Test with multiple entries for the same canonical title
+    tagged_entries = [
+        {
+            "title": "FF7",
+            "tagged": {
+                "canonical_title": "Final Fantasy VII",
+                "type": "Game",
+                "tags": {"platform": ["PS1"]},
+                "confidence": 0.9,
+                "source": "igdb",
+            },
+            "started_dates": ["2023-01-01"],
+            "finished_dates": [],
+        },
+        {
+            "title": "Final Fantasy 7",
+            "tagged": {
+                "canonical_title": "Final Fantasy VII",
+                "type": "Game",
+                "tags": {"platform": ["PS1"]},
+                "confidence": 0.85,
+                "source": "igdb",
+            },
+            "started_dates": [],
+            "finished_dates": ["2023-02-01"],
+        },
+        {
+            "title": "The Hobbit",
+            "tagged": {
+                "canonical_title": "The Hobbit",
+                "type": "Book",
+                "tags": {"genre": ["Fantasy"]},
+                "confidence": 0.95,
+                "source": "openlibrary",
+            },
+            "started_dates": ["2023-03-01"],
+            "finished_dates": ["2023-04-01"],
+        },
+    ]
+
+    combined = _combine_similar_entries(tagged_entries)
+
+    # Should have 2 entries (one for each unique canonical title + type)
+    assert len(combined) == 2
+
+    # Find Final Fantasy VII entry
+    ff7_entry = next(
+        entry for entry in combined if entry["canonical_title"] == "Final Fantasy VII"
+    )
+    assert sorted(ff7_entry["original_titles"]) == sorted(["FF7", "Final Fantasy 7"])
+    assert ff7_entry["started_dates"] == ["2023-01-01"]
+    assert ff7_entry["finished_dates"] == ["2023-02-01"]
+    assert ff7_entry["tagged"]["type"] == "Game"
+
+    # Find The Hobbit entry
+    hobbit_entry = next(
+        entry for entry in combined if entry["canonical_title"] == "The Hobbit"
+    )
+    assert hobbit_entry["original_titles"] == ["The Hobbit"]
+    assert hobbit_entry["started_dates"] == ["2023-03-01"]
+    assert hobbit_entry["finished_dates"] == ["2023-04-01"]
+    assert hobbit_entry["tagged"]["type"] == "Book"
+
+
+def test_combine_similar_entries_edge_cases(caplog):
+    """Test edge cases for the _combine_similar_entries function."""
+    # Test with empty list
+    assert not _combine_similar_entries([])
+
+    # Test with inconsistent tags
+    inconsistent_tags = [
+        {
+            "title": "FF7",
+            "tagged": {
+                "canonical_title": "Final Fantasy VII",
+                "type": "Game",
+                "tags": {"platform": ["PS1"]},
+                "confidence": 0.9,
+                "source": "igdb",
+                "poster_path": "path1.jpg",
+            },
+            "started_dates": ["2023-01-01"],
+            "finished_dates": [],
+        },
+        {
+            "title": "Final Fantasy 7",
+            "tagged": {
+                "canonical_title": "Final Fantasy VII",
+                "type": "Game",
+                "tags": {"platform": ["PS5"]},  # Different platform
+                "confidence": 0.8,  # Different confidence
+                "source": "hint",  # Different source
+                "poster_path": "path2.jpg",  # Different poster
+            },
+            "started_dates": [],
+            "finished_dates": ["2023-02-01"],
+        },
+    ]
+
+    with caplog.at_level(logging.WARNING):
+        combined = _combine_similar_entries(inconsistent_tags)
+
+    # Should still combine but log warnings
+    assert len(combined) == 1
+    assert "Inconsistent tags" in caplog.text
+    assert "Inconsistent poster_path" in caplog.text
+    assert "Inconsistent confidence" in caplog.text
+    assert "Inconsistent source" in caplog.text
+
+    # The first entry's values should be preserved
+    ff7_entry = combined[0]
+    assert ff7_entry["tagged"]["tags"]["platform"] == ["PS1"]
+    assert ff7_entry["tagged"]["confidence"] == 0.9
+    assert ff7_entry["tagged"]["source"] == "igdb"
+    assert ff7_entry["tagged"]["poster_path"] == "path1.jpg"
+
+    # Dates should be combined
+    assert ff7_entry["started_dates"] == ["2023-01-01"]
+    assert ff7_entry["finished_dates"] == ["2023-02-01"]

@@ -5,8 +5,9 @@ from unittest.mock import mock_open, patch
 
 
 from preprocessing.preprocess import (
-    calculate_statistics,
+    _group_entries,
     _load_weekly_records,
+    calculate_statistics,
     process_and_save,
 )
 
@@ -98,6 +99,66 @@ def test_process_and_save():
     assert stats["by_type"]["Book"] == 2
     assert mock_extract.call_count > 0  # extract_entries was called
     assert mock_tag.call_count > 0  # apply_tagging was called
+
+
+def test_group_entries():
+    """Test the _group_entries function that groups individual entries by title."""
+    # Test with multiple entries for the same title
+    individual_entries = [
+        {"title": "The Hobbit", "action": "started", "date": "2023-01-01"},
+        {"title": "The Hobbit", "action": "finished", "date": "2023-02-01"},
+        {"title": "Game of Thrones", "action": "started", "date": "2023-03-01"},
+    ]
+
+    grouped = _group_entries(individual_entries)
+
+    # Should have 2 entries (one for each unique title)
+    assert len(grouped) == 2
+
+    # Find The Hobbit entry
+    hobbit_entry = next(entry for entry in grouped if entry["title"] == "The Hobbit")
+    assert hobbit_entry["started_dates"] == ["2023-01-01"]
+    assert hobbit_entry["finished_dates"] == ["2023-02-01"]
+
+    # Find Game of Thrones entry
+    got_entry = next(entry for entry in grouped if entry["title"] == "Game of Thrones")
+    assert got_entry["started_dates"] == ["2023-03-01"]
+    assert got_entry["finished_dates"] == []
+
+
+def test_group_entries_edge_cases():
+    """Test edge cases for the _group_entries function."""
+    # Test with empty list
+    assert not _group_entries([])
+
+    # Test with entries missing title
+    entries_missing_title = [
+        {"action": "started", "date": "2023-01-01"},
+        {"title": "", "action": "started", "date": "2023-01-02"},
+    ]
+    grouped = _group_entries(entries_missing_title)
+    assert len(grouped) == 0  # Should skip entries without title
+
+    # Test with duplicate dates
+    duplicate_dates = [
+        {"title": "Book A", "action": "started", "date": "2023-01-01"},
+        {"title": "Book A", "action": "started", "date": "2023-01-01"},  # Duplicate
+        {"title": "Book A", "action": "finished", "date": "2023-02-01"},
+        {"title": "Book A", "action": "finished", "date": "2023-02-01"},  # Duplicate
+    ]
+    grouped = _group_entries(duplicate_dates)
+    assert len(grouped) == 1
+    assert grouped[0]["started_dates"] == ["2023-01-01"]  # No duplicates
+    assert grouped[0]["finished_dates"] == ["2023-02-01"]  # No duplicates
+
+    # Test with unknown action
+    unknown_action = [
+        {"title": "Book A", "action": "unknown", "date": "2023-01-01"},
+    ]
+    grouped = _group_entries(unknown_action)
+    assert len(grouped) == 1
+    assert grouped[0]["started_dates"] == []
+    assert grouped[0]["finished_dates"] == []
 
 
 def test_calculate_statistics():
