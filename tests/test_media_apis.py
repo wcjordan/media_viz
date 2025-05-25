@@ -28,6 +28,58 @@ GENRE_MAPPING = [
 ]
 
 
+DEFAULT_BOOKS = [
+    {
+        "title": "The Hobbit",
+        "author_name": ["J.R.R. Tolkien"],
+        "first_publish_year": 1937,
+        "subject": ["Fantasy", "Fiction", "Adventure"],
+        "cover_i": 12345,
+    },
+    {
+        "title": "The Hobbit: An Unexpected Journey",
+        "author_name": ["J.R.R. Tolkien", "Peter Jackson"],
+        "first_publish_year": 2012,
+        "subject": ["Fantasy", "Film Adaptation"],
+        "cover_i": 67890,
+    },
+]
+DEFAULT_GAMES = [
+    {
+        "name": "The Witcher 3: Wild Hunt",
+        "first_release_date": 1431993600,  # May 19, 2015
+        "rating": 93.4,
+        "aggregated_rating": 91.2,
+        "cover": {
+            "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyy.jpg",
+        },
+        "genres": [
+            {"name": "Role-playing (RPG)"},
+            {"name": "Adventure"},
+        ],
+        "platforms": [
+            {"name": "PC"},
+            {"name": "PlayStation 4"},
+        ],
+    },
+    {
+        "name": "The Witcher 3: Wild Hunt - Hearts of Stone",
+        "first_release_date": 1444694400,  # October 13, 2015
+        "rating": 87.5,
+        "cover": {
+            "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyz.jpg",
+        },
+        "genres": [
+            {"name": "Role-playing (RPG)"},
+            {"name": "Adventure"},
+        ],
+        "platforms": [
+            {"name": "PC"},
+            {"name": "PlayStation 4"},
+            {"name": "Xbox One"},
+        ],
+    },
+]
 DEFAULT_MOVIES = [
     {
         "title": "The Matrix",
@@ -110,6 +162,33 @@ def mock_get_genre_map():
         yield mock_get_genre_map
 
 
+@pytest.fixture
+def mock_get_igdb_token():
+    """Mock the IGDB authentication response."""
+    with patch("preprocessing.media_apis._get_igdb_token") as mock_get_igdb_token:
+        mock_get_igdb_token.return_value = "mock_token"
+        yield
+
+
+@pytest.fixture
+def mock_igdb_auth_response(mock_http_requests):
+    """
+    Mock the IGDB authentication response.
+    """
+
+    def _mock_igdb_auth_response():
+        _, mock_post = mock_http_requests
+        mock_post.return_value.json.return_value = {
+            "access_token": "mock_access_token",
+            "expires_in": 14400,
+            "token_type": "bearer",
+        }
+        mock_post.side_effect = None
+        return mock_post
+
+    return _mock_igdb_auth_response
+
+
 @pytest.fixture(name="mock_tmdb_response")
 def fixture_mock_tmdb_response(mock_http_requests):
     def _mock_tmdb_response(results):
@@ -121,164 +200,36 @@ def fixture_mock_tmdb_response(mock_http_requests):
 
 
 @pytest.fixture
-def mock_igdb_responses():
-    """Mock responses for IGDB API."""
-    return {
-        "auth": {
-            "access_token": "mock_access_token",
-            "expires_in": 14400,
-            "token_type": "bearer",
-        },
-        "games": [
-            {
-                "id": 1942,
-                "name": "The Witcher 3: Wild Hunt",
-                "first_release_date": 1431993600,  # May 19, 2015
-                "rating": 93.4,
-                "aggregated_rating": 91.2,
-                "cover": {
-                    "id": 89386,
-                    "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyy.jpg",
-                },
-                "genres": [
-                    {"id": 12, "name": "Role-playing (RPG)"},
-                    {"id": 31, "name": "Adventure"},
-                ],
-                "platforms": [
-                    {"id": 6, "name": "PC"},
-                    {"id": 48, "name": "PlayStation 4"},
-                    {"id": 49, "name": "Xbox One"},
-                    {"id": 130, "name": "Nintendo Switch"},
-                ],
-            },
-            {
-                "id": 1943,
-                "name": "The Witcher 3: Wild Hunt - Hearts of Stone",
-                "first_release_date": 1444694400,  # October 13, 2015
-                "rating": 87.5,
-                "cover": {
-                    "id": 89387,
-                    "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyz.jpg",
-                },
-                "genres": [
-                    {"id": 12, "name": "Role-playing (RPG)"},
-                    {"id": 31, "name": "Adventure"},
-                ],
-                "platforms": [
-                    {"id": 6, "name": "PC"},
-                    {"id": 48, "name": "PlayStation 4"},
-                    {"id": 49, "name": "Xbox One"},
-                ],
-            },
-        ],
-        "empty": [],
-    }
+def mock_igdb_response(mock_http_requests):
+    """Mock the response for IGDB API."""
 
-
-@pytest.fixture
-def setup_igdb_mocks(mock_igdb_responses, mock_api_response, mock_http_requests):
-    """Setup mocks for IGDB API tests."""
-
-    def _setup_mocks(response_type="games", error_type=None):
+    def _mock_igdb_response(results=DEFAULT_GAMES):
         _, mock_post = mock_http_requests
-
-        if error_type == "missing_credentials":
-            os.environ.clear()
-            return None
-
-        if error_type == "api_error":
-            mock_post.side_effect = requests.RequestException("API Error")
-            return mock_post
-
-        mock_api_response.json.return_value = mock_igdb_responses[response_type]
-        mock_post.return_value = mock_api_response
+        mock_post.return_value.json.return_value = results
         mock_post.side_effect = None
         return mock_post
 
-    return _setup_mocks
+    return _mock_igdb_response
 
 
 @pytest.fixture
-def igdb_test_games():
-    """Test game data for IGDB formatting tests."""
-    return {
-        "complete": {
-            "name": "The Witcher 3",
-            "first_release_date": 1431993600,  # May 19, 2015
-            "rating": 93.4,
-            "aggregated_rating": 91.2,
-            "cover": {"url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyy.jpg"},
-            "genres": [{"name": "Role-playing (RPG)"}, {"name": "Adventure"}],
-            "platforms": [{"name": "PC"}, {"name": "PlayStation 4"}],
-        },
-        "minimal": {
-            "name": "Minimal Game",
-            # Missing most fields
-        },
-        "partial": {
-            "name": "Partial Game",
-            "first_release_date": 1577836800,  # January 1, 2020
-            "genres": [],  # Empty list
-            "platforms": [{"name": "PC"}],
-            "cover": {"url": "thumb/image.jpg"},  # Malformed URL
-        },
-    }
-
-
-@pytest.fixture
-def mock_openlibrary_responses():
+def mock_openlibrary_response(mock_http_requests):
     """Mock responses for OpenLibrary API."""
-    return {
-        "success": {
-            "numFound": 2,
-            "start": 0,
-            "docs": [
-                {
-                    "key": "/works/OL45883W",
-                    "title": "The Hobbit",
-                    "author_name": ["J.R.R. Tolkien"],
-                    "first_publish_year": 1937,
-                    "subject": ["Fantasy", "Fiction", "Adventure"],
-                    "cover_i": 12345,
-                },
-                {
-                    "key": "/works/OL12345W",
-                    "title": "The Hobbit: An Unexpected Journey",
-                    "author_name": ["J.R.R. Tolkien", "Peter Jackson"],
-                    "first_publish_year": 2012,
-                    "subject": ["Fantasy", "Film Adaptation"],
-                    "cover_i": 67890,
-                },
-            ],
-        },
-        "empty": {"numFound": 0, "start": 0, "docs": []},
-        "missing_fields": {
-            "numFound": 1,
-            "start": 0,
-            "docs": [
-                {
-                    "key": "/works/OL12345W",
-                    "title": "Book With Missing Fields",
-                    # Missing: author_name, first_publish_year, subject, cover_i
-                }
-            ],
-        },
-        "malformed": {"malformed": "response"},  # Missing 'docs' key
-        "confidence_test": {
-            "numFound": 1,
-            "docs": [
-                {
-                    "title": "Lord of the Rings",
-                    "first_publish_year": 1954,
-                }
-            ],
-        },
-    }
+
+    def _mock_openlibrary_response(results=DEFAULT_BOOKS):
+        mock_get, _ = mock_http_requests
+        mock_get.return_value.json.return_value = {
+            "docs": results,
+        }
+        mock_get.side_effect = None
+        return mock_get
+
+    return _mock_openlibrary_response
 
 
 @pytest.fixture
 def setup_openlibrary_mocks(
-    mock_openlibrary_responses, mock_api_response, mock_http_requests
+    mock_openlibrary_response, mock_api_response, mock_http_requests
 ):
     """Setup mocks for OpenLibrary API tests."""
 
@@ -289,7 +240,7 @@ def setup_openlibrary_mocks(
             mock_get.side_effect = requests.RequestException("API Error")
             return mock_get
 
-        mock_api_response.json.return_value = mock_openlibrary_responses[response_type]
+        mock_api_response.json.return_value = mock_openlibrary_response[response_type]
         mock_get.return_value = mock_api_response
         mock_get.side_effect = None
         return mock_get
@@ -441,22 +392,29 @@ def test_query_tmdb_limits_results(mock_tmdb_response, mock_get_genre_map):
 def test_query_tmdb_handles_missing_fields(mock_tmdb_response, mock_get_genre_map):
     """Test that TMDB query handles missing fields gracefully."""
     # Create mock response with missing release_date
-    mock_tmdb_response(
-        [
-            {
-                "title": "Future Matrix Movie",
-            }
-        ]
-    )
+    unreleased_movies = [movie.copy() for movie in DEFAULT_MOVIES]
+    for movie in unreleased_movies:
+        movie["release_date"] = None
+    mock_tmdb_response(unreleased_movies)
     results = query_tmdb("movie", "Movie")
 
-    # Verify that results missing a release date are omitted
+    # Verify that results missing a release_date are omitted
+    assert len(results) == 0
+
+    # Create mock response with missing release_date
+    unreleased_tv = [show.copy() for show in DEFAULT_TV_SHOWS]
+    for show in unreleased_tv:
+        show["first_air_date"] = None
+    mock_tmdb_response(unreleased_tv)
+    results = query_tmdb("tv", "Show")
+
+    # Verify that results missing a first_air_date are omitted
     assert len(results) == 0
 
 
-def test_get_igdb_token_success(setup_igdb_mocks):
+def test_get_igdb_token_success(mock_igdb_auth_response):
     """Test successful IGDB token retrieval."""
-    mock_post = setup_igdb_mocks("auth")
+    mock_post = mock_igdb_auth_response()
 
     token = _get_igdb_token()
 
@@ -466,9 +424,10 @@ def test_get_igdb_token_success(setup_igdb_mocks):
     assert "'client_secret': 'fake_client_secret'" in str(mock_post.call_args)
 
 
-def test_get_igdb_token_missing_credentials(setup_igdb_mocks, caplog):
+def test_get_igdb_token_missing_credentials(caplog):
     """Test IGDB token retrieval with missing credentials."""
-    setup_igdb_mocks(error_type="missing_credentials")
+    # Clear the IGDB_CLIENT_ID and IGDB_CLIENT_SECRET environment variable set by the autouse fixture
+    os.environ.clear()
 
     with caplog.at_level(logging.WARNING):
         token = _get_igdb_token()
@@ -477,9 +436,10 @@ def test_get_igdb_token_missing_credentials(setup_igdb_mocks, caplog):
         assert "IGDB_CLIENT_ID or IGDB_CLIENT_SECRET not found" in caplog.text
 
 
-def test_get_igdb_token_api_error(setup_igdb_mocks, caplog):
+def test_get_igdb_token_api_error(caplog, mock_http_requests):
     """Test IGDB token retrieval with API error."""
-    mock_post = setup_igdb_mocks(error_type="api_error")
+    _, mock_post = mock_http_requests
+    mock_post.side_effect = requests.RequestException("API Error")
 
     with caplog.at_level(logging.ERROR):
         token = _get_igdb_token()
@@ -488,11 +448,11 @@ def test_get_igdb_token_api_error(setup_igdb_mocks, caplog):
         assert mock_post.called
 
 
-def test_format_igdb_entry(igdb_test_games):
+def test_format_igdb_entry():
     """Test formatting an IGDB game entry."""
-    result = _format_igdb_entry("The Witcher 3", igdb_test_games["complete"])
+    result = _format_igdb_entry("The Witcher 3: Wild Hunt", DEFAULT_GAMES[0])
 
-    assert result["canonical_title"] == "The Witcher 3"
+    assert result["canonical_title"] == "The Witcher 3: Wild Hunt"
     assert result["type"] == "Game"
     assert result["tags"]["genre"] == ["Role-playing (RPG)", "Adventure"]
     assert result["tags"]["platform"] == ["PC", "PlayStation 4"]
@@ -503,47 +463,53 @@ def test_format_igdb_entry(igdb_test_games):
     assert "720p" in result["poster_path"]  # Should upgrade image quality
 
 
-def test_format_igdb_entry_missing_fields(igdb_test_games):
+def test_format_igdb_entry_unreleased():
     """Test formatting an IGDB game entry with missing fields."""
-    result = _format_igdb_entry("Minimal Game", igdb_test_games["minimal"])
+    test_game = DEFAULT_GAMES[0].copy()
+    test_game["first_release_date"] = None  # Simulate missing first_release_date
+
+    result = _format_igdb_entry("Unreleased Game", test_game)
 
     # Results without a first_release_date should not be included
     assert result is None
 
 
-def test_format_igdb_entry_partial_fields(igdb_test_games):
+def test_format_igdb_entry_partial_fields():
     """Test formatting an IGDB game entry with partial fields."""
-    result = _format_igdb_entry("Partial Game", igdb_test_games["partial"])
+    test_game = {
+        "name": DEFAULT_GAMES[0].get("name"),
+        "first_release_date": DEFAULT_GAMES[0].get("first_release_date"),
+    }
 
-    assert result["canonical_title"] == "Partial Game"
+    result = _format_igdb_entry("Partial Game", test_game)
+
+    assert result["canonical_title"] == "The Witcher 3: Wild Hunt"
     assert result["type"] == "Game"
     assert result["tags"]["genre"] == []
-    assert result["tags"]["platform"] == ["PC"]
-    assert result["tags"]["release_year"] == "2020"
-    assert result["poster_path"] == "720p/image.jpg"  # Should replace thumb with 720p
+    assert result["tags"]["platform"] == []
+    assert result["tags"]["release_year"] == "2015"
+    assert result["poster_path"] == ""
 
 
-def test_query_igdb_success(setup_igdb_mocks):
+def test_query_igdb_success(mock_get_igdb_token, mock_igdb_response):
     """Test successful IGDB query."""
-    mock_post = setup_igdb_mocks("games")
+    mock_post = mock_igdb_response()
+    results = query_igdb("The Witcher 3")
 
-    with patch("preprocessing.media_apis._get_igdb_token", return_value="mock_token"):
-        results = query_igdb("The Witcher 3")
+    assert len(results) == 2
+    assert results[0]["canonical_title"] == "The Witcher 3: Wild Hunt"
+    assert results[0]["type"] == "Game"
+    assert "Role-playing (RPG)" in results[0]["tags"]["genre"]
+    assert "PC" in results[0]["tags"]["platform"]
+    assert results[0]["tags"]["release_year"] == "2015"
+    assert results[0]["confidence"] > 0.6
+    assert results[0]["source"] == "igdb"
+    assert "https:" in results[0]["poster_path"]
 
-        assert len(results) == 2
-        assert results[0]["canonical_title"] == "The Witcher 3: Wild Hunt"
-        assert results[0]["type"] == "Game"
-        assert "Role-playing (RPG)" in results[0]["tags"]["genre"]
-        assert "PC" in results[0]["tags"]["platform"]
-        assert results[0]["tags"]["release_year"] == "2015"
-        assert results[0]["confidence"] > 0.6
-        assert results[0]["source"] == "igdb"
-        assert "https:" in results[0]["poster_path"]
-
-        # Verify API call
-        mock_post.assert_called_once()
-        assert "Bearer mock_token" in str(mock_post.call_args)
-        assert "The Witcher 3" in str(mock_post.call_args)
+    # Verify API call
+    mock_post.assert_called_once()
+    assert "Bearer mock_token" in str(mock_post.call_args)
+    assert "The Witcher 3" in str(mock_post.call_args)
 
 
 def test_query_igdb_no_token():
@@ -553,32 +519,28 @@ def test_query_igdb_no_token():
         assert len(results) == 0
 
 
-def test_query_igdb_api_error(setup_igdb_mocks, caplog):
+def test_query_igdb_api_error(caplog, mock_get_igdb_token, mock_http_requests):
     """Test IGDB query with API error."""
-    mock_post = setup_igdb_mocks(error_type="api_error")
+    _, mock_post = mock_http_requests
+    mock_post.side_effect = requests.RequestException("API Error")
 
-    with patch(
-        "preprocessing.media_apis._get_igdb_token", return_value="mock_token"
-    ), caplog.at_level(logging.ERROR):
+    with caplog.at_level(logging.ERROR):
         results = query_igdb("The Witcher 3")
 
         assert len(results) == 0
         assert "Error querying IGDB API: API Error" in caplog.text
 
 
-def test_query_igdb_empty_results(setup_igdb_mocks):
+def test_query_igdb_empty_results(mock_get_igdb_token, mock_igdb_response):
     """Test IGDB query with empty results."""
-    mock_post = setup_igdb_mocks("empty")
-
-    with patch("preprocessing.media_apis._get_igdb_token", return_value="mock_token"):
-        results = query_igdb("NonexistentGame12345")
-
-        assert len(results) == 0
+    mock_igdb_response([])
+    results = query_igdb("NonexistentGame12345")
+    assert len(results) == 0
 
 
-def test_query_openlibrary_success(setup_openlibrary_mocks):
+def test_query_openlibrary_success(mock_openlibrary_response):
     """Test successful OpenLibrary query."""
-    mock_get = setup_openlibrary_mocks("success")
+    mock_get = mock_openlibrary_response()
 
     results = query_openlibrary("The Hobbit")
 
@@ -598,18 +560,19 @@ def test_query_openlibrary_success(setup_openlibrary_mocks):
     assert mock_get.call_args.kwargs["params"]["title"] == "The Hobbit"
 
 
-def test_query_openlibrary_empty_results(setup_openlibrary_mocks):
+def test_query_openlibrary_empty_results(mock_openlibrary_response):
     """Test OpenLibrary query with empty results."""
-    setup_openlibrary_mocks("empty")
+    mock_openlibrary_response([])
 
     results = query_openlibrary("NonexistentBook12345")
 
     assert len(results) == 0
 
 
-def test_query_openlibrary_api_error(setup_openlibrary_mocks, caplog):
+def test_query_openlibrary_api_error(caplog, mock_http_requests):
     """Test OpenLibrary query with API error."""
-    setup_openlibrary_mocks(error_type="api_error")
+    mock_get, _ = mock_http_requests
+    mock_get.side_effect = requests.RequestException("API Error")
 
     with caplog.at_level(logging.ERROR):
         results = query_openlibrary("The Hobbit")
@@ -618,9 +581,12 @@ def test_query_openlibrary_api_error(setup_openlibrary_mocks, caplog):
         assert "Error querying Open Library API: API Error" in caplog.text
 
 
-def test_query_openlibrary_missing_fields(setup_openlibrary_mocks):
+def test_query_openlibrary_missing_fields(caplog, mock_openlibrary_response):
     """Test OpenLibrary query with missing fields in response."""
-    setup_openlibrary_mocks("missing_fields")
+    unreleased_books = [book.copy() for book in DEFAULT_BOOKS]
+    for book in unreleased_books:
+        book["first_publish_year"] = None
+    mock_openlibrary_response(unreleased_books)
 
     results = query_openlibrary("Book")
 
@@ -628,27 +594,42 @@ def test_query_openlibrary_missing_fields(setup_openlibrary_mocks):
     assert len(results) == 0
 
 
-def test_query_openlibrary_malformed_response(setup_openlibrary_mocks):
+def test_query_openlibrary_malformed_response(mock_http_requests):
     """Test OpenLibrary query with malformed response."""
-    setup_openlibrary_mocks("malformed")
+    mock_get, _ = mock_http_requests
+    mock_get.return_value.json.return_value = {"malformed": "response"}
+    mock_get.side_effect = None
 
     results = query_openlibrary("The Hobbit")
 
     assert len(results) == 0
 
 
-def test_query_openlibrary_confidence_calculation(setup_openlibrary_mocks):
+def test_query_openlibrary_confidence_calculation(mock_openlibrary_response):
     """Test confidence calculation in OpenLibrary query."""
-    mock_get = setup_openlibrary_mocks("confidence_test")
+    different_title = "The Fellowship of the Ring"
+    mock_openlibrary_response(DEFAULT_BOOKS + [{"title": different_title, "first_publish_year": 1954}])
 
     # Test with different search titles to test confidence calculation
-    exact_results = query_openlibrary("Lord of the Rings")
-    similar_results = query_openlibrary("The Lord of the Rings")
-    different_results = query_openlibrary("Completely Different Title")
+    query_results = query_openlibrary("The Hobbit")
+
+    exact_results = [
+        result for result in query_results if result["canonical_title"] == "The Hobbit"
+    ][0]
+    similar_results = [
+        result
+        for result in query_results
+        if result["canonical_title"] == "The Hobbit: An Unexpected Journey"
+    ][0]
+    different_results = [
+        result
+        for result in query_results
+        if result["canonical_title"] == different_title
+    ][0]
 
     # Verify confidence scores
-    assert exact_results[0]["confidence"] > similar_results[0]["confidence"]
-    assert similar_results[0]["confidence"] > different_results[0]["confidence"]
+    assert exact_results["confidence"] > similar_results["confidence"]
+    assert similar_results["confidence"] > different_results["confidence"]
 
 
 def test_calculate_title_similarity():
@@ -665,3 +646,15 @@ def test_calculate_title_similarity():
     for title1, title2, (min_val, max_val) in test_cases:
         similarity = _calculate_title_similarity(title1, title2)
         assert min_val <= similarity <= max_val, f"Failed for {title1} vs {title2}"
+
+
+        # "malformed": {"malformed": "response"},  # Missing 'docs' key
+        # "confidence_test": {
+        #     "numFound": 1,
+        #     "docs": [
+        #         {
+        #             "title": "Lord of the Rings",
+        #             "first_publish_year": 1954,
+        #         }
+        #     ],
+        # },
