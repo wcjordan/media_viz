@@ -16,8 +16,8 @@ def sample_hints():
                 "mood": ["Epic"],
             },
         },
-        "LOTR": {
-            "canonical_title": "The Lord of the Rings",
+        "The Hobbit": {
+            "canonical_title": "The Hobbit",
             "type": "Book",
             "tags": {
                 "genre": ["Fantasy"],

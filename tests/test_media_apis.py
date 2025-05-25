@@ -28,86 +28,91 @@ GENRE_MAPPING = [
 ]
 
 
-DEFAULT_BOOKS = [
-    {
-        "title": "The Hobbit",
-        "author_name": ["J.R.R. Tolkien"],
-        "first_publish_year": 1937,
-        "subject": ["Fantasy", "Fiction", "Adventure"],
-        "cover_i": 12345,
-    },
-    {
-        "title": "The Hobbit: An Unexpected Journey",
-        "author_name": ["J.R.R. Tolkien", "Peter Jackson"],
-        "first_publish_year": 2012,
-        "subject": ["Fantasy", "Film Adaptation"],
-        "cover_i": 67890,
-    },
-]
-DEFAULT_GAMES = [
-    {
-        "name": "The Witcher 3: Wild Hunt",
-        "first_release_date": 1431993600,  # May 19, 2015
-        "rating": 93.4,
-        "aggregated_rating": 91.2,
-        "cover": {
-            "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyy.jpg",
-        },
-        "genres": [
-            {"name": "Role-playing (RPG)"},
-            {"name": "Adventure"},
+@pytest.fixture(name="mock_api_responses")
+def fixture_mock_api_responses():
+    """Mock API responses for different media types."""
+    return {
+        "book": [
+            {
+                "title": "The Hobbit",
+                "author_name": ["J.R.R. Tolkien"],
+                "first_publish_year": 1937,
+                "subject": ["Fantasy", "Fiction", "Adventure"],
+                "cover_i": 12345,
+            },
+            {
+                "title": "The Hobbit: An Unexpected Journey",
+                "author_name": ["J.R.R. Tolkien", "Peter Jackson"],
+                "first_publish_year": 2012,
+                "subject": ["Fantasy", "Film Adaptation"],
+                "cover_i": 67890,
+            },
         ],
-        "platforms": [
-            {"name": "PC"},
-            {"name": "PlayStation 4"},
+        "game": [
+            {
+                "name": "The Witcher 3: Wild Hunt",
+                "first_release_date": 1431993600,  # May 19, 2015
+                "rating": 93.4,
+                "aggregated_rating": 91.2,
+                "cover": {
+                    "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyy.jpg",
+                },
+                "genres": [
+                    {"name": "Role-playing (RPG)"},
+                    {"name": "Adventure"},
+                ],
+                "platforms": [
+                    {"name": "PC"},
+                    {"name": "PlayStation 4"},
+                ],
+            },
+            {
+                "name": "The Witcher 3: Wild Hunt - Hearts of Stone",
+                "first_release_date": 1444694400,  # October 13, 2015
+                "rating": 87.5,
+                "cover": {
+                    "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyz.jpg",
+                },
+                "genres": [
+                    {"name": "Role-playing (RPG)"},
+                    {"name": "Adventure"},
+                ],
+                "platforms": [
+                    {"name": "PC"},
+                    {"name": "PlayStation 4"},
+                    {"name": "Xbox One"},
+                ],
+            },
         ],
-    },
-    {
-        "name": "The Witcher 3: Wild Hunt - Hearts of Stone",
-        "first_release_date": 1444694400,  # October 13, 2015
-        "rating": 87.5,
-        "cover": {
-            "url": "//images.igdb.com/igdb/image/upload/t_thumb/co1wyz.jpg",
-        },
-        "genres": [
-            {"name": "Role-playing (RPG)"},
-            {"name": "Adventure"},
+        "movie": [
+            {
+                "title": "The Matrix",
+                "release_date": "1999-03-31",
+                "popularity": 50.0,
+                "vote_average": 8.7,
+                "poster_path": "/path/to/poster.jpg",
+                "genre_ids": [28, 878],  # Action, Sci-Fi
+            },
+            {
+                "title": "The Matrix Reloaded",
+                "release_date": "2003-05-15",
+                "popularity": 40.0,
+                "vote_average": 7.2,
+                "poster_path": "/path/to/poster2.jpg",
+                "genre_ids": [28, 878],
+            },
         ],
-        "platforms": [
-            {"name": "PC"},
-            {"name": "PlayStation 4"},
-            {"name": "Xbox One"},
+        "tv": [
+            {
+                "name": "Stranger Things",
+                "first_air_date": "2016-07-15",
+                "popularity": 80.0,
+                "vote_average": 8.5,
+                "poster_path": "/path/to/poster10.jpg",
+                "genre_ids": [18, 9648, 10765],  # Drama, Mystery, Sci-Fi & Fantasy
+            },
         ],
-    },
-]
-DEFAULT_MOVIES = [
-    {
-        "title": "The Matrix",
-        "release_date": "1999-03-31",
-        "popularity": 50.0,
-        "vote_average": 8.7,
-        "poster_path": "/path/to/poster.jpg",
-        "genre_ids": [28, 878],  # Action, Sci-Fi
-    },
-    {
-        "title": "The Matrix Reloaded",
-        "release_date": "2003-05-15",
-        "popularity": 40.0,
-        "vote_average": 7.2,
-        "poster_path": "/path/to/poster2.jpg",
-        "genre_ids": [28, 878],
-    },
-]
-DEFAULT_TV_SHOWS = [
-    {
-        "name": "Stranger Things",
-        "first_air_date": "2016-07-15",
-        "popularity": 80.0,
-        "vote_average": 8.5,
-        "poster_path": "/path/to/poster10.jpg",
-        "genre_ids": [18, 9648, 10765],  # Drama, Mystery, Sci-Fi & Fantasy
-    },
-]
+    }
 
 
 @pytest.fixture(autouse=True, name="mock_http_requests")
@@ -194,12 +199,12 @@ def fixture_mock_tmdb_response(mock_http_requests):
 
 
 @pytest.fixture(name="mock_igdb_response")
-def fixture_mock_igdb_response(mock_http_requests):
+def fixture_mock_igdb_response(mock_api_responses, mock_http_requests):
     """Mock the response for IGDB API."""
 
     def _mock_igdb_response(results=None):
         if results is None:
-            results = DEFAULT_GAMES
+            results = mock_api_responses["game"]
         _, mock_post = mock_http_requests
         mock_post.return_value.json.return_value = results
         mock_post.side_effect = None
@@ -209,12 +214,12 @@ def fixture_mock_igdb_response(mock_http_requests):
 
 
 @pytest.fixture(name="mock_openlibrary_response")
-def fixture_mock_openlibrary_response(mock_http_requests):
+def fixture_mock_openlibrary_response(mock_api_responses, mock_http_requests):
     """Mock responses for OpenLibrary API."""
 
     def _mock_openlibrary_response(results=None):
         if results is None:
-            results = DEFAULT_BOOKS
+            results = mock_api_responses["book"]
         mock_get, _ = mock_http_requests
         mock_get.return_value.json.return_value = {
             "docs": results,
@@ -251,9 +256,9 @@ def test_get_genre_map(mock_http_requests):
     assert genre_map == expected_genre_map
 
 
-def test_query_tmdb_movie_success(mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_movie_success(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
     """Test successful TMDB movie query."""
-    mock_tmdb_response(DEFAULT_MOVIES)
+    mock_tmdb_response(mock_api_responses["movie"])
 
     # Call the function
     results = query_tmdb("movie", "The Matrix")
@@ -269,9 +274,9 @@ def test_query_tmdb_movie_success(mock_tmdb_response, _mock_get_genre_map):
     assert "poster_path" in results[0]
 
 
-def test_query_tmdb_tv_success(mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_tv_success(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
     """Test successful TMDB TV query."""
-    mock_tmdb_response(DEFAULT_TV_SHOWS)
+    mock_tmdb_response(mock_api_responses["tv"])
 
     # Call the function
     results = query_tmdb("tv", "Stranger Things")
@@ -319,11 +324,11 @@ def test_query_tmdb_api_error(mock_http_requests, caplog, _mock_get_genre_map):
         assert "Error querying TMDB API for movie: API Error" in caplog.text
 
 
-def test_query_tmdb_confidence_calculation(mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_confidence_calculation(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
     """Test confidence calculation in TMDB query."""
     different_title = "Matrices and Their Many Uses in Mathematics"
     mock_tmdb_response(
-        DEFAULT_MOVIES
+        mock_api_responses["movie"]
         + [
             {
                 "title": different_title,
@@ -354,10 +359,10 @@ def test_query_tmdb_confidence_calculation(mock_tmdb_response, _mock_get_genre_m
     assert similar_results["confidence"] > different_results["confidence"]
 
 
-def test_query_tmdb_limits_results(mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_limits_results(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
     """Test that TMDB query limits results to top 5."""
     # Create mock response with more than 5 results
-    mock_tmdb_response(DEFAULT_MOVIES * 10)
+    mock_tmdb_response(mock_api_responses["movie"] * 10)
 
     # Call the function
     results = query_tmdb("movie", "Movie")
@@ -366,10 +371,10 @@ def test_query_tmdb_limits_results(mock_tmdb_response, _mock_get_genre_map):
     assert len(results) == 5
 
 
-def test_query_tmdb_handles_missing_fields(mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_handles_missing_fields(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
     """Test that TMDB query handles missing fields gracefully."""
     # Create mock response with missing release_date
-    unreleased_movies = [movie.copy() for movie in DEFAULT_MOVIES]
+    unreleased_movies = [movie.copy() for movie in mock_api_responses["movie"]]
     for movie in unreleased_movies:
         movie["release_date"] = None
     mock_tmdb_response(unreleased_movies)
@@ -379,7 +384,7 @@ def test_query_tmdb_handles_missing_fields(mock_tmdb_response, _mock_get_genre_m
     assert len(results) == 0
 
     # Create mock response with missing release_date
-    unreleased_tv = [show.copy() for show in DEFAULT_TV_SHOWS]
+    unreleased_tv = [show.copy() for show in mock_api_responses["tv"]]
     for show in unreleased_tv:
         show["first_air_date"] = None
     mock_tmdb_response(unreleased_tv)
@@ -425,9 +430,9 @@ def test_get_igdb_token_api_error(caplog, mock_http_requests):
         assert mock_post.called
 
 
-def test_format_igdb_entry():
+def test_format_igdb_entry(mock_api_responses):
     """Test formatting an IGDB game entry."""
-    result = _format_igdb_entry("The Witcher 3: Wild Hunt", DEFAULT_GAMES[0])
+    result = _format_igdb_entry("The Witcher 3: Wild Hunt", mock_api_responses["game"][0])
 
     assert result["canonical_title"] == "The Witcher 3: Wild Hunt"
     assert result["type"] == "Game"
@@ -440,9 +445,9 @@ def test_format_igdb_entry():
     assert "720p" in result["poster_path"]  # Should upgrade image quality
 
 
-def test_format_igdb_entry_unreleased():
+def test_format_igdb_entry_unreleased(mock_api_responses):
     """Test formatting an IGDB game entry with missing fields."""
-    test_game = DEFAULT_GAMES[0].copy()
+    test_game = mock_api_responses["game"][0].copy()
     test_game["first_release_date"] = None  # Simulate missing first_release_date
 
     result = _format_igdb_entry("Unreleased Game", test_game)
@@ -451,11 +456,11 @@ def test_format_igdb_entry_unreleased():
     assert result is None
 
 
-def test_format_igdb_entry_partial_fields():
+def test_format_igdb_entry_partial_fields(mock_api_responses):
     """Test formatting an IGDB game entry with partial fields."""
     test_game = {
-        "name": DEFAULT_GAMES[0].get("name"),
-        "first_release_date": DEFAULT_GAMES[0].get("first_release_date"),
+        "name": mock_api_responses["game"][0].get("name"),
+        "first_release_date": mock_api_responses["game"][0].get("first_release_date"),
     }
 
     result = _format_igdb_entry("Partial Game", test_game)
@@ -558,9 +563,9 @@ def test_query_openlibrary_api_error(caplog, mock_http_requests):
         assert "Error querying Open Library API: API Error" in caplog.text
 
 
-def test_query_openlibrary_missing_fields(mock_openlibrary_response):
+def test_query_openlibrary_missing_fields(mock_api_responses, mock_openlibrary_response):
     """Test OpenLibrary query with missing fields in response."""
-    unreleased_books = [book.copy() for book in DEFAULT_BOOKS]
+    unreleased_books = [book.copy() for book in mock_api_responses["book"]]
     for book in unreleased_books:
         book["first_publish_year"] = None
     mock_openlibrary_response(unreleased_books)
@@ -582,11 +587,11 @@ def test_query_openlibrary_malformed_response(mock_http_requests):
     assert len(results) == 0
 
 
-def test_query_openlibrary_confidence_calculation(mock_openlibrary_response):
+def test_query_openlibrary_confidence_calculation(mock_api_responses, mock_openlibrary_response):
     """Test confidence calculation in OpenLibrary query."""
     different_title = "The Fellowship of the Ring"
     mock_openlibrary_response(
-        DEFAULT_BOOKS + [{"title": different_title, "first_publish_year": 1954}]
+        mock_api_responses["book"] + [{"title": different_title, "first_publish_year": 1954}]
     )
 
     # Test with different search titles to test confidence calculation
