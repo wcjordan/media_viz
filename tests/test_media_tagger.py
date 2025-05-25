@@ -9,12 +9,70 @@ from preprocessing import media_tagger
 from preprocessing.media_tagger import apply_tagging
 
 
+@pytest.fixture(autouse=True, name="mock_dependencies")
+def fixture_mock_dependencies():
+    """Mock dependencies to avoid actual API calls."""
+    with patch("preprocessing.media_tagger.load_hints") as mock_load_hints, patch(
+        "preprocessing.media_tagger.query_tmdb"
+    ) as mock_query_tmdb, patch(
+        "preprocessing.media_tagger.query_igdb"
+    ) as mock_query_igdb, patch(
+        "preprocessing.media_tagger.query_openlibrary"
+    ) as mock_query_openlibrary:
+        mock_load_hints.side_effect = RuntimeError("Unmocked load_hints attempted")
+        mock_query_tmdb.side_effect = RuntimeError("Unmocked query_tmdb attempted")
+        mock_query_igdb.side_effect = RuntimeError("Unmocked query_igdb attempted")
+        mock_query_openlibrary.side_effect = RuntimeError(
+            "Unmocked query_openlibrary attempted"
+        )
+        yield mock_load_hints, mock_query_tmdb, mock_query_igdb, mock_query_openlibrary
+
+
+@pytest.fixture(name="reset_dependency_mocks")
+def fixture_reset_dependency_mocks(mock_dependencies):
+    """Reset dependency mocks to avoid side effects between tests."""
+
+    def _reset_mocks():
+        """Reset all mocks to their initial state."""
+        mock_load_hints, mock_query_tmdb, mock_query_igdb, mock_query_openlibrary = (
+            mock_dependencies
+        )
+        mock_load_hints.reset_mock()
+        mock_query_tmdb.reset_mock()
+        mock_query_igdb.reset_mock()
+        mock_query_openlibrary.reset_mock()
+
+    return _reset_mocks
+
+
+@pytest.fixture(name="reset_query_cache")
+def fixture_reset_query_cache():
+    """Reset query cache."""
+
+    def _reset_query_cache():
+        media_tagger.QUERY_CACHE = {}
+        media_tagger.MEDIA_DB_API_CALL_COUNTS = {}
+
+    return _reset_query_cache
+
+
 @pytest.fixture(autouse=True)
-def reset_query_cache():
+def auto_reset_query_cache(reset_query_cache):
     """Reset query cache before each test to ensure consistent state."""
-    media_tagger.QUERY_CACHE = {}
-    media_tagger.MEDIA_DB_API_CALL_COUNTS = {}
-    yield
+    reset_query_cache()
+
+
+@pytest.fixture(name="setup_hints_mock")
+def fixture_setup_hints_mock(mock_dependencies):
+    """Setup mock for hints loading."""
+    mock_load_hints, _, _, _ = mock_dependencies
+
+    def _setup_hints_mock(hints=None):
+        mock_load_hints.return_value = hints or {}
+        mock_load_hints.side_effect = None
+        return mock_load_hints
+
+    return _setup_hints_mock
 
 
 @pytest.fixture(name="sample_entries")
@@ -23,22 +81,135 @@ def fixture_sample_entries():
     return [
         {"title": "FF7", "started_dates": ["2023-01-01"], "finished_dates": []},
         {"title": "The Hobbit", "started_dates": [], "finished_dates": ["2023-02-15"]},
-        {"title": "Succesion", "started_dates": ["2023-03-10"], "finished_dates": []},
+        {"title": "Succession", "started_dates": ["2023-03-10"], "finished_dates": []},
+        {"title": "The Hobbit", "started_dates": ["2023-04-18"], "finished_dates": []},
     ]
 
 
-def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
-    """Test applying tagging with only hints and no API hits."""
-    with patch(
-        "preprocessing.media_tagger.load_hints", return_value=sample_hints
-    ), patch("os.path.exists", return_value=True), patch(
-        "preprocessing.media_tagger.query_tmdb"
-    ), patch(
-        "preprocessing.media_tagger.query_igdb"
-    ), patch(
-        "preprocessing.media_tagger.query_openlibrary"
+@pytest.fixture(name="mock_api_responses")
+def fixture_mock_api_responses():
+    """Mock API responses for different media types."""
+    return {
+        "movie": {
+            "The Hobbit": [
+                {
+                    "canonical_title": "The Hobbit: An Unexpected Journey",
+                    "type": "Movie",
+                    "tags": {"genre": ["Adventure"]},
+                    "confidence": 0.9,
+                    "source": "tmdb",
+                }
+            ],
+        },
+        "tv": {
+            "Succession": [
+                {
+                    "canonical_title": "Succession",
+                    "type": "TV Show",
+                    "tags": {"genre": ["Drama"]},
+                    "confidence": 0.9,
+                    "source": "tmdb",
+                }
+            ],
+        },
+        "game": {
+            "FF7": [
+                {
+                    "canonical_title": "Final Fantasy VII",
+                    "type": "Game",
+                    "tags": {"platform": ["PS1"]},
+                    "confidence": 0.9,
+                    "source": "igdb",
+                },
+                {
+                    "canonical_title": "Final Fantasy VII: Remake",
+                    "type": "Game",
+                    "tags": {"platform": ["PS5"]},
+                    "confidence": 0.85,
+                    "source": "igdb",
+                },
+            ],
+        },
+        "book": {
+            "The Hobbit": [
+                {
+                    "canonical_title": "The Hobbit",
+                    "type": "Book",
+                    "tags": {"genre": ["Fantasy"]},
+                    "confidence": 1.0,
+                    "source": "openlibrary",
+                }
+            ],
+        },
+    }
+
+
+@pytest.fixture(name="setup_api_mocks")
+def fixture_setup_api_mocks(mock_dependencies, mock_api_responses):
+    """Setup mocks for API calls in media tagger tests."""
+
+    def _setup_mocks(
+        movie_response=None, tv_response=None, game_response=None, book_response=None
     ):
-        tagged_entries = apply_tagging(sample_entries, "fake_path.yaml")
+        _, mock_tmdb, mock_igdb, mock_openlibrary = mock_dependencies
+        if (
+            movie_response is None
+            and tv_response is None
+            and game_response is None
+            and book_response is None
+        ):
+            movie_response = mock_api_responses["movie"]
+            tv_response = mock_api_responses["tv"]
+            game_response = mock_api_responses["game"]
+            book_response = mock_api_responses["book"]
+
+        # Configure mock returns based on parameters or use empty lists as default
+        def tmdb_side_effect(mode, title):
+            if mode == "movie" and movie_response is not None:
+                if isinstance(movie_response, list):
+                    return movie_response
+                return movie_response.get(title, [])
+            if mode == "tv" and tv_response is not None:
+                if isinstance(tv_response, list):
+                    return tv_response
+                return tv_response.get(title, [])
+            return []
+
+        mock_tmdb.side_effect = tmdb_side_effect
+
+        def igdb_side_effect(title):
+            if game_response is not None:
+                if isinstance(game_response, list):
+                    return game_response
+                return game_response.get(title, [])
+            return []
+
+        mock_igdb.side_effect = igdb_side_effect
+
+        def openlibrary_side_effect(title):
+            if book_response is not None:
+                if isinstance(book_response, list):
+                    return book_response
+                return book_response.get(title, [])
+            return []
+
+        mock_openlibrary.side_effect = openlibrary_side_effect
+
+        return mock_tmdb, mock_igdb, mock_openlibrary
+
+    return _setup_mocks
+
+
+def test_apply_tagging_with_only_hints(
+    sample_entries, sample_hints, setup_api_mocks, setup_hints_mock
+):
+    """Test applying tagging with only hints and no API hits."""
+    setup_hints_mock(sample_hints)
+    setup_api_mocks(
+        movie_response=[], tv_response=[], game_response=[], book_response=[]
+    )
+
+    tagged_entries = apply_tagging(sample_entries)
 
     # Check the entry that should match a hint
     entry = next(
@@ -55,53 +226,24 @@ def test_apply_tagging_with_only_hints(sample_entries, sample_hints):
     assert tagged_entry["source"] == "hint"
 
 
-def test_apply_tagging_with_api_calls(sample_entries):
+def test_apply_tagging_with_api_calls(
+    sample_entries, setup_api_mocks, setup_hints_mock
+):
     """Test applying tagging with API hits."""
     # Mock the API calls
-    succession_entry = [
-        entry for entry in sample_entries if entry["title"] == "Succesion"
-    ]
-    with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
-        "preprocessing.media_tagger.query_tmdb"
-    ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
-        "preprocessing.media_tagger.query_openlibrary"
-    ) as mock_openlibrary:
-        # Set up mock returns
-        mock_tmdb.return_value = [
-            {
-                "canonical_title": "Succession",
-                "type": "TV Show",
-                "tags": {"genre": ["Drama"]},
-                "confidence": 0.9,
-                "source": "tmdb",
-            }
-        ]
-        mock_openlibrary.return_value = [
-            {
-                "canonical_title": "The Hobbit",
-                "type": "Book",
-                "tags": {"genre": ["Fantasy"]},
-                "confidence": 0.6,
-                "source": "openlibrary",
-            }
-        ]
-        mock_igdb.return_value = [
-            {
-                "canonical_title": "Elden Ring",
-                "type": "Game",
-                "tags": {"platform": ["PS5"]},
-                "confidence": 0.55,
-                "source": "igdb",
-            }
-        ]
+    setup_hints_mock()
+    setup_api_mocks()
 
-        tagged_entries = apply_tagging(succession_entry)
+    succession_entry = [
+        entry for entry in sample_entries if entry["title"] == "Succession"
+    ]
+    tagged_entries = apply_tagging(succession_entry)
 
     # Assert entry is tagged correctly
     assert len(tagged_entries) == 1
     entry = tagged_entries[0]
     assert entry["canonical_title"] == "Succession"
-    assert entry["original_titles"][0] == "Succesion"
+    assert entry["original_titles"][0] == "Succession"
     assert "started_dates" in entry
     assert "finished_dates" in entry
 
@@ -112,19 +254,18 @@ def test_apply_tagging_with_api_calls(sample_entries):
     assert tagged_entry["source"] == "tmdb"
 
 
-def test_apply_tagging_api_failure(sample_entries, caplog):
+def test_apply_tagging_api_failure(
+    sample_entries, caplog, setup_api_mocks, setup_hints_mock
+):
     """Test applying tagging when API calls fail."""
     # Mock the API calls to fail
-    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    setup_hints_mock()
+    setup_api_mocks(
+        movie_response=[], tv_response=[], game_response=[], book_response=[]
+    )
 
-    with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger.load_hints", return_value={}
-    ), patch("preprocessing.media_tagger.query_tmdb", return_value=[]), patch(
-        "preprocessing.media_tagger.query_igdb", return_value=[]
-    ), patch(
-        "preprocessing.media_tagger.query_openlibrary",
-        return_value=[],
-    ):
+    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    with caplog.at_level(logging.WARNING):
         tagged_entries = apply_tagging(ff7_entry)
 
     # Check that fallback values are used
@@ -140,17 +281,14 @@ def test_apply_tagging_api_failure(sample_entries, caplog):
         assert tagged_entry["source"] == "fallback"
 
 
-def test_apply_tagging_with_api_calls_and_hints(sample_entries):
+def test_apply_tagging_with_api_calls_and_hints(
+    mock_api_responses, sample_entries, setup_api_mocks, setup_hints_mock
+):
     """Test applying tagging with API hits and hints."""
     # Mock the API calls
-    succession_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
-    with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
-        "preprocessing.media_tagger.query_tmdb"
-    ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
-        "preprocessing.media_tagger.query_openlibrary"
-    ) as mock_openlibrary:
-        # Set up mock returns
-        mock_tmdb.return_value = [
+    setup_hints_mock()
+    setup_api_mocks(
+        movie_response=[
             {
                 "canonical_title": "Final Fantasy VII: Advent Children",
                 "type": "Movie",
@@ -158,26 +296,12 @@ def test_apply_tagging_with_api_calls_and_hints(sample_entries):
                 "confidence": 0.7,
                 "source": "tmdb",
             }
-        ]
-        mock_openlibrary.return_value = []
-        mock_igdb.return_value = [
-            {
-                "canonical_title": "Final Fantasy VII",
-                "type": "Game",
-                "tags": {"platform": ["PS1"]},
-                "confidence": 0.9,
-                "source": "igdb",
-            },
-            {
-                "canonical_title": "Final Fantasy VII: Remake",
-                "type": "Game",
-                "tags": {"platform": ["PS5"]},
-                "confidence": 0.85,
-                "source": "igdb",
-            },
-        ]
+        ],
+        game_response=mock_api_responses["game"]["FF7"],
+    )
 
-        tagged_entries = apply_tagging(succession_entry)
+    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    tagged_entries = apply_tagging(ff7_entry)
 
     # Assert entry is tagged correctly
     assert len(tagged_entries) == 1
@@ -194,38 +318,18 @@ def test_apply_tagging_with_api_calls_and_hints(sample_entries):
     assert tagged_entry["source"] == "igdb"
 
 
-def test_apply_tagging_with_narrow_confidence(sample_entries, caplog):
+def test_apply_tagging_with_narrow_confidence(
+    caplog, sample_entries, setup_api_mocks, setup_hints_mock
+):
     """Test applying tagging when multiple top API hits have a close confidence score."""
     # Mock the API calls
-    hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
-    with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger.load_hints", return_value={}
-    ), patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
-        "preprocessing.media_tagger.query_igdb"
-    ) as mock_igdb, patch(
-        "preprocessing.media_tagger.query_openlibrary"
-    ) as mock_openlibrary:
-        # Set up mock returns
-        mock_tmdb.return_value = [
-            {
-                "canonical_title": "The Hobbit: An Unexpected Journey",
-                "type": "Movie",
-                "tags": {"genre": ["Adventure"]},
-                "confidence": 0.9,
-                "source": "tmdb",
-            }
-        ]
-        mock_openlibrary.return_value = [
-            {
-                "canonical_title": "The Hobbit",
-                "type": "Book",
-                "tags": {"genre": ["Fantasy"]},
-                "confidence": 1.0,
-                "source": "openlibrary",
-            }
-        ]
-        mock_igdb.return_value = []
+    setup_api_mocks()
+    setup_hints_mock()
 
+    hobbit_entry = [
+        entry for entry in sample_entries if entry["title"] == "The Hobbit"
+    ][:1]
+    with caplog.at_level(logging.WARNING):
         tagged_entries = apply_tagging(hobbit_entry)
 
     # Check for warnings about close confidence scores
@@ -249,51 +353,24 @@ def test_apply_tagging_with_narrow_confidence(sample_entries, caplog):
     assert tagged_entry["source"] == "openlibrary"
 
 
-def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
+def test_apply_tagging_fix_confidence_with_hint(
+    caplog, sample_entries, setup_api_mocks, setup_hints_mock
+):
     """Test applying tagging with multiple hits resolved by hints."""
     # Mock the API calls
-    hobbit_entry = [entry for entry in sample_entries if entry["title"] == "The Hobbit"]
-    with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger.load_hints"
-    ) as mock_hints, patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
-        "preprocessing.media_tagger.query_igdb"
-    ) as mock_igdb, patch(
-        "preprocessing.media_tagger.query_openlibrary"
-    ) as mock_openlibrary:
-        # Set up mock returns
-        mock_hints.return_value = {
+    setup_api_mocks()
+    setup_hints_mock(
+        {
             "The Hobbit": {
                 "type": "Movie",
             }
         }
+    )
 
-        def tmdb_return_value(mode, _):
-            return (
-                [
-                    {
-                        "canonical_title": "The Hobbit: An Unexpected Journey",
-                        "type": "Movie",
-                        "tags": {"genre": ["Adventure"]},
-                        "confidence": 0.9,
-                        "source": "tmdb",
-                    }
-                ]
-                if mode == "movie"
-                else []
-            )
-
-        mock_tmdb.side_effect = tmdb_return_value
-        mock_openlibrary.return_value = [
-            {
-                "canonical_title": "The Hobbit",
-                "type": "Book",
-                "tags": {"genre": ["Fantasy"]},
-                "confidence": 1.0,
-                "source": "openlibrary",
-            }
-        ]
-        mock_igdb.return_value = []
-
+    hobbit_entry = [
+        entry for entry in sample_entries if entry["title"] == "The Hobbit"
+    ][:1]
+    with caplog.at_level(logging.WARNING):
         tagged_entries = apply_tagging(hobbit_entry)
 
     # Check for warnings about close confidence scores
@@ -314,30 +391,19 @@ def test_apply_tagging_fix_confidence_with_hint(sample_entries, caplog):
     assert tagged_entry["source"] == "tmdb"
 
 
-def test_apply_tagging_with_low_confidence(sample_entries, caplog):
+def test_apply_tagging_with_low_confidence(
+    caplog, sample_entries, mock_api_responses, setup_api_mocks, setup_hints_mock
+):
     """Test applying tagging when the top API hit has a low confidence score."""
     # Mock the API calls
-    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
-    with caplog.at_level(logging.WARNING), patch(
-        "preprocessing.media_tagger.load_hints", return_value={}
-    ), patch("preprocessing.media_tagger.query_tmdb") as mock_tmdb, patch(
-        "preprocessing.media_tagger.query_igdb"
-    ) as mock_igdb, patch(
-        "preprocessing.media_tagger.query_openlibrary"
-    ) as mock_openlibrary:
-        # Set up mock returns
-        mock_tmdb.return_value = []
-        mock_openlibrary.return_value = []
-        mock_igdb.return_value = [
-            {
-                "canonical_title": "Final Fantasy VII",
-                "type": "Game",
-                "tags": {"platform": ["PS1"]},
-                "confidence": 0.2,
-                "source": "igdb",
-            },
-        ]
+    setup_hints_mock()
 
+    low_confidence_response = mock_api_responses["game"]["FF7"][0]
+    low_confidence_response["confidence"] = 0.2
+    setup_api_mocks(game_response=[low_confidence_response])
+
+    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    with caplog.at_level(logging.WARNING):
         tagged_entries = apply_tagging(ff7_entry)
 
     # Check for warnings about close confidence scores
@@ -357,186 +423,136 @@ def test_apply_tagging_with_low_confidence(sample_entries, caplog):
     assert tagged_entry["source"] == "igdb"
 
 
-def test_apply_tagging_only_queries_specified_type():
+def test_apply_tagging_only_queries_specified_type(
+    sample_entries, setup_hints_mock, setup_api_mocks, reset_dependency_mocks
+):
     """
     Test that only the appropriate API is queried when hint specifies the type.
     This minimizes unnecessary API calls and improves performance.
     """
     # Create entries for each media type
-    movie_entry = [{"title": "Matrix", "action": "watched", "date": "2023-01-01"}]
-    tv_entry = [{"title": "Succession", "action": "watched", "date": "2023-01-01"}]
-    game_entry = [{"title": "Elden", "action": "played", "date": "2023-01-01"}]
-    book_entry = [{"title": "LOTR", "action": "read", "date": "2023-01-01"}]
+    movie_entries = [
+        entry for entry in sample_entries if entry["title"] == "The Hobbit"
+    ][:1]
+    tv_entries = [entry for entry in sample_entries if entry["title"] == "Succession"]
+    game_entries = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    book_entries = [
+        entry for entry in sample_entries if entry["title"] == "The Hobbit"
+    ][1:]
 
-    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
-        "preprocessing.media_tagger.query_tmdb"
-    ) as mock_tmdb, patch("preprocessing.media_tagger.query_igdb") as mock_igdb, patch(
-        "preprocessing.media_tagger.query_openlibrary"
-    ) as mock_openlibrary:
+    mock_tmdb, mock_igdb, mock_openlibrary = setup_api_mocks()
 
-        def reset_mocks():
-            mock_tmdb.reset_mock()
-            mock_igdb.reset_mock()
-            mock_openlibrary.reset_mock()
+    # Test Movie type
+    setup_hints_mock({"The Hobbit": {"type": "Movie"}})
+    apply_tagging(movie_entries)
 
-        # Test Movie type
-        mock_hints.return_value = {"Matrix": {"type": "Movie"}}
-        mock_tmdb.return_value = [
-            {
-                "canonical_title": "The Matrix",
-                "type": "Movie",
-                "confidence": 0.9,
-                "source": "tmdb",
-                "tags": {},
-            }
-        ]
+    # Verify only movie API was called
+    mock_tmdb.assert_called_once_with("movie", "The Hobbit")
+    mock_igdb.assert_not_called()
+    mock_openlibrary.assert_not_called()
 
-        apply_tagging(movie_entry)
+    # Test TV type
+    reset_dependency_mocks()
+    setup_hints_mock({"Succession": {"type": "TV Show"}})
+    apply_tagging(tv_entries)
 
-        # Verify only movie API was called
-        mock_tmdb.assert_called_once_with("movie", "Matrix")
-        mock_igdb.assert_not_called()
-        mock_openlibrary.assert_not_called()
+    # Verify only TV API was called
+    mock_tmdb.assert_called_once_with("tv", "Succession")
+    mock_igdb.assert_not_called()
+    mock_openlibrary.assert_not_called()
 
-        # Test TV type
-        reset_mocks()
-        mock_hints.return_value = {"Succession": {"type": "TV Show"}}
-        mock_tmdb.return_value = [
-            {
-                "canonical_title": "Succession",
-                "type": "TV Show",
-                "confidence": 0.9,
-                "source": "tmdb",
-                "tags": {},
-            }
-        ]
+    # Test Game type
+    reset_dependency_mocks()
+    setup_hints_mock({"FF7": {"type": "Game"}})
+    apply_tagging(game_entries)
 
-        apply_tagging(tv_entry)
+    # Verify only game API was called
+    mock_tmdb.assert_not_called()
+    mock_igdb.assert_called_once_with("FF7")
+    mock_openlibrary.assert_not_called()
 
-        # Verify only TV API was called
-        mock_tmdb.assert_called_once_with("tv", "Succession")
-        mock_igdb.assert_not_called()
-        mock_openlibrary.assert_not_called()
+    # Test Book type
+    reset_dependency_mocks()
+    setup_hints_mock({"The Hobbit": {"type": "Book"}})
+    apply_tagging(book_entries)
 
-        # Test Game type
-        reset_mocks()
-        mock_hints.return_value = {"Elden": {"type": "Game"}}
-        mock_igdb.return_value = [
-            {
-                "canonical_title": "Elden Ring",
-                "type": "Game",
-                "confidence": 0.9,
-                "source": "igdb",
-                "tags": {},
-            }
-        ]
-
-        apply_tagging(game_entry)
-
-        # Verify only game API was called
-        mock_tmdb.assert_not_called()
-        mock_igdb.assert_called_once_with("Elden")
-        mock_openlibrary.assert_not_called()
-
-        # Test Book type
-        reset_mocks()
-        mock_hints.return_value = {"LOTR": {"type": "Book"}}
-        mock_openlibrary.return_value = [
-            {
-                "canonical_title": "The Lord of the Rings",
-                "type": "Book",
-                "confidence": 0.9,
-                "source": "openlibrary",
-                "tags": {},
-            }
-        ]
-
-        apply_tagging(book_entry)
-
-        # Verify only book API was called
-        mock_tmdb.assert_not_called()
-        mock_igdb.assert_not_called()
-        mock_openlibrary.assert_called_once_with("LOTR")
+    # Verify only book API was called
+    mock_tmdb.assert_not_called()
+    mock_igdb.assert_not_called()
+    mock_openlibrary.assert_called_once_with("The Hobbit")
 
 
-def test_use_canonical_title_from_hint():
+def test_use_canonical_title_from_hint(
+    sample_entries, mock_api_responses, setup_hints_mock, setup_api_mocks
+):
     """Test that the canonical_title from hint is used when querying APIs."""
-    entry = [{"title": "FF7", "action": "played", "date": "2023-01-01"}]
-
-    with patch("preprocessing.media_tagger.load_hints") as mock_hints, patch(
-        "preprocessing.media_tagger.query_igdb"
-    ) as mock_igdb:
-        # Set up mock hint with canonical_title
-        mock_hints.return_value = {
-            "FF7": {"canonical_title": "Final Fantasy VII Remake", "type": "Game"}
-        }
-        mock_igdb.return_value = [
-            {
-                "canonical_title": "Final Fantasy VII Remake",
-                "type": "Game",
-                "confidence": 0.9,
-                "source": "igdb",
-                "tags": {"platform": ["PS5"]},
-            }
+    _, mock_igdb, _ = setup_api_mocks(
+        game_response=[
+            mock_api_responses["game"]["FF7"][1],
         ]
+    )
 
-        apply_tagging(entry)
+    # Set up mock hint with canonical_title
+    setup_hints_mock(
+        {"FF7": {"canonical_title": "Final Fantasy VII Remake", "type": "Game"}}
+    )
 
-        # Verify API was called with canonical_title from hint
-        mock_igdb.assert_called_once_with("Final Fantasy VII Remake")
+    ff7_entry = [entry for entry in sample_entries if entry["title"] == "FF7"]
+    apply_tagging(ff7_entry)
+
+    # Verify API was called with canonical_title from hint
+    mock_igdb.assert_called_once_with("Final Fantasy VII Remake")
 
 
-def test_season_extraction_in_tagging():
+def test_season_extraction_in_tagging(
+    mock_api_responses,
+    setup_hints_mock,
+    setup_api_mocks,
+    reset_dependency_mocks,
+    reset_query_cache,
+):
     """Test that season information is correctly extracted and added back to canonical title."""
     # Test cases for different season formats
-    expected_title = "Game of Thrones"
+    expected_title = "Succession"
     test_cases = [
         {
-            "title": "Game of Thrones s1",
+            "title": "Succession s1",
             "expected_season": "s1",
         },
         {
-            "title": "Game of Thrones s01e02",
+            "title": "Succession s01e02",
             "expected_season": "s01",
         },
         {
-            "title": "Game of Thrones s1 e2",
+            "title": "Succession s1 e2",
             "expected_season": "s1",
         },
         {
-            "title": "Game of Thrones S1E1 ",
+            "title": "Succession S1E1 ",
             "expected_season": "s1",
         },
     ]
 
     for test_case in test_cases:
-        media_tagger.QUERY_CACHE = {}
+        reset_query_cache()
+        reset_dependency_mocks()
         entry = {"title": test_case["title"], "action": "started", "date": "2023-01-01"}
 
-        with patch("preprocessing.media_tagger.load_hints", return_value={}), patch(
-            "preprocessing.media_tagger.query_tmdb"
-        ) as mock_tmdb:
-            # Set up mock return for TV API
-            mock_tmdb.return_value = [
-                {
-                    "canonical_title": "Game of Thrones",
-                    "type": "TV Show",
-                    "confidence": 0.9,
-                    "source": "tmdb",
-                    "tags": {"genre": ["Drama", "Fantasy"]},
-                }
-            ]
+        setup_hints_mock()
+        mock_tmdb, _, _ = setup_api_mocks(
+            tv_response=mock_api_responses["tv"]["Succession"],
+        )
 
-            tagged_entries = apply_tagging([entry])
+        tagged_entries = apply_tagging([entry])
 
-            # Verify season extraction and canonical title
-            assert len(tagged_entries) == 1
-            tagged_entry = tagged_entries[0]
-            assert (
-                tagged_entry["canonical_title"]
-                == f"Game of Thrones {test_case['expected_season']}"
-            )
-            assert tagged_entry["tagged"]["type"] == "TV Show"
+        # Verify season extraction and canonical title
+        assert len(tagged_entries) == 1
+        tagged_entry = tagged_entries[0]
+        assert (
+            tagged_entry["canonical_title"]
+            == f"Succession {test_case['expected_season']}"
+        )
+        assert tagged_entry["tagged"]["type"] == "TV Show"
 
-            # Verify API was called with the title without season information
-            mock_tmdb.assert_called_with("tv", expected_title)
+        # Verify API was called with the title without season information
+        mock_tmdb.assert_called_once_with("tv", expected_title)
