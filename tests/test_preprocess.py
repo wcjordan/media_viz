@@ -5,8 +5,9 @@ from unittest.mock import mock_open, patch
 
 
 from preprocessing.preprocess import (
-    calculate_statistics,
+    _group_entries,
     _load_weekly_records,
+    calculate_statistics,
     process_and_save,
 )
 
@@ -102,8 +103,6 @@ def test_process_and_save():
 
 def test_group_entries():
     """Test the _group_entries function that groups individual entries by title."""
-    from preprocessing.preprocess import _group_entries
-
     # Test with multiple entries for the same title
     individual_entries = [
         {"title": "The Hobbit", "action": "started", "date": "2023-01-01"},
@@ -112,15 +111,15 @@ def test_group_entries():
     ]
 
     grouped = _group_entries(individual_entries)
-    
+
     # Should have 2 entries (one for each unique title)
     assert len(grouped) == 2
-    
+
     # Find The Hobbit entry
     hobbit_entry = next(entry for entry in grouped if entry["title"] == "The Hobbit")
     assert hobbit_entry["started_dates"] == ["2023-01-01"]
     assert hobbit_entry["finished_dates"] == ["2023-02-01"]
-    
+
     # Find Game of Thrones entry
     got_entry = next(entry for entry in grouped if entry["title"] == "Game of Thrones")
     assert got_entry["started_dates"] == ["2023-03-01"]
@@ -129,11 +128,9 @@ def test_group_entries():
 
 def test_group_entries_edge_cases():
     """Test edge cases for the _group_entries function."""
-    from preprocessing.preprocess import _group_entries
-    
     # Test with empty list
-    assert _group_entries([]) == []
-    
+    assert not _group_entries([])
+
     # Test with entries missing title
     entries_missing_title = [
         {"action": "started", "date": "2023-01-01"},
@@ -141,7 +138,7 @@ def test_group_entries_edge_cases():
     ]
     grouped = _group_entries(entries_missing_title)
     assert len(grouped) == 0  # Should skip entries without title
-    
+
     # Test with duplicate dates
     duplicate_dates = [
         {"title": "Book A", "action": "started", "date": "2023-01-01"},
@@ -153,7 +150,7 @@ def test_group_entries_edge_cases():
     assert len(grouped) == 1
     assert grouped[0]["started_dates"] == ["2023-01-01"]  # No duplicates
     assert grouped[0]["finished_dates"] == ["2023-02-01"]  # No duplicates
-    
+
     # Test with unknown action
     unknown_action = [
         {"title": "Book A", "action": "unknown", "date": "2023-01-01"},
