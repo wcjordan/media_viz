@@ -1,7 +1,6 @@
 """Unit tests for the Pydantic models."""
 
 import json
-from datetime import date
 
 import pytest
 from pydantic import ValidationError
@@ -16,15 +15,15 @@ def test_media_tags_model():
     assert tags.genre == []
     assert tags.platform == []
     assert tags.mood == []
-    
+
     # Test with provided values
     tags = MediaTags(genre=["Fantasy", "Adventure"], platform=["PS5"], mood=["Epic"])
     assert tags.genre == ["Fantasy", "Adventure"]
     assert tags.platform == ["PS5"]
     assert tags.mood == ["Epic"]
-    
+
     # Test serialization
-    tags_dict = tags.dict()
+    tags_dict = tags.model_dump()
     assert tags_dict["genre"] == ["Fantasy", "Adventure"]
     assert tags_dict["platform"] == ["PS5"]
     assert tags_dict["mood"] == ["Epic"]
@@ -37,7 +36,7 @@ def test_tagged_entry_model():
         canonical_title="Final Fantasy VII Remake",
         type="Game",
         confidence=0.92,
-        source="igdb"
+        source="igdb",
     )
     assert tagged.canonical_title == "Final Fantasy VII Remake"
     assert tagged.type == "Game"
@@ -45,7 +44,7 @@ def test_tagged_entry_model():
     assert tagged.source == "igdb"
     assert tagged.tags.genre == []
     assert tagged.poster_path is None
-    
+
     # Test with all fields
     tagged = TaggedEntry(
         canonical_title="Final Fantasy VII Remake",
@@ -53,7 +52,7 @@ def test_tagged_entry_model():
         tags=MediaTags(genre=["JRPG"], platform=["PS5"]),
         confidence=0.92,
         source="igdb",
-        poster_path="https://example.com/poster.jpg"
+        poster_path="https://example.com/poster.jpg",
     )
     assert tagged.canonical_title == "Final Fantasy VII Remake"
     assert tagged.type == "Game"
@@ -74,8 +73,8 @@ def test_media_entry_model():
             canonical_title="Final Fantasy VII Remake",
             type="Game",
             confidence=0.92,
-            source="igdb"
-        )
+            source="igdb",
+        ),
     )
     assert entry.canonical_title == "Final Fantasy VII Remake"
     assert entry.original_titles == ["FF7"]
@@ -83,7 +82,7 @@ def test_media_entry_model():
     assert entry.finished_dates == []
     assert entry.duration_days is None
     assert entry.status == "unknown"
-    
+
     # Test with all fields
     entry = MediaEntry(
         canonical_title="Final Fantasy VII Remake",
@@ -93,10 +92,10 @@ def test_media_entry_model():
             type="Game",
             tags=MediaTags(genre=["JRPG"], platform=["PS5"]),
             confidence=0.92,
-            source="igdb"
+            source="igdb",
         ),
         started_dates=["2023-02-14"],
-        finished_dates=["2023-03-07"]
+        finished_dates=["2023-03-07"],
     )
     assert entry.canonical_title == "Final Fantasy VII Remake"
     assert entry.original_titles == ["FF7", "Final Fantasy 7"]
@@ -117,9 +116,9 @@ def test_media_entry_date_validation():
                 canonical_title="Test",
                 type="Book",
                 confidence=0.9,
-                source="openlibrary"
+                source="openlibrary",
             ),
-            started_dates=["02/14/2023"]  # Invalid format
+            started_dates=["02/14/2023"],  # Invalid format
         )
 
 
@@ -133,16 +132,16 @@ def test_media_entry_json_serialization():
             type="Game",
             tags=MediaTags(genre=["JRPG"], platform=["PS5"]),
             confidence=0.92,
-            source="igdb"
+            source="igdb",
         ),
         started_dates=["2023-02-14"],
-        finished_dates=["2023-03-07"]
+        finished_dates=["2023-03-07"],
     )
-    
+
     # Convert to JSON and back
-    entry_json = entry.json()
+    entry_json = entry.model_dump_json()
     entry_dict = json.loads(entry_json)
-    
+
     # Verify structure
     assert entry_dict["canonical_title"] == "Final Fantasy VII Remake"
     assert entry_dict["original_titles"] == ["FF7", "Final Fantasy 7"]

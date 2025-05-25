@@ -8,6 +8,8 @@ import json
 import logging
 from typing import List, Dict
 
+from pydantic import ValidationError
+
 from .media_extractor import RANGE_VERBS, extract_entries
 from .week_extractor import parse_row
 from .media_tagger import apply_tagging, get_media_db_api_calls
@@ -138,11 +140,15 @@ def process_and_save(
         try:
             validated_entry = MediaEntry(**entry)
             validated_entries.append(validated_entry.dict())
-        except Exception as e:
-            logger.warning("Failed to validate entry %s: %s", entry.get("canonical_title", "Unknown"), str(e))
-    
+        except ValidationError as e:
+            logger.warning(
+                "Failed to validate entry %s: %s",
+                entry.get("canonical_title", "Unknown"),
+                str(e),
+            )
+
     logger.info("Validated %d/%d entries", len(validated_entries), len(tagged_entries))
-    
+
     # Save to JSON
     try:
         with open(output_json, "w", encoding="utf-8") as f:
