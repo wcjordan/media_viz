@@ -2,7 +2,7 @@
 
 import logging
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 import requests
 
@@ -110,8 +110,8 @@ DEFAULT_TV_SHOWS = [
 ]
 
 
-@pytest.fixture(autouse=True)
-def mock_http_requests():
+@pytest.fixture(autouse=True, name="mock_http_requests")
+def fixture_mock_http_requests():
     """
     Prevent real HTTP requests during tests by mocking requests.get and requests.post.
     This fixture runs automatically for all tests.
@@ -144,16 +144,8 @@ def mock_env_variables():
         yield
 
 
-@pytest.fixture
-def mock_api_response():
-    """Create a mock API response."""
-    mock_response = MagicMock()
-    mock_response.raise_for_status.return_value = None
-    return mock_response
-
-
-@pytest.fixture
-def mock_get_genre_map():
+@pytest.fixture(name="_mock_get_genre_map")
+def fixture_mock_get_genre_map():
     """Mock the _get_genre_map function to return a predefined genre map."""
     with patch("preprocessing.media_apis._get_genre_map") as mock_get_genre_map:
         mock_get_genre_map.return_value = {
@@ -162,16 +154,16 @@ def mock_get_genre_map():
         yield mock_get_genre_map
 
 
-@pytest.fixture
-def mock_get_igdb_token():
+@pytest.fixture(name="_mock_get_igdb_token")
+def fixture_mock_get_igdb_token():
     """Mock the IGDB authentication response."""
     with patch("preprocessing.media_apis._get_igdb_token") as mock_get_igdb_token:
         mock_get_igdb_token.return_value = "mock_token"
         yield
 
 
-@pytest.fixture
-def mock_igdb_auth_response(mock_http_requests):
+@pytest.fixture(name="mock_igdb_auth_response")
+def fixture_mock_igdb_auth_response(mock_http_requests):
     """
     Mock the IGDB authentication response.
     """
@@ -191,6 +183,8 @@ def mock_igdb_auth_response(mock_http_requests):
 
 @pytest.fixture(name="mock_tmdb_response")
 def fixture_mock_tmdb_response(mock_http_requests):
+    """Mock the response for TMDB API."""
+
     def _mock_tmdb_response(results):
         mock_get, _ = mock_http_requests
         mock_get.return_value.json.return_value = {"results": results}
@@ -199,11 +193,13 @@ def fixture_mock_tmdb_response(mock_http_requests):
     return _mock_tmdb_response
 
 
-@pytest.fixture
-def mock_igdb_response(mock_http_requests):
+@pytest.fixture(name="mock_igdb_response")
+def fixture_mock_igdb_response(mock_http_requests):
     """Mock the response for IGDB API."""
 
-    def _mock_igdb_response(results=DEFAULT_GAMES):
+    def _mock_igdb_response(results=None):
+        if results is None:
+            results = DEFAULT_GAMES
         _, mock_post = mock_http_requests
         mock_post.return_value.json.return_value = results
         mock_post.side_effect = None
@@ -212,11 +208,13 @@ def mock_igdb_response(mock_http_requests):
     return _mock_igdb_response
 
 
-@pytest.fixture
-def mock_openlibrary_response(mock_http_requests):
+@pytest.fixture(name="mock_openlibrary_response")
+def fixture_mock_openlibrary_response(mock_http_requests):
     """Mock responses for OpenLibrary API."""
 
-    def _mock_openlibrary_response(results=DEFAULT_BOOKS):
+    def _mock_openlibrary_response(results=None):
+        if results is None:
+            results = DEFAULT_BOOKS
         mock_get, _ = mock_http_requests
         mock_get.return_value.json.return_value = {
             "docs": results,
@@ -225,27 +223,6 @@ def mock_openlibrary_response(mock_http_requests):
         return mock_get
 
     return _mock_openlibrary_response
-
-
-@pytest.fixture
-def setup_openlibrary_mocks(
-    mock_openlibrary_response, mock_api_response, mock_http_requests
-):
-    """Setup mocks for OpenLibrary API tests."""
-
-    def _setup_mocks(response_type="success", error_type=None):
-        mock_get, _ = mock_http_requests
-
-        if error_type == "api_error":
-            mock_get.side_effect = requests.RequestException("API Error")
-            return mock_get
-
-        mock_api_response.json.return_value = mock_openlibrary_response[response_type]
-        mock_get.return_value = mock_api_response
-        mock_get.side_effect = None
-        return mock_get
-
-    return _setup_mocks
 
 
 def test_get_genre_map(mock_http_requests):
@@ -274,7 +251,7 @@ def test_get_genre_map(mock_http_requests):
     assert genre_map == expected_genre_map
 
 
-def test_query_tmdb_movie_success(mock_tmdb_response, mock_get_genre_map):
+def test_query_tmdb_movie_success(mock_tmdb_response, _mock_get_genre_map):
     """Test successful TMDB movie query."""
     mock_tmdb_response(DEFAULT_MOVIES)
 
@@ -292,7 +269,7 @@ def test_query_tmdb_movie_success(mock_tmdb_response, mock_get_genre_map):
     assert "poster_path" in results[0]
 
 
-def test_query_tmdb_tv_success(mock_tmdb_response, mock_get_genre_map):
+def test_query_tmdb_tv_success(mock_tmdb_response, _mock_get_genre_map):
     """Test successful TMDB TV query."""
     mock_tmdb_response(DEFAULT_TV_SHOWS)
 
@@ -309,7 +286,7 @@ def test_query_tmdb_tv_success(mock_tmdb_response, mock_get_genre_map):
     assert results[0]["source"] == "tmdb"
 
 
-def test_query_tmdb_no_api_key(caplog, mock_get_genre_map):
+def test_query_tmdb_no_api_key(caplog, _mock_get_genre_map):
     """Test TMDB query with no API key."""
     # Clear the TMDB_API_KEY environment variable set by the autouse fixture
     os.environ.clear()
@@ -320,7 +297,7 @@ def test_query_tmdb_no_api_key(caplog, mock_get_genre_map):
         assert "TMDB_API_KEY not found in environment variables" in caplog.text
 
 
-def test_query_tmdb_empty_results(mock_tmdb_response, mock_get_genre_map):
+def test_query_tmdb_empty_results(mock_tmdb_response, _mock_get_genre_map):
     """Test TMDB query with empty results."""
     # Set up mock for empty results
     mock_tmdb_response([])
@@ -330,7 +307,7 @@ def test_query_tmdb_empty_results(mock_tmdb_response, mock_get_genre_map):
     assert len(results) == 0
 
 
-def test_query_tmdb_api_error(mock_http_requests, caplog, mock_get_genre_map):
+def test_query_tmdb_api_error(mock_http_requests, caplog, _mock_get_genre_map):
     """Test TMDB query with API error."""
     mock_get, _ = mock_http_requests
     mock_get.side_effect = requests.RequestException("API Error")
@@ -342,7 +319,7 @@ def test_query_tmdb_api_error(mock_http_requests, caplog, mock_get_genre_map):
         assert "Error querying TMDB API for movie: API Error" in caplog.text
 
 
-def test_query_tmdb_confidence_calculation(mock_tmdb_response, mock_get_genre_map):
+def test_query_tmdb_confidence_calculation(mock_tmdb_response, _mock_get_genre_map):
     """Test confidence calculation in TMDB query."""
     different_title = "Matrices and Their Many Uses in Mathematics"
     mock_tmdb_response(
@@ -377,7 +354,7 @@ def test_query_tmdb_confidence_calculation(mock_tmdb_response, mock_get_genre_ma
     assert similar_results["confidence"] > different_results["confidence"]
 
 
-def test_query_tmdb_limits_results(mock_tmdb_response, mock_get_genre_map):
+def test_query_tmdb_limits_results(mock_tmdb_response, _mock_get_genre_map):
     """Test that TMDB query limits results to top 5."""
     # Create mock response with more than 5 results
     mock_tmdb_response(DEFAULT_MOVIES * 10)
@@ -389,7 +366,7 @@ def test_query_tmdb_limits_results(mock_tmdb_response, mock_get_genre_map):
     assert len(results) == 5
 
 
-def test_query_tmdb_handles_missing_fields(mock_tmdb_response, mock_get_genre_map):
+def test_query_tmdb_handles_missing_fields(mock_tmdb_response, _mock_get_genre_map):
     """Test that TMDB query handles missing fields gracefully."""
     # Create mock response with missing release_date
     unreleased_movies = [movie.copy() for movie in DEFAULT_MOVIES]
@@ -491,7 +468,7 @@ def test_format_igdb_entry_partial_fields():
     assert result["poster_path"] == ""
 
 
-def test_query_igdb_success(mock_get_igdb_token, mock_igdb_response):
+def test_query_igdb_success(_mock_get_igdb_token, mock_igdb_response):
     """Test successful IGDB query."""
     mock_post = mock_igdb_response()
     results = query_igdb("The Witcher 3")
@@ -519,7 +496,7 @@ def test_query_igdb_no_token():
         assert len(results) == 0
 
 
-def test_query_igdb_api_error(caplog, mock_get_igdb_token, mock_http_requests):
+def test_query_igdb_api_error(caplog, _mock_get_igdb_token, mock_http_requests):
     """Test IGDB query with API error."""
     _, mock_post = mock_http_requests
     mock_post.side_effect = requests.RequestException("API Error")
@@ -531,7 +508,7 @@ def test_query_igdb_api_error(caplog, mock_get_igdb_token, mock_http_requests):
         assert "Error querying IGDB API: API Error" in caplog.text
 
 
-def test_query_igdb_empty_results(mock_get_igdb_token, mock_igdb_response):
+def test_query_igdb_empty_results(_mock_get_igdb_token, mock_igdb_response):
     """Test IGDB query with empty results."""
     mock_igdb_response([])
     results = query_igdb("NonexistentGame12345")
@@ -581,7 +558,7 @@ def test_query_openlibrary_api_error(caplog, mock_http_requests):
         assert "Error querying Open Library API: API Error" in caplog.text
 
 
-def test_query_openlibrary_missing_fields(caplog, mock_openlibrary_response):
+def test_query_openlibrary_missing_fields(mock_openlibrary_response):
     """Test OpenLibrary query with missing fields in response."""
     unreleased_books = [book.copy() for book in DEFAULT_BOOKS]
     for book in unreleased_books:
@@ -608,7 +585,9 @@ def test_query_openlibrary_malformed_response(mock_http_requests):
 def test_query_openlibrary_confidence_calculation(mock_openlibrary_response):
     """Test confidence calculation in OpenLibrary query."""
     different_title = "The Fellowship of the Ring"
-    mock_openlibrary_response(DEFAULT_BOOKS + [{"title": different_title, "first_publish_year": 1954}])
+    mock_openlibrary_response(
+        DEFAULT_BOOKS + [{"title": different_title, "first_publish_year": 1954}]
+    )
 
     # Test with different search titles to test confidence calculation
     query_results = query_openlibrary("The Hobbit")
@@ -646,15 +625,3 @@ def test_calculate_title_similarity():
     for title1, title2, (min_val, max_val) in test_cases:
         similarity = _calculate_title_similarity(title1, title2)
         assert min_val <= similarity <= max_val, f"Failed for {title1} vs {title2}"
-
-
-        # "malformed": {"malformed": "response"},  # Missing 'docs' key
-        # "confidence_test": {
-        #     "numFound": 1,
-        #     "docs": [
-        #         {
-        #             "title": "Lord of the Rings",
-        #             "first_publish_year": 1954,
-        #         }
-        #     ],
-        # },
