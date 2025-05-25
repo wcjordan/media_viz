@@ -26,9 +26,36 @@ GENRE_MAPPING = [
     {"id": 9648, "name": "Mystery"},
     {"id": 10765, "name": "Sci-Fi & Fantasy"},
 ]
-GENRE_RESPONSE = {
-    "genres": GENRE_MAPPING,
-}
+
+
+DEFAULT_MOVIES = [
+    {
+        "title": "The Matrix",
+        "release_date": "1999-03-31",
+        "popularity": 50.0,
+        "vote_average": 8.7,
+        "poster_path": "/path/to/poster.jpg",
+        "genre_ids": [28, 878],  # Action, Sci-Fi
+    },
+    {
+        "title": "The Matrix Reloaded",
+        "release_date": "2003-05-15",
+        "popularity": 40.0,
+        "vote_average": 7.2,
+        "poster_path": "/path/to/poster2.jpg",
+        "genre_ids": [28, 878],
+    },
+]
+DEFAULT_TV_SHOWS = [
+    {
+        "name": "Stranger Things",
+        "first_air_date": "2016-07-15",
+        "popularity": 80.0,
+        "vote_average": 8.5,
+        "poster_path": "/path/to/poster10.jpg",
+        "genre_ids": [18, 9648, 10765],  # Drama, Mystery, Sci-Fi & Fantasy
+    },
+]
 
 
 @pytest.fixture(autouse=True)
@@ -74,162 +101,23 @@ def mock_api_response():
 
 
 @pytest.fixture
-def mock_tmdb_responses():
-    """Mock responses for TMDB API."""
-    return {
-        "movie": {
-            "results": [
-                {
-                    "id": 123,
-                    "title": "The Matrix",
-                    "release_date": "1999-03-31",
-                    "popularity": 50.0,
-                    "vote_average": 8.7,
-                    "poster_path": "/path/to/poster.jpg",
-                    "genre_ids": [28, 878],  # Action, Sci-Fi
-                    "overview": "A computer hacker learns about the true nature of reality",
-                },
-                {
-                    "id": 456,
-                    "title": "The Matrix Reloaded",
-                    "release_date": "2003-05-15",
-                    "popularity": 40.0,
-                    "vote_average": 7.2,
-                    "poster_path": "/path/to/poster2.jpg",
-                    "genre_ids": [28, 878],
-                    "overview": "Neo and the rebels fight against the machines",
-                },
-            ]
-        },
-        "tv": {
-            "results": [
-                {
-                    "id": 789,
-                    "name": "Stranger Things",
-                    "first_air_date": "2016-07-15",
-                    "popularity": 80.0,
-                    "vote_average": 8.5,
-                    "poster_path": "/path/to/poster3.jpg",
-                    "genre_ids": [18, 9648, 10765],  # Drama, Mystery, Sci-Fi & Fantasy
-                    "overview": "When a young boy disappears, his mother and friends must confront terrifying forces",
-                }
-            ]
-        },
-        "genres": GENRE_RESPONSE,
-    }
+def mock_get_genre_map():
+    """Mock the _get_genre_map function to return a predefined genre map."""
+    with patch("preprocessing.media_apis._get_genre_map") as mock_get_genre_map:
+        mock_get_genre_map.return_value = {
+            genre["id"]: genre["name"] for genre in GENRE_MAPPING
+        }
+        yield mock_get_genre_map
 
 
-@pytest.fixture
-def setup_tmdb_error_tests(mock_http_requests):
-    """Setup for TMDB error test cases."""
-
-    def _setup(error_type, mock_response=None):
+@pytest.fixture(name="mock_tmdb_response")
+def fixture_mock_tmdb_response(mock_http_requests):
+    def _mock_tmdb_response(results):
         mock_get, _ = mock_http_requests
+        mock_get.return_value.json.return_value = {"results": results}
+        mock_get.side_effect = None
 
-        if error_type == "no_api_key":
-            # Clear environment
-            os.environ.clear()
-        elif error_type == "empty_results":
-            # Set up mock for empty results
-            mock_response = MagicMock()
-            mock_response.json.return_value = {"results": []}
-            mock_response.raise_for_status.return_value = None
-            mock_get.return_value = mock_response
-            mock_get.side_effect = None
-        elif error_type == "api_error":
-            # Set up mock to raise an exception
-            mock_get.side_effect = requests.RequestException("API Error")
-        else:
-            # Custom mock response
-            mock_get.return_value = mock_response
-            mock_get.side_effect = None
-
-        return mock_get
-
-    return _setup
-
-
-@pytest.fixture
-def setup_tmdb_mocks(mock_tmdb_responses, mock_api_response, mock_http_requests):
-    """Setup mocks for TMDB API tests."""
-
-    def _setup_mocks(mode):
-        mock_get, _ = mock_http_requests
-
-        # Set up mock responses
-        def mock_response_side_effect(*args, **_):
-            mock_resp = mock_api_response
-            if f"search/{mode}" in args[0]:
-                mock_resp.json.return_value = mock_tmdb_responses[mode]
-            elif f"genre/{mode}/list" in args[0]:
-                mock_resp.json.return_value = mock_tmdb_responses["genres"]
-            return mock_resp
-
-        mock_get.side_effect = mock_response_side_effect
-        return mock_get
-
-    return _setup_mocks
-
-
-@pytest.fixture
-def tmdb_confidence_test_data():
-    """Test data for TMDB confidence calculation tests."""
-    return {
-        "exact_match": {
-            "results": [
-                {
-                    "title": "Inception",
-                    "popularity": 50.0,
-                    "vote_average": 8.0,
-                    "release_date": "2010-07-16",
-                    "genre_ids": [],
-                }
-            ]
-        },
-        "similar_match": {
-            "results": [
-                {
-                    "title": "Inceptions",  # Slightly different
-                    "popularity": 50.0,
-                    "vote_average": 8.0,
-                    "release_date": "2010-07-16",
-                    "genre_ids": [],
-                }
-            ]
-        },
-        "different_match": {
-            "results": [
-                {
-                    "title": "Completely Different Title",
-                    "popularity": 50.0,
-                    "vote_average": 8.0,
-                    "release_date": "2010-07-16",
-                    "genre_ids": [],
-                }
-            ]
-        },
-        "many_results": {
-            "results": [
-                {
-                    "title": f"Movie {i}",
-                    "popularity": 50.0,
-                    "vote_average": 7.0,
-                    "release_date": "2020-01-01",
-                    "genre_ids": [],
-                }
-                for i in range(10)  # 10 results
-            ]
-        },
-        "missing_fields": {
-            "results": [
-                {
-                    "title": "Movie With Missing Fields",
-                    # Missing: popularity, vote_average, release_date, poster_path
-                    "genre_ids": [],
-                }
-            ]
-        },
-    }
+    return _mock_tmdb_response
 
 
 @pytest.fixture
@@ -409,16 +297,15 @@ def setup_openlibrary_mocks(
     return _setup_mocks
 
 
-def test_get_genre_map(mock_api_response, mock_http_requests):
+def test_get_genre_map(mock_http_requests):
     """Test getting and caching the genre map."""
     mock_get, _ = mock_http_requests
-    mock_api_response.json.return_value = GENRE_RESPONSE
-    mock_get.return_value = mock_api_response
-    mock_get.side_effect = None  # Override the default side_effect
-
-    expected_genre_map = {
-        genre["id"]: genre["name"] for genre in GENRE_MAPPING
+    mock_get.return_value.json.return_value = {
+        "genres": GENRE_MAPPING,
     }
+    mock_get.side_effect = None
+
+    expected_genre_map = {genre["id"]: genre["name"] for genre in GENRE_MAPPING}
 
     # First call should make the API request
     genre_map = _get_genre_map("movie")
@@ -436,9 +323,9 @@ def test_get_genre_map(mock_api_response, mock_http_requests):
     assert genre_map == expected_genre_map
 
 
-def test_query_tmdb_movie_success(setup_tmdb_mocks):
+def test_query_tmdb_movie_success(mock_tmdb_response, mock_get_genre_map):
     """Test successful TMDB movie query."""
-    mock_get = setup_tmdb_mocks("movie")
+    mock_tmdb_response(DEFAULT_MOVIES)
 
     # Call the function
     results = query_tmdb("movie", "The Matrix")
@@ -454,9 +341,9 @@ def test_query_tmdb_movie_success(setup_tmdb_mocks):
     assert "poster_path" in results[0]
 
 
-def test_query_tmdb_tv_success(setup_tmdb_mocks):
+def test_query_tmdb_tv_success(mock_tmdb_response, mock_get_genre_map):
     """Test successful TMDB TV query."""
-    mock_get = setup_tmdb_mocks("tv")
+    mock_tmdb_response(DEFAULT_TV_SHOWS)
 
     # Call the function
     results = query_tmdb("tv", "Stranger Things")
@@ -471,10 +358,10 @@ def test_query_tmdb_tv_success(setup_tmdb_mocks):
     assert results[0]["source"] == "tmdb"
 
 
-def test_query_tmdb_no_api_key(setup_tmdb_error_tests, caplog):
+def test_query_tmdb_no_api_key(caplog, mock_get_genre_map):
     """Test TMDB query with no API key."""
-    setup_tmdb_error_tests("no_api_key")
-
+    # Clear the TMDB_API_KEY environment variable set by the autouse fixture
+    os.environ.clear()
     with caplog.at_level(logging.WARNING):
         results = query_tmdb("movie", "The Matrix")
 
@@ -482,18 +369,20 @@ def test_query_tmdb_no_api_key(setup_tmdb_error_tests, caplog):
         assert "TMDB_API_KEY not found in environment variables" in caplog.text
 
 
-def test_query_tmdb_empty_results(setup_tmdb_error_tests):
+def test_query_tmdb_empty_results(mock_tmdb_response, mock_get_genre_map):
     """Test TMDB query with empty results."""
-    setup_tmdb_error_tests("empty_results")
+    # Set up mock for empty results
+    mock_tmdb_response([])
 
     results = query_tmdb("movie", "NonexistentMovie12345")
 
     assert len(results) == 0
 
 
-def test_query_tmdb_api_error(setup_tmdb_error_tests, caplog):
+def test_query_tmdb_api_error(mock_http_requests, caplog, mock_get_genre_map):
     """Test TMDB query with API error."""
-    setup_tmdb_error_tests("api_error")
+    mock_get, _ = mock_http_requests
+    mock_get.side_effect = requests.RequestException("API Error")
 
     with caplog.at_level(logging.ERROR):
         results = query_tmdb("movie", "The Matrix")
@@ -502,88 +391,67 @@ def test_query_tmdb_api_error(setup_tmdb_error_tests, caplog):
         assert "Error querying TMDB API for movie: API Error" in caplog.text
 
 
-def test_query_tmdb_confidence_calculation(
-    tmdb_confidence_test_data, mock_api_response, mock_http_requests
-):
+def test_query_tmdb_confidence_calculation(mock_tmdb_response, mock_get_genre_map):
     """Test confidence calculation in TMDB query."""
-    mock_get, _ = mock_http_requests
-    mock_get.side_effect = None
-    mock_get.return_value = mock_api_response
-
-    with patch("preprocessing.media_apis._get_genre_map", return_value={}):
-        # Test exact match
-        mock_api_response.json.return_value = tmdb_confidence_test_data["exact_match"]
-        exact_results = query_tmdb("movie", "Inception")
-
-        # Test similar match
-        mock_api_response.json.return_value = tmdb_confidence_test_data["similar_match"]
-        similar_results = query_tmdb("movie", "Inception")
-
-        # Test different match
-        mock_api_response.json.return_value = tmdb_confidence_test_data[
-            "different_match"
+    different_title = "Matrices and Their Many Uses in Mathematics"
+    mock_tmdb_response(
+        DEFAULT_MOVIES
+        + [
+            {
+                "title": different_title,
+                "release_date": "2020-01-15",
+                "popularity": 7.2,
+                "vote_average": 6.2,
+            }
         ]
-        different_results = query_tmdb("movie", "Inception")
+    )
 
-        # Verify confidence scores
-        assert exact_results[0]["confidence"] > similar_results[0]["confidence"]
-        assert similar_results[0]["confidence"] > different_results[0]["confidence"]
+    query_results = query_tmdb("movie", "Matrix")
+    exact_results = [
+        result for result in query_results if result["canonical_title"] == "The Matrix"
+    ][0]
+    similar_results = [
+        result
+        for result in query_results
+        if result["canonical_title"] == "The Matrix Reloaded"
+    ][0]
+    different_results = [
+        result
+        for result in query_results
+        if result["canonical_title"] == different_title
+    ][0]
+
+    # Verify confidence scores
+    assert exact_results["confidence"] > similar_results["confidence"]
+    assert similar_results["confidence"] > different_results["confidence"]
 
 
-def test_query_tmdb_limits_results(
-    tmdb_confidence_test_data, mock_api_response, mock_http_requests
-):
+def test_query_tmdb_limits_results(mock_tmdb_response, mock_get_genre_map):
     """Test that TMDB query limits results to top 5."""
-    mock_get, _ = mock_http_requests
-    mock_get.side_effect = None
-    mock_get.return_value = mock_api_response
+    # Create mock response with more than 5 results
+    mock_tmdb_response(DEFAULT_MOVIES * 10)
 
-    with patch("preprocessing.media_apis._get_genre_map", return_value={}):
-        # Create mock response with more than 5 results
-        mock_api_response.json.return_value = tmdb_confidence_test_data["many_results"]
+    # Call the function
+    results = query_tmdb("movie", "Movie")
 
-        # Call the function
-        results = query_tmdb("movie", "Movie")
-
-        # Verify results are limited to 5
-        assert len(results) == 5
+    # Verify results are limited to 5
+    assert len(results) == 5
 
 
-def test_query_tmdb_handles_missing_fields(
-    tmdb_confidence_test_data, mock_api_response, mock_http_requests
-):
+def test_query_tmdb_handles_missing_fields(mock_tmdb_response, mock_get_genre_map):
     """Test that TMDB query handles missing fields gracefully."""
-    mock_get, _ = mock_http_requests
-    mock_get.side_effect = None
-    mock_get.return_value = mock_api_response
-
-    with patch("preprocessing.media_apis._get_genre_map", return_value={}):
-        # Create mock response with missing fields
-        mock_api_response.json.return_value = tmdb_confidence_test_data[
-            "missing_fields"
+    # Create mock response with missing release_date
+    mock_tmdb_response(
+        [
+            {
+                "title": "Future Matrix Movie",
+            }
         ]
+    )
+    results = query_tmdb("movie", "Movie")
 
-        # Call the function
-        results = query_tmdb("movie", "Movie")
-
-        # Verify that results missing a release date are omitted
-        assert len(results) == 0
-
-
-def test_calculate_title_similarity():
-    """Test the title similarity calculation function."""
-    test_cases = [
-        # (title1, title2, expected_range)
-        ("The Witcher 3", "The Witcher 3", (1.0, 1.0)),  # Identical
-        ("The Witcher 3", "The Witcher III", (0.7, 1.0)),  # Similar
-        ("The Witcher 3", "Cyberpunk 2077", (0.0, 0.5)),  # Different
-        ("", "", (1.0, 1.0)),  # Empty
-        ("Title", "", (0.0, 0.2)),  # One empty
-    ]
-
-    for title1, title2, (min_val, max_val) in test_cases:
-        similarity = _calculate_title_similarity(title1, title2)
-        assert min_val <= similarity <= max_val, f"Failed for {title1} vs {title2}"
+    # Verify that results missing a release date are omitted
+    assert len(results) == 0
 
 
 def test_get_igdb_token_success(setup_igdb_mocks):
@@ -781,3 +649,19 @@ def test_query_openlibrary_confidence_calculation(setup_openlibrary_mocks):
     # Verify confidence scores
     assert exact_results[0]["confidence"] > similar_results[0]["confidence"]
     assert similar_results[0]["confidence"] > different_results[0]["confidence"]
+
+
+def test_calculate_title_similarity():
+    """Test the title similarity calculation function."""
+    test_cases = [
+        # (title1, title2, expected_range)
+        ("The Witcher 3", "The Witcher 3", (1.0, 1.0)),  # Identical
+        ("The Witcher 3", "The Witcher III", (0.7, 1.0)),  # Similar
+        ("The Witcher 3", "Cyberpunk 2077", (0.0, 0.5)),  # Different
+        ("", "", (1.0, 1.0)),  # Empty
+        ("Title", "", (0.0, 0.2)),  # One empty
+    ]
+
+    for title1, title2, (min_val, max_val) in test_cases:
+        similarity = _calculate_title_similarity(title1, title2)
+        assert min_val <= similarity <= max_val, f"Failed for {title1} vs {title2}"
