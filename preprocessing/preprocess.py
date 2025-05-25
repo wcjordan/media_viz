@@ -139,7 +139,7 @@ def process_and_save(
     for entry in tagged_entries:
         try:
             validated_entry = MediaEntry(**entry)
-            validated_entries.append(validated_entry.dict())
+            validated_entries.append(validated_entry.model_dump(exclude_none=True))
         except ValidationError as e:
             logger.warning(
                 "Failed to validate entry %s: %s",

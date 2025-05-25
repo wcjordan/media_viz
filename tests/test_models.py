@@ -11,22 +11,24 @@ from preprocessing.models import MediaEntry, TaggedEntry, MediaTags
 def test_media_tags_model():
     """Test the MediaTags model."""
     # Test with default values
-    tags = MediaTags()
-    assert tags.genre == []
-    assert tags.platform == []
-    assert tags.mood == []
+    tags = MediaTags(release_year=2023)
+    assert tags.release_year == 2023
+    assert tags.genre is None
+    assert tags.platform is None
 
     # Test with provided values
-    tags = MediaTags(genre=["Fantasy", "Adventure"], platform=["PS5"], mood=["Epic"])
+    tags = MediaTags(
+        genre=["Fantasy", "Adventure"], platform=["PS5"], release_year=2023
+    )
+    assert tags.release_year == 2023
     assert tags.genre == ["Fantasy", "Adventure"]
     assert tags.platform == ["PS5"]
-    assert tags.mood == ["Epic"]
 
     # Test serialization
-    tags_dict = tags.model_dump()
+    tags_dict = tags.model_dump(exclude_none=True)
     assert tags_dict["genre"] == ["Fantasy", "Adventure"]
     assert tags_dict["platform"] == ["PS5"]
-    assert tags_dict["mood"] == ["Epic"]
+    assert tags_dict["release_year"] == 2023
 
 
 def test_tagged_entry_model():
@@ -37,19 +39,21 @@ def test_tagged_entry_model():
         type="Game",
         confidence=0.92,
         source="igdb",
+        tags=MediaTags(release_year=2023),
     )
     assert tagged.canonical_title == "Final Fantasy VII Remake"
     assert tagged.type == "Game"
     assert tagged.confidence == 0.92
     assert tagged.source == "igdb"
-    assert tagged.tags.genre == []
+    assert tagged.tags.genre is None
+    assert tagged.tags.release_year == 2023
     assert tagged.poster_path is None
 
     # Test with all fields
     tagged = TaggedEntry(
         canonical_title="Final Fantasy VII Remake",
         type="Game",
-        tags=MediaTags(genre=["JRPG"], platform=["PS5"]),
+        tags=MediaTags(genre=["JRPG"], platform=["PS5"], release_year=2023),
         confidence=0.92,
         source="igdb",
         poster_path="https://example.com/poster.jpg",
@@ -58,6 +62,7 @@ def test_tagged_entry_model():
     assert tagged.type == "Game"
     assert tagged.tags.genre == ["JRPG"]
     assert tagged.tags.platform == ["PS5"]
+    assert tagged.tags.release_year == 2023
     assert tagged.confidence == 0.92
     assert tagged.source == "igdb"
     assert tagged.poster_path == "https://example.com/poster.jpg"
@@ -74,6 +79,7 @@ def test_media_entry_model():
             type="Game",
             confidence=0.92,
             source="igdb",
+            tags=MediaTags(release_year=2023),
         ),
     )
     assert entry.canonical_title == "Final Fantasy VII Remake"
@@ -90,7 +96,7 @@ def test_media_entry_model():
         tagged=TaggedEntry(
             canonical_title="Final Fantasy VII Remake",
             type="Game",
-            tags=MediaTags(genre=["JRPG"], platform=["PS5"]),
+            tags=MediaTags(genre=["JRPG"], platform=["PS5"], release_year=2023),
             confidence=0.92,
             source="igdb",
         ),
@@ -117,6 +123,7 @@ def test_media_entry_date_validation():
                 type="Book",
                 confidence=0.9,
                 source="openlibrary",
+                tags=MediaTags(release_year=2023),
             ),
             started_dates=["02/14/2023"],  # Invalid format
         )
@@ -130,7 +137,7 @@ def test_media_entry_json_serialization():
         tagged=TaggedEntry(
             canonical_title="Final Fantasy VII Remake",
             type="Game",
-            tags=MediaTags(genre=["JRPG"], platform=["PS5"]),
+            tags=MediaTags(genre=["JRPG"], platform=["PS5"], release_year=2023),
             confidence=0.92,
             source="igdb",
         ),
@@ -139,7 +146,7 @@ def test_media_entry_json_serialization():
     )
 
     # Convert to JSON and back
-    entry_json = entry.model_dump_json()
+    entry_json = entry.model_dump_json(exclude_none=True)
     entry_dict = json.loads(entry_json)
 
     # Verify structure
@@ -149,6 +156,7 @@ def test_media_entry_json_serialization():
     assert entry_dict["tagged"]["type"] == "Game"
     assert entry_dict["tagged"]["tags"]["genre"] == ["JRPG"]
     assert entry_dict["tagged"]["tags"]["platform"] == ["PS5"]
+    assert entry_dict["tagged"]["tags"]["release_year"] == 2023
     assert entry_dict["tagged"]["confidence"] == 0.92
     assert entry_dict["tagged"]["source"] == "igdb"
     assert entry_dict["started_dates"] == ["2023-02-14"]

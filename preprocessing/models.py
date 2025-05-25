@@ -10,9 +10,10 @@ from pydantic import BaseModel, Field
 class MediaTags(BaseModel):
     """Tags for a media entry."""
 
-    genre: Annotated[Optional[List[str]], Field(default_factory=list)]
-    platform: Annotated[Optional[List[str]], Field(default_factory=list)]
-    mood: Annotated[Optional[List[str]], Field(default_factory=list)]
+    author: Annotated[Optional[List[str]], Field(default=None)]
+    genre: Annotated[Optional[List[str]], Field(default=None)]
+    platform: Annotated[Optional[List[str]], Field(default=None)]
+    release_year: int
 
 
 class TaggedEntry(BaseModel):
