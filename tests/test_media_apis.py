@@ -256,7 +256,9 @@ def test_get_genre_map(mock_http_requests):
     assert genre_map == expected_genre_map
 
 
-def test_query_tmdb_movie_success(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_movie_success(
+    mock_api_responses, mock_tmdb_response, _mock_get_genre_map
+):
     """Test successful TMDB movie query."""
     mock_tmdb_response(mock_api_responses["movie"])
 
@@ -274,7 +276,9 @@ def test_query_tmdb_movie_success(mock_api_responses, mock_tmdb_response, _mock_
     assert "poster_path" in results[0]
 
 
-def test_query_tmdb_tv_success(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_tv_success(
+    mock_api_responses, mock_tmdb_response, _mock_get_genre_map
+):
     """Test successful TMDB TV query."""
     mock_tmdb_response(mock_api_responses["tv"])
 
@@ -324,7 +328,9 @@ def test_query_tmdb_api_error(mock_http_requests, caplog, _mock_get_genre_map):
         assert "Error querying TMDB API for movie: API Error" in caplog.text
 
 
-def test_query_tmdb_confidence_calculation(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_confidence_calculation(
+    mock_api_responses, mock_tmdb_response, _mock_get_genre_map
+):
     """Test confidence calculation in TMDB query."""
     different_title = "Matrices and Their Many Uses in Mathematics"
     mock_tmdb_response(
@@ -359,7 +365,9 @@ def test_query_tmdb_confidence_calculation(mock_api_responses, mock_tmdb_respons
     assert similar_results["confidence"] > different_results["confidence"]
 
 
-def test_query_tmdb_limits_results(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_limits_results(
+    mock_api_responses, mock_tmdb_response, _mock_get_genre_map
+):
     """Test that TMDB query limits results to top 5."""
     # Create mock response with more than 5 results
     mock_tmdb_response(mock_api_responses["movie"] * 10)
@@ -371,7 +379,9 @@ def test_query_tmdb_limits_results(mock_api_responses, mock_tmdb_response, _mock
     assert len(results) == 5
 
 
-def test_query_tmdb_handles_missing_fields(mock_api_responses, mock_tmdb_response, _mock_get_genre_map):
+def test_query_tmdb_handles_missing_fields(
+    mock_api_responses, mock_tmdb_response, _mock_get_genre_map
+):
     """Test that TMDB query handles missing fields gracefully."""
     # Create mock response with missing release_date
     unreleased_movies = [movie.copy() for movie in mock_api_responses["movie"]]
@@ -432,7 +442,9 @@ def test_get_igdb_token_api_error(caplog, mock_http_requests):
 
 def test_format_igdb_entry(mock_api_responses):
     """Test formatting an IGDB game entry."""
-    result = _format_igdb_entry("The Witcher 3: Wild Hunt", mock_api_responses["game"][0])
+    result = _format_igdb_entry(
+        "The Witcher 3: Wild Hunt", mock_api_responses["game"][0]
+    )
 
     assert result["canonical_title"] == "The Witcher 3: Wild Hunt"
     assert result["type"] == "Game"
@@ -563,7 +575,9 @@ def test_query_openlibrary_api_error(caplog, mock_http_requests):
         assert "Error querying Open Library API: API Error" in caplog.text
 
 
-def test_query_openlibrary_missing_fields(mock_api_responses, mock_openlibrary_response):
+def test_query_openlibrary_missing_fields(
+    mock_api_responses, mock_openlibrary_response
+):
     """Test OpenLibrary query with missing fields in response."""
     unreleased_books = [book.copy() for book in mock_api_responses["book"]]
     for book in unreleased_books:
@@ -587,11 +601,14 @@ def test_query_openlibrary_malformed_response(mock_http_requests):
     assert len(results) == 0
 
 
-def test_query_openlibrary_confidence_calculation(mock_api_responses, mock_openlibrary_response):
+def test_query_openlibrary_confidence_calculation(
+    mock_api_responses, mock_openlibrary_response
+):
     """Test confidence calculation in OpenLibrary query."""
     different_title = "The Fellowship of the Ring"
     mock_openlibrary_response(
-        mock_api_responses["book"] + [{"title": different_title, "first_publish_year": 1954}]
+        mock_api_responses["book"]
+        + [{"title": different_title, "first_publish_year": 1954}]
     )
 
     # Test with different search titles to test confidence calculation
