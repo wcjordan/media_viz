@@ -17,6 +17,7 @@ logging.basicConfig(
 )
 
 
+@st.cache_data
 def load_media_entries(file_path="preprocessing/processed_data/media_entries.json"):
     """
     Load media entries from the JSON file.
