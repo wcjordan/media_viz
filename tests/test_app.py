@@ -3,6 +3,7 @@ Tests for the Streamlit app's media entries loading functionality.
 """
 
 import json
+import logging
 from unittest.mock import patch, mock_open
 
 import pytest
@@ -27,8 +28,8 @@ SAMPLE_MEDIA_ENTRIES = [
 ]
 
 
-@pytest.fixture(autouse=True)
-def mock_streamlit_error():
+@pytest.fixture(autouse=True, name="mock_streamlit_error")
+def fixture_mock_streamlit_error():
     """Fixture to mock streamlit error call."""
     with patch("app.streamlit_app.st.error") as mock_error:
         yield mock_error
@@ -45,26 +46,31 @@ def test_load_media_entries_file_exists():
         assert entries == SAMPLE_MEDIA_ENTRIES
 
 
-def test_load_media_entries_file_not_found():
+def test_load_media_entries_file_not_found(mock_streamlit_error):
     """Test loading media entries when the file doesn't exist."""
-    with patch("os.path.exists", return_value=False), patch(
-        "streamlit.error"
-    ) as mock_st_error:
+    with patch("os.path.exists", return_value=False):
         entries = streamlit_app.load_media_entries()
-        assert entries == []
-        mock_st_error.assert_called_once()
+
+    assert entries == []
+    mock_streamlit_error.assert_called_once_with(
+        "File not found: preprocessing/processed_data/media_entries.json"
+    )
 
 
-def test_load_media_entries_invalid_json():
+def test_load_media_entries_invalid_json(caplog, mock_streamlit_error):
     """Test loading media entries when the JSON is malformed."""
     invalid_json = "{ this is not valid JSON }"
-    
-    with patch("os.path.exists", return_value=True), \
-         patch("builtins.open", mock_open(read_data=invalid_json)), \
-         patch("streamlit.error") as mock_st_error:
+
+    with patch("os.path.exists", return_value=True), patch(
+        "builtins.open", mock_open(read_data=invalid_json)
+    ), caplog.at_level(logging.ERROR):
         entries = streamlit_app.load_media_entries()
-        assert entries == []
-        mock_st_error.assert_called_once()
+
+    assert entries == []
+    mock_streamlit_error.assert_called_once_with(
+        "Error decoding JSON from preprocessing/processed_data/media_entries.json"
+    )
+    assert "JSON decode error" in caplog.text
 
 
 def test_main_function_imports():

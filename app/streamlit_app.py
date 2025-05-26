@@ -35,7 +35,7 @@ def load_media_entries(file_path="preprocessing/processed_data/media_entries.jso
             st.error(f"File not found: {file_path}")
             return []
     except json.JSONDecodeError as e:
-        st.error(f"Error decoding JSON from {file_path}: {e}")
+        st.error(f"Error decoding JSON from {file_path}")
         logger.error("JSON decode error: %s", e)
         return []
 
