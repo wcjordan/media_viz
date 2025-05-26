@@ -55,6 +55,18 @@ def test_load_media_entries_file_not_found():
         mock_st_error.assert_called_once()
 
 
+def test_load_media_entries_invalid_json():
+    """Test loading media entries when the JSON is malformed."""
+    invalid_json = "{ this is not valid JSON }"
+    
+    with patch("os.path.exists", return_value=True), \
+         patch("builtins.open", mock_open(read_data=invalid_json)), \
+         patch("streamlit.error") as mock_st_error:
+        entries = streamlit_app.load_media_entries()
+        assert entries == []
+        mock_st_error.assert_called_once()
+
+
 def test_main_function_imports():
     """Smoke test to ensure the main function imports correctly."""
     assert callable(streamlit_app.main)
