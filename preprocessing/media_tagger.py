@@ -105,7 +105,9 @@ def _combine_votes(
     return tagged_entry
 
 
-def _query_with_cache(media_type: str, title: str, release_year: str = None) -> List[Dict]:
+def _query_with_cache(
+    media_type: str, title: str, release_year: str = None
+) -> List[Dict]:
     """
     Query the appropriate API with caching to avoid redundant calls.
 
@@ -164,6 +166,7 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
 
     # Apply hints if available
     hint = hints.get(title, None)
+    release_year_query_term = None
     if hint:
         logger.info("Applying hint for '%s' to entry '%s'", title, entry)
         if hint.get("type") == "Ignored":
@@ -171,7 +174,7 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
         title = hint.get("canonical_title", title)
         # Extract release_year from hint if available
         if "release_year" in hint:
-            entry["release_year"] = hint["release_year"]
+            release_year_query_term = hint["release_year"]
 
     api_hits = []
     types_to_query = ["Movie", "TV Show", "Game", "Book"]
@@ -181,18 +184,15 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
     elif hint and "type" in hint:
         types_to_query = [hint["type"]]
 
-    # Get release_year from entry or hint
-    release_year = entry.get("release_year")
-    
     # Query APIs with caching
     if "Movie" in types_to_query:
-        api_hits.extend(_query_with_cache("movie", title, release_year))
+        api_hits.extend(_query_with_cache("movie", title, release_year_query_term))
     if "TV Show" in types_to_query:
-        api_hits.extend(_query_with_cache("tv", title, release_year))
+        api_hits.extend(_query_with_cache("tv", title, release_year_query_term))
     if "Game" in types_to_query:
-        api_hits.extend(_query_with_cache("game", title, release_year))
+        api_hits.extend(_query_with_cache("game", title, release_year_query_term))
     if "Book" in types_to_query:
-        api_hits.extend(_query_with_cache("book", title, release_year))
+        api_hits.extend(_query_with_cache("book", title, release_year_query_term))
 
     # Combine votes from hints and API hits
     tagged_entry = _combine_votes(entry, api_hits, hint)

@@ -150,11 +150,11 @@ def query_tmdb(mode: str, title: str, release_year: str = None) -> list:
             "page": 1,
             "include_adult": "false",
         }
-        
+
         # Add year parameter if provided
         if release_year:
             params["year"] = release_year
-            
+
         tmdb_response = requests.get(
             f"{TMDB_BASE_URL}/search/{mode}",
             params=params,
@@ -321,7 +321,7 @@ def query_igdb(title: str, release_year: str = None) -> list:
     client_id = os.environ.get("IGDB_CLIENT_ID")
     headers = {"Client-ID": client_id, "Authorization": f"Bearer {access_token}"}
     try:
-        # Step 2: Query IGDB API for games
+        # Query IGDB API for games
 
         # Use the Apicalypse query format that IGDB requires
         # Search for games with name similar to the title
@@ -331,21 +331,25 @@ def query_igdb(title: str, release_year: str = None) -> list:
             fields name, cover.url, first_release_date, genres.name, platforms.name, rating, aggregated_rating;
             where version_parent = null;
         """
-        
+
         # Add year filter if provided
         if release_year:
             # Convert year to Unix timestamps (start and end of year)
             try:
                 year = int(release_year)
-                start_timestamp = int(time.mktime(time.strptime(f"{year}-01-01", "%Y-%m-%d")))
-                end_timestamp = int(time.mktime(time.strptime(f"{year}-12-31", "%Y-%m-%d")))
+                start_timestamp = int(
+                    time.mktime(time.strptime(f"{year}-01-01", "%Y-%m-%d"))
+                )
+                end_timestamp = int(
+                    time.mktime(time.strptime(f"{year}-12-31", "%Y-%m-%d"))
+                )
                 query += f" & first_release_date >= {start_timestamp} & first_release_date <= {end_timestamp};"
             except ValueError:
                 logger.warning("Invalid release_year format: %s", release_year)
                 query += ";"
         else:
             query += ";"
-            
+
         query += " limit 5;"
 
         response = requests.post(
@@ -354,13 +358,68 @@ def query_igdb(title: str, release_year: str = None) -> list:
         response.raise_for_status()
         games = response.json()
 
-        # Step 3: Process results
         tagged_games = [_format_igdb_entry(title, game) for game in games]
         return [game for game in tagged_games if game is not None]
 
     except requests.RequestException as e:
         logger.error("Error querying IGDB API: %s", e)
         return []
+
+
+def _format_openlibrary_entry(search_title: str, book: dict) -> dict:
+    """
+    Format a single Open Library book entry into a standardized dictionary.
+    Args:
+        search_title: The search title.  Used to calculate confidence.
+        book: A dictionary containing book metadata from Open Library.
+    Returns:
+        A dictionary with the following keys
+            - canonical_title: The official title from Open Library
+            - poster_path: The URL to the book's cover image
+            - type: The type of media (Book)
+            - tags: A dictionary containing tags for genre, author, etc.
+            - confidence: A float between 0 and 1 indicating match confidence
+            - source: The source of the metadata (e.g., "openlibrary")
+    """
+    # Calculate confidence based on title similarity
+    # Note books confidence is handicapped to 0.8 to avoid drowning out games and movies
+    book_title = book.get("title", "")
+    confidence = 0.8 * _calculate_title_similarity(search_title, book_title)
+
+    # Get cover image URL if available
+    cover_id = book.get("cover_i")
+    cover_url = ""
+    if cover_id:
+        cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
+
+    # Get authors
+    authors = book.get("author_name", [])
+
+    # Get subjects/genres
+    subjects = book.get("subject", []) if book.get("subject") else []
+
+    # Get first publication year
+    publish_year = (
+        str(book.get("first_publish_year", ""))
+        if book.get("first_publish_year")
+        else ""
+    )
+    if not publish_year:
+        return None
+
+    # Create result entry
+    return {
+        "canonical_title": book_title,
+        "poster_path": cover_url,
+        "type": "Book",
+        "tags": {
+            "genre": subjects,
+            "author": authors,
+            "release_year": publish_year,
+        },
+        "confidence": confidence,
+        "source": "openlibrary",
+    }
 
 
 def query_openlibrary(title: str, release_year: str = None) -> list:
@@ -389,11 +448,11 @@ def query_openlibrary(title: str, release_year: str = None) -> list:
             "limit": 5,
             "fields": "key,title,author_name,first_publish_year,subject,cover_i",
         }
-        
+
         # Add first_publish_year parameter if provided
         if release_year:
             params["first_publish_year"] = release_year
-            
+
         # Search for books by title
         search_url = "https://openlibrary.org/search.json"
         response = requests.get(
@@ -405,51 +464,11 @@ def query_openlibrary(title: str, release_year: str = None) -> list:
         search_data = response.json()
 
         # Process search results
-        results = []
-        for book in search_data.get("docs", []):
-            # Calculate confidence based on title similarity
-            # Note books confidence is handicapped to 0.8 to avoid drowning out games and movies
-            book_title = book.get("title", "")
-            confidence = 0.8 * _calculate_title_similarity(title, book_title)
-
-            # Get cover image URL if available
-            cover_id = book.get("cover_i")
-            cover_url = ""
-            if cover_id:
-                cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-L.jpg"
-
-            # Get authors
-            authors = book.get("author_name", [])
-
-            # Get subjects/genres
-            subjects = book.get("subject", []) if book.get("subject") else []
-
-            # Get first publication year
-            publish_year = (
-                str(book.get("first_publish_year", ""))
-                if book.get("first_publish_year")
-                else ""
-            )
-            if not publish_year:
-                continue
-
-            # Create result entry
-            results.append(
-                {
-                    "canonical_title": book_title,
-                    "poster_path": cover_url,
-                    "type": "Book",
-                    "tags": {
-                        "genre": subjects,
-                        "author": authors,
-                        "release_year": publish_year,
-                    },
-                    "confidence": confidence,
-                    "source": "openlibrary",
-                }
-            )
-
-        return results
+        tagged_books = [
+            _format_openlibrary_entry(title, book)
+            for book in search_data.get("docs", [])
+        ]
+        return [book for book in tagged_books if book is not None]
 
     except requests.RequestException as e:
         logger.error("Error querying Open Library API: %s", e)

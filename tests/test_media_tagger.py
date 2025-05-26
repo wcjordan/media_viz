@@ -164,7 +164,7 @@ def fixture_setup_api_mocks(mock_dependencies, mock_api_responses):
             book_response = mock_api_responses["book"]
 
         # Configure mock returns based on parameters or use empty lists as default
-        def tmdb_side_effect(mode, title):
+        def tmdb_side_effect(mode, title, *_):
             if mode == "movie" and movie_response is not None:
                 if isinstance(movie_response, list):
                     return movie_response
@@ -177,7 +177,7 @@ def fixture_setup_api_mocks(mock_dependencies, mock_api_responses):
 
         mock_tmdb.side_effect = tmdb_side_effect
 
-        def igdb_side_effect(title):
+        def igdb_side_effect(title, *_):
             if game_response is not None:
                 if isinstance(game_response, list):
                     return game_response
@@ -186,7 +186,7 @@ def fixture_setup_api_mocks(mock_dependencies, mock_api_responses):
 
         mock_igdb.side_effect = igdb_side_effect
 
-        def openlibrary_side_effect(title):
+        def openlibrary_side_effect(title, *_):
             if book_response is not None:
                 if isinstance(book_response, list):
                     return book_response
@@ -226,33 +226,24 @@ def test_apply_tagging_with_only_hints(
     assert tagged_entry["source"] == "hint"
 
 
-def test_apply_tagging_with_release_year_hint(
-    caplog, setup_api_mocks, setup_hints_mock
-):
+def test_apply_tagging_with_release_year_hint(setup_api_mocks, setup_hints_mock):
     """Test applying tagging with release_year in the hint."""
     # Setup a hint with release_year
-    setup_hints_mock(
-        {
-            "Sapiens": {
-                "type": "Book",
-                "release_year": "2011"
-            }
-        }
-    )
-    
+    setup_hints_mock({"Sapiens": {"type": "Book", "release_year": "2011"}})
+
     # Mock the API calls
     mock_tmdb, mock_igdb, mock_openlibrary = setup_api_mocks()
-    
+
     # Create a test entry
     entry = {"title": "Sapiens", "started_dates": ["2023-01-01"], "finished_dates": []}
-    
+
     # Apply tagging
     apply_tagging([entry])
-    
+
     # Verify that the release_year was passed to the OpenLibrary API
     mock_openlibrary.assert_called_once()
     assert "2011" in str(mock_openlibrary.call_args)
-    
+
     # Verify that other APIs were not called since the hint specified Book type
     mock_tmdb.assert_not_called()
     mock_igdb.assert_not_called()
@@ -479,7 +470,7 @@ def test_apply_tagging_only_queries_specified_type(
     apply_tagging(movie_entries)
 
     # Verify only movie API was called
-    mock_tmdb.assert_called_once_with("movie", "The Hobbit")
+    mock_tmdb.assert_called_once_with("movie", "The Hobbit", None)
     mock_igdb.assert_not_called()
     mock_openlibrary.assert_not_called()
 
@@ -489,7 +480,7 @@ def test_apply_tagging_only_queries_specified_type(
     apply_tagging(tv_entries)
 
     # Verify only TV API was called
-    mock_tmdb.assert_called_once_with("tv", "Succession")
+    mock_tmdb.assert_called_once_with("tv", "Succession", None)
     mock_igdb.assert_not_called()
     mock_openlibrary.assert_not_called()
 
@@ -500,7 +491,7 @@ def test_apply_tagging_only_queries_specified_type(
 
     # Verify only game API was called
     mock_tmdb.assert_not_called()
-    mock_igdb.assert_called_once_with("FF7")
+    mock_igdb.assert_called_once_with("FF7", None)
     mock_openlibrary.assert_not_called()
 
     # Test Book type
@@ -511,7 +502,7 @@ def test_apply_tagging_only_queries_specified_type(
     # Verify only book API was called
     mock_tmdb.assert_not_called()
     mock_igdb.assert_not_called()
-    mock_openlibrary.assert_called_once_with("The Hobbit")
+    mock_openlibrary.assert_called_once_with("The Hobbit", None)
 
 
 def test_use_canonical_title_from_hint(
@@ -533,7 +524,7 @@ def test_use_canonical_title_from_hint(
     apply_tagging(ff7_entry)
 
     # Verify API was called with canonical_title from hint
-    mock_igdb.assert_called_once_with("Final Fantasy VII Remake")
+    mock_igdb.assert_called_once_with("Final Fantasy VII Remake", None)
 
 
 def test_season_extraction_in_tagging(
@@ -587,7 +578,7 @@ def test_season_extraction_in_tagging(
         assert tagged_entry["tagged"]["type"] == "TV Show"
 
         # Verify API was called with the title without season information
-        mock_tmdb.assert_called_once_with("tv", expected_title)
+        mock_tmdb.assert_called_once_with("tv", expected_title, None)
 
 
 def test_combine_similar_entries():

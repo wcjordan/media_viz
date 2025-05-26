@@ -282,13 +282,14 @@ def test_query_tmdb_with_release_year(
     """Test TMDB query with release_year parameter."""
     mock_get, _ = mock_http_requests
     mock_tmdb_response(mock_api_responses["movie"])
-    
+
     # Call the function with release_year
     query_tmdb("movie", "The Matrix", "1999")
-    
+
     # Verify that the year parameter was included in the API call
     assert mock_get.call_count == 1
-    assert "year=1999" in str(mock_get.call_args)
+    assert "year" in mock_get.call_args.kwargs["params"]
+    assert mock_get.call_args.kwargs["params"]["year"] == "1999"
 
 
 def test_query_tmdb_tv_success(
@@ -524,10 +525,10 @@ def test_query_igdb_success(_mock_get_igdb_token, mock_igdb_response):
 def test_query_igdb_with_release_year(_mock_get_igdb_token, mock_igdb_response):
     """Test IGDB query with release_year parameter."""
     mock_post = mock_igdb_response()
-    
+
     # Call the function with release_year
     query_igdb("The Witcher 3", "2015")
-    
+
     # Verify that the release_year was included in the query
     assert mock_post.call_count == 1
     assert "first_release_date >=" in str(mock_post.call_args)
@@ -585,10 +586,10 @@ def test_query_openlibrary_success(mock_openlibrary_response):
 def test_query_openlibrary_with_release_year(mock_openlibrary_response):
     """Test OpenLibrary query with release_year parameter."""
     mock_get = mock_openlibrary_response()
-    
+
     # Call the function with release_year
     query_openlibrary("The Hobbit", "1937")
-    
+
     # Verify that the first_publish_year parameter was included in the API call
     assert mock_get.call_count == 1
     assert mock_get.call_args.kwargs["params"]["first_publish_year"] == "1937"
