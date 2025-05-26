@@ -326,11 +326,13 @@ def query_igdb(title: str, release_year: str = None) -> list:
         # Use the Apicalypse query format that IGDB requires
         # Search for games with name similar to the title
         # Include relevant fields for metadata
-        query = f"""
+        query_segments = [
+            f"""
             search "{title}";
             fields name, cover.url, first_release_date, genres.name, platforms.name, rating, aggregated_rating;
             where version_parent = null;
         """
+        ]
 
         # Add year filter if provided
         if release_year:

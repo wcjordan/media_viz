@@ -241,8 +241,7 @@ def test_apply_tagging_with_release_year_hint(setup_api_mocks, setup_hints_mock)
     apply_tagging([entry])
 
     # Verify that the release_year was passed to the OpenLibrary API
-    mock_openlibrary.assert_called_once()
-    assert mock_openlibrary.call_args.kwargs["release_year"] == "2011"
+    mock_openlibrary.assert_called_once_with("Sapiens", "2011")
 
     # Verify that other APIs were not called since the hint specified Book type
     mock_tmdb.assert_not_called()
