@@ -5,6 +5,8 @@ Tests for the Streamlit app's media entries loading functionality.
 import json
 from unittest.mock import patch, mock_open
 
+import pytest
+
 from app import streamlit_app
 
 # Sample media entries for testing
@@ -23,6 +25,13 @@ SAMPLE_MEDIA_ENTRIES = [
         "warnings": [],
     }
 ]
+
+
+@pytest.fixture(autouse=True)
+def mock_streamlit_error():
+    """Fixture to mock streamlit error call."""
+    with patch("app.streamlit_app.st.error") as mock_error:
+        yield mock_error
 
 
 def test_load_media_entries_file_exists():
