@@ -7,6 +7,7 @@ import logging
 from unittest.mock import patch, mock_open
 
 import pytest
+import streamlit as st
 
 from app import streamlit_app
 
@@ -33,6 +34,13 @@ def fixture_mock_streamlit_error():
     """Fixture to mock streamlit error call."""
     with patch("app.streamlit_app.st.error") as mock_error:
         yield mock_error
+
+
+@pytest.fixture(autouse=True)
+def fixture_clear_cache():
+    """Fixture to clear Streamlit cache before each test."""
+    # Clear the cache before each test
+    st.cache_data.clear()
 
 
 def test_load_media_entries_file_exists():
