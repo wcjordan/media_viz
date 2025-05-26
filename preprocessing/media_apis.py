@@ -115,13 +115,14 @@ def _format_tmdb_entry(
     }
 
 
-def query_tmdb(mode: str, title: str) -> list:
+def query_tmdb(mode: str, title: str, release_year: str = None) -> list:
     """
     Query The Movie Database (TMDB) API for TV shows or Movie metadata.
 
     Args:
         mode: The mode of media to query (e.g., "movie" or "tv").
         title: The title of the media to query.
+        release_year: Optional year of release to narrow search results.
 
     Returns:
         List of dictionaries with metadata for each entry:
@@ -286,12 +287,13 @@ def _format_igdb_entry(search_title: str, game: dict) -> dict:
     }
 
 
-def query_igdb(title: str) -> list:
+def query_igdb(title: str, release_year: str = None) -> list:
     """
     Query the Internet Game Database (IGDB) API for video game metadata.
 
     Args:
         title: The title of the game to query.
+        release_year: Optional year of release to narrow search results.
 
     Returns:
         List of dictionaries with metadata for each entry:
@@ -321,8 +323,23 @@ def query_igdb(title: str) -> list:
             search "{title}";
             fields name, cover.url, first_release_date, genres.name, platforms.name, rating, aggregated_rating;
             where version_parent = null;
-            limit 5;
         """
+        
+        # Add year filter if provided
+        if release_year:
+            # Convert year to Unix timestamps (start and end of year)
+            try:
+                year = int(release_year)
+                start_timestamp = int(time.mktime(time.strptime(f"{year}-01-01", "%Y-%m-%d")))
+                end_timestamp = int(time.mktime(time.strptime(f"{year}-12-31", "%Y-%m-%d")))
+                query += f" & first_release_date >= {start_timestamp} & first_release_date <= {end_timestamp};"
+            except ValueError:
+                logger.warning("Invalid release_year format: %s", release_year)
+                query += ";"
+        else:
+            query += ";"
+            
+        query += " limit 5;"
 
         response = requests.post(
             "https://api.igdb.com/v4/games", headers=headers, data=query, timeout=10
@@ -339,12 +356,13 @@ def query_igdb(title: str) -> list:
         return []
 
 
-def query_openlibrary(title: str) -> list:
+def query_openlibrary(title: str, release_year: str = None) -> list:
     """
     Query the Open Library API for book metadata.
 
     Args:
         title: The title of the book to query.
+        release_year: Optional year of release to narrow search results.
 
     Returns:
         List of dictionaries with metadata for each entry:
@@ -358,15 +376,22 @@ def query_openlibrary(title: str) -> list:
     logger.info("Querying Open Library for title: %s", title)
 
     try:
+        # Prepare parameters for the API call
+        params = {
+            "title": title,
+            "limit": 5,
+            "fields": "key,title,author_name,first_publish_year,subject,cover_i",
+        }
+        
+        # Add first_publish_year parameter if provided
+        if release_year:
+            params["first_publish_year"] = release_year
+            
         # Search for books by title
         search_url = "https://openlibrary.org/search.json"
         response = requests.get(
             search_url,
-            params={
-                "title": title,
-                "limit": 5,
-                "fields": "key,title,author_name,first_publish_year,subject,cover_i",
-            },
+            params=params,
             timeout=10,
         )
         response.raise_for_status()

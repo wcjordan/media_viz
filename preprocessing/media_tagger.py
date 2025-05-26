@@ -105,18 +105,19 @@ def _combine_votes(
     return tagged_entry
 
 
-def _query_with_cache(media_type: str, title: str) -> List[Dict]:
+def _query_with_cache(media_type: str, title: str, release_year: str = None) -> List[Dict]:
     """
     Query the appropriate API with caching to avoid redundant calls.
 
     Args:
         media_type: The type of media to query ("movie", "tv", "game", "book")
         title: The title to search for
+        release_year: Optional year of release to narrow search results
 
     Returns:
         List of API hits
     """
-    cache_key = (title.lower(), media_type)
+    cache_key = (title.lower(), media_type, release_year)
     if cache_key in QUERY_CACHE:
         logger.info("Using cached result for %s: %s", media_type, title)
         return QUERY_CACHE[cache_key]
@@ -128,13 +129,13 @@ def _query_with_cache(media_type: str, title: str) -> List[Dict]:
     # Query the appropriate API
     results = []
     if media_type == "movie":
-        results = query_tmdb("movie", title)
+        results = query_tmdb("movie", title, release_year)
     elif media_type == "tv":
-        results = query_tmdb("tv", title)
+        results = query_tmdb("tv", title, release_year)
     elif media_type == "game":
-        results = query_igdb(title)
+        results = query_igdb(title, release_year)
     elif media_type == "book":
-        results = query_openlibrary(title)
+        results = query_openlibrary(title, release_year)
 
     # Cache the results
     QUERY_CACHE[cache_key] = results
@@ -168,6 +169,9 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
         if hint.get("type") == "Ignored":
             return None
         title = hint.get("canonical_title", title)
+        # Extract release_year from hint if available
+        if "release_year" in hint:
+            entry["release_year"] = hint["release_year"]
 
     api_hits = []
     types_to_query = ["Movie", "TV Show", "Game", "Book"]
@@ -177,15 +181,18 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
     elif hint and "type" in hint:
         types_to_query = [hint["type"]]
 
+    # Get release_year from entry or hint
+    release_year = entry.get("release_year")
+    
     # Query APIs with caching
     if "Movie" in types_to_query:
-        api_hits.extend(_query_with_cache("movie", title))
+        api_hits.extend(_query_with_cache("movie", title, release_year))
     if "TV Show" in types_to_query:
-        api_hits.extend(_query_with_cache("tv", title))
+        api_hits.extend(_query_with_cache("tv", title, release_year))
     if "Game" in types_to_query:
-        api_hits.extend(_query_with_cache("game", title))
+        api_hits.extend(_query_with_cache("game", title, release_year))
     if "Book" in types_to_query:
-        api_hits.extend(_query_with_cache("book", title))
+        api_hits.extend(_query_with_cache("book", title, release_year))
 
     # Combine votes from hints and API hits
     tagged_entry = _combine_votes(entry, api_hits, hint)

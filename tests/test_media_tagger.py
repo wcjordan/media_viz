@@ -226,6 +226,38 @@ def test_apply_tagging_with_only_hints(
     assert tagged_entry["source"] == "hint"
 
 
+def test_apply_tagging_with_release_year_hint(
+    caplog, setup_api_mocks, setup_hints_mock
+):
+    """Test applying tagging with release_year in the hint."""
+    # Setup a hint with release_year
+    setup_hints_mock(
+        {
+            "Sapiens": {
+                "type": "Book",
+                "release_year": "2011"
+            }
+        }
+    )
+    
+    # Mock the API calls
+    mock_tmdb, mock_igdb, mock_openlibrary = setup_api_mocks()
+    
+    # Create a test entry
+    entry = {"title": "Sapiens", "started_dates": ["2023-01-01"], "finished_dates": []}
+    
+    # Apply tagging
+    apply_tagging([entry])
+    
+    # Verify that the release_year was passed to the OpenLibrary API
+    mock_openlibrary.assert_called_once()
+    assert "2011" in str(mock_openlibrary.call_args)
+    
+    # Verify that other APIs were not called since the hint specified Book type
+    mock_tmdb.assert_not_called()
+    mock_igdb.assert_not_called()
+
+
 def test_apply_tagging_with_api_calls(
     sample_entries, setup_api_mocks, setup_hints_mock
 ):
