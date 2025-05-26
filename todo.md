@@ -35,14 +35,14 @@
 - [x] Implement `query_tmdb`
 - [x] Implement `query_igdb`
 - [x] Implement `query_openlibrary`
-- [ ] Batch titles to minimize requests to the APIs
+- [x] Batch titles to minimize requests to the APIs
 - [x] Trim seasons
 - [x] Use hints to limit the DBs queried for a title
 
 ## 5. JSON Schema & Validation
-- [ ] Define `MediaEntry` Pydantic model in `models.py`
-- [ ] Validate entries in `preprocess.py` and serialize to `media_entries.json`
-- [ ] Write tests in `tests/test_models.py` for model instantiation and JSON output
+- [x] Define `MediaEntry` Pydantic model in `models.py`
+- [x] Validate entries in `preprocess.py` and serialize to `media_entries.json`
+- [x] Write tests in `tests/test_models.py` for model instantiation and JSON output
 
 ## 6. Streamlit Skeleton
 - [ ] Create `app/streamlit_app.py`

@@ -76,11 +76,16 @@ def _combine_votes(
     # Sort API hits by confidence so we can check how close the to matches are
     if len(api_hits) > 1:
         api_hits.sort(key=lambda x: x["confidence"], reverse=True)
-        if api_hits[0]["confidence"] - api_hits[1]["confidence"] < 0.1:
+        close_api_hits = [
+            hit
+            for hit in api_hits
+            if hit["confidence"] >= api_hits[0]["confidence"] - 0.1
+        ]
+        if len(close_api_hits) > 1:
             logger.warning(
                 "Multiple API hits with close confidence for %s.\n\t%s",
                 entry,
-                ",\n\t".join(str(hit) for hit in api_hits),
+                ",\n\t".join(str(hit) for hit in close_api_hits),
             )
 
     best_api_hit = api_hits[0]
@@ -157,13 +162,12 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
         logger.info("Extracted season from title: %s", entry)
 
     # Apply hints if available
-    hint = None
-    for hint_key, hint_data in hints.items():
-        if hint_key == title:
-            logger.info("Applying hint for '%s' to entry '%s'", hint_key, entry)
-            title = hint_data.get("canonical_title", title)
-            hint = hint_data
-            break
+    hint = hints.get(title, None)
+    if hint:
+        logger.info("Applying hint for '%s' to entry '%s'", title, entry)
+        if hint.get("type") == "Ignored":
+            return None
+        title = hint.get("canonical_title", title)
 
     api_hits = []
     types_to_query = ["Movie", "TV Show", "Game", "Book"]
@@ -209,7 +213,10 @@ def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
     """
     canonical_groups = {}
     for entry in tagged_entries:
-        tagged_entry = entry.get("tagged", {})
+        tagged_entry = entry.get("tagged")
+        if tagged_entry is None:
+            continue
+
         canonical_key = (
             tagged_entry.get("canonical_title", ""),
             tagged_entry.get("type", ""),

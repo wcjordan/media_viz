@@ -8,23 +8,35 @@ import json
 import logging
 from typing import List, Dict
 
+from pydantic import ValidationError
+
 from .media_extractor import RANGE_VERBS, extract_entries
 from .week_extractor import parse_row
 from .media_tagger import apply_tagging, get_media_db_api_calls
+from .models import MediaEntry
 
 
 logger = logging.getLogger(__name__)
 
 
-def _load_weekly_records(path: str) -> List[Dict]:
+def _load_weekly_records(
+    path: str, start_date: str = None, end_date: str = None
+) -> List[Dict]:
     """
     Load weekly records from a CSV file.
 
     Args:
         path: The file path to the CSV file.
+        start_date: Optional start date to filter records.
+        end_date: Optional end date to filter records.
 
     Returns:
         A list of dictionaries representing the weekly records.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        PermissionError: If there are permission issues accessing the file.
+        csv.Error: If there is an error parsing the CSV file.
     """
     records = []
     current_year = None
@@ -35,6 +47,10 @@ def _load_weekly_records(path: str) -> List[Dict]:
             for row in reader:
                 record, current_year = parse_row(row, current_year)
                 if record:
+                    if start_date and record.get("start_date") < start_date:
+                        continue
+                    if end_date and record.get("start_date") >= end_date:
+                        continue
                     records.append(record)
 
     except FileNotFoundError as e:
@@ -94,7 +110,10 @@ def _group_entries(individual_entries):
 
 
 def process_and_save(
-    input_csv: str, output_json: str, hints_path: str = None, limit: int = None
+    input_csv: str,
+    output_json: str,
+    start_date: str = None,
+    end_date: str = None,
 ) -> Dict:
     """
     Process the input CSV file and save the results to a JSON file.
@@ -102,14 +121,14 @@ def process_and_save(
     Args:
         input_csv: Path to the input CSV file.
         output_json: Path to the output JSON file.
-        hints_path: Path to the hints YAML file. Optional.
-        limit: Maximum number of entries to process. Optional.
+        start_date: Start date for filtering entries. Optional.
+        end_date: End date for filtering entries. Optional.
 
     Returns:
         Dictionary with statistics about the processing.
     """
     # Load weekly records
-    weekly_records = _load_weekly_records(input_csv)
+    weekly_records = _load_weekly_records(input_csv, start_date, end_date)
     logger.info("Loaded %d weekly records from %s", len(weekly_records), input_csv)
 
     # Extract media entries
@@ -122,20 +141,32 @@ def process_and_save(
     grouped_entries = _group_entries(individual_entries)
 
     # Apply tagging
-    if limit is not None:
-        grouped_entries = grouped_entries[:limit]
-        logger.warning("Limited to %d entries", limit)
-    tagged_entries = apply_tagging(grouped_entries, hints_path)
+    tagged_entries = apply_tagging(grouped_entries)
     logger.info("Tagged %d media entries", len(tagged_entries))
 
     # Calculate statistics
     stats = calculate_statistics(tagged_entries)
 
+    # Validate entries against the MediaEntry model
+    validated_entries = []
+    for entry in tagged_entries:
+        try:
+            validated_entry = MediaEntry(**entry)
+            validated_entries.append(validated_entry.model_dump(exclude_none=True))
+        except ValidationError as e:
+            logger.warning(
+                "Failed to validate entry %s: %s",
+                entry.get("canonical_title", "Unknown"),
+                str(e),
+            )
+
+    logger.info("Validated %d/%d entries", len(validated_entries), len(tagged_entries))
+
     # Save to JSON
     try:
         with open(output_json, "w", encoding="utf-8") as f:
-            json.dump(tagged_entries, f, indent=2)
-        logger.info("Saved %d entries to %s", len(tagged_entries), output_json)
+            json.dump(validated_entries, f, indent=2)
+        logger.info("Saved %d entries to %s", len(validated_entries), output_json)
     except IOError as e:
         logger.error("Error saving to JSON file: %s", e)
         raise
@@ -185,7 +216,8 @@ if __name__ == "__main__":
     final_stats = process_and_save(
         "preprocessing/raw_data/media_enjoyed.csv",
         "preprocessing/processed_data/media_entries.json",
-        limit=20,
+        start_date=None,
+        end_date="2021-07-01",
     )
 
     # Print statistics
