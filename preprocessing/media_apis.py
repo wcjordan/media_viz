@@ -343,14 +343,14 @@ def query_igdb(title: str, release_year: str = None) -> list:
                 end_timestamp = int(
                     time.mktime(time.strptime(f"{year}-12-31", "%Y-%m-%d"))
                 )
-                query += f" & first_release_date >= {start_timestamp} & first_release_date <= {end_timestamp};"
+                query_segments.append(
+                    f"first_release_date >= {start_timestamp} & first_release_date <= {end_timestamp}"
+                )
             except ValueError:
                 logger.warning("Invalid release_year format: %s", release_year)
-                query += ";"
-        else:
-            query += ";"
 
-        query += " limit 5;"
+        query_segments.append("limit 5")
+        query = "; ".join(query_segments) + ";"
 
         response = requests.post(
             "https://api.igdb.com/v4/games", headers=headers, data=query, timeout=10
