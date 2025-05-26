@@ -18,6 +18,10 @@ lint:
 format:
 	black .
 
+.PHONY: preprocess
+preprocess:
+	env $$(grep -v 'ANTHROPIC' .env | xargs) python -m preprocessing.preprocess
+
 .PHONY: test
 test:
 	python -m pytest tests -v

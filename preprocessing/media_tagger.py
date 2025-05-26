@@ -76,11 +76,16 @@ def _combine_votes(
     # Sort API hits by confidence so we can check how close the to matches are
     if len(api_hits) > 1:
         api_hits.sort(key=lambda x: x["confidence"], reverse=True)
-        if api_hits[0]["confidence"] - api_hits[1]["confidence"] < 0.1:
+        close_api_hits = [
+            hit
+            for hit in api_hits
+            if hit["confidence"] >= api_hits[0]["confidence"] - 0.1
+        ]
+        if len(close_api_hits) > 1:
             logger.warning(
                 "Multiple API hits with close confidence for %s.\n\t%s",
                 entry,
-                ",\n\t".join(str(hit) for hit in api_hits),
+                ",\n\t".join(str(hit) for hit in close_api_hits),
             )
 
     best_api_hit = api_hits[0]
