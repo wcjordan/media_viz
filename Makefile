@@ -22,6 +22,10 @@ format:
 preprocess:
 	env $$(grep -v 'ANTHROPIC' .env | xargs) python -m preprocessing.preprocess
 
+.PHONY: start
+start:
+	streamlit run app/streamlit_app.py
+
 .PHONY: test
 test:
 	python -m pytest tests -v
