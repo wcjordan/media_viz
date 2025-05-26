@@ -142,15 +142,22 @@ def query_tmdb(mode: str, title: str, release_year: str = None) -> list:
 
     # Search for TV shows or Movies
     try:
+        # Prepare parameters for the API call
+        params = {
+            "api_key": api_key,
+            "query": title,
+            "language": "en-US",
+            "page": 1,
+            "include_adult": "false",
+        }
+        
+        # Add year parameter if provided
+        if release_year:
+            params["year"] = release_year
+            
         tmdb_response = requests.get(
             f"{TMDB_BASE_URL}/search/{mode}",
-            params={
-                "api_key": api_key,
-                "query": title,
-                "language": "en-US",
-                "page": 1,
-                "include_adult": "false",
-            },
+            params=params,
             timeout=10,
         )
         tmdb_response.raise_for_status()
