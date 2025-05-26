@@ -21,7 +21,7 @@ class TaggedEntry(BaseModel):
 
     canonical_title: str
     type: str
-    tags: Annotated[MediaTags, Field(default_factory=MediaTags)]
+    tags: Annotated[MediaTags, Field(default_factory=lambda: MediaTags(release_year=0))]
     confidence: float
     source: str
     poster_path: Optional[str] = None
