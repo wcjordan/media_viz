@@ -1,13 +1,10 @@
-import os
-import sys
+"""
+Tests for the Streamlit app's media entries loading functionality.
+"""
+
 import json
-import pytest
 from unittest.mock import patch, mock_open
 
-# Add the app directory to the path so we can import the streamlit app
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-# Import the streamlit app module
 from app import streamlit_app
 
 # Sample media entries for testing

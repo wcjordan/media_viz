@@ -1,9 +1,13 @@
+"""
+Streamlit application to visualize media consumption data.
+"""
+
 import json
 import os
 import streamlit as st
 
 
-def load_media_entries(file_path="preprocessing/media_entries.json"):
+def load_media_entries(file_path="preprocessing/processed_data/media_entries.json"):
     """
     Load media entries from the JSON file.
 
@@ -15,13 +19,13 @@ def load_media_entries(file_path="preprocessing/media_entries.json"):
     """
     try:
         if os.path.exists(file_path):
-            with open(file_path, "r") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         else:
             st.error(f"File not found: {file_path}")
             return []
-    except Exception as e:
-        st.error(f"Error loading media entries: {str(e)}")
+    except json.JSONDecodeError as e:
+        st.error(f"Error decoding JSON from {file_path}: {e}")
         return []
 
 
@@ -37,7 +41,7 @@ def main():
     # Add a reload button
     if st.button("Reload Data"):
         st.cache_data.clear()
-        st.experimental_rerun()
+        st.rerun()
 
     # Load and display the media entries
     media_entries = load_media_entries()
