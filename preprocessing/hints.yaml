@@ -18,7 +18,6 @@ FF7:
   type: "Game"
 
 Hades:
-  canonical_title: "Hades"
   type: "Game"
 
 The Avengers:
@@ -30,12 +29,8 @@ The Avengers w/ Danyi:
   type: "Game"
 
 # Books
-LOTR:
-  canonical_title: "The Lord of the Rings"
-  type: "Book"
-
-Hobbit:
-  canonical_title: "The Hobbit"
+Sapiens:
+  canonical_title: "Sapiens: A Brief History of Mankind"
   type: "Book"
 
 # TV Shows
@@ -43,12 +38,29 @@ Captain Falcon & the Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
   type: "TV Show"
 
+Falcon & Winter Soldier:
+  canonical_title: "The Falcon and the Winter Soldier"
+  type: "TV Show"
+
 Finished WandaVision:
   canonical_title: "WandaVision"
   type: "TV Show"
 
+Loki:
+  type: "TV Show"
+
+Love, Death, & Robots:
+  type: "TV Show"
+
+Nevers:
+  canonical_title: "The Nevers"
+  type: "TV Show"
+
+Shadow & Bone:
+  canonical_title: "Shadow and Bone"
+  type: "TV Show"
+
 Snowpiercer:
-  canonical_title: "Snowpiercer"
   type: "TV Show"
 
 Star Trek Discovery:
@@ -56,20 +68,24 @@ Star Trek Discovery:
   type: "TV Show"
 
 # Movies
-Matrix:
-  canonical_title: "The Matrix"
+Mortal Combat:
+  canonical_title: "Mortal Kombat"
   type: "Movie"
 
 # Other
 Ant Design:
-  type: "Software Development"
-
+  type: "Ignored"
 BackstopJS:
-  type: "Software Development"
-
+  type: "Ignored"
 React Native Paper:
-  type: "Software Development"
-
+  type: "Ignored"
 Todo App testing:
-  canonical_title: "Chalk Project"
-  type: "Software Development"
+  type: "Ignored"
+Accessibility UX study:
+  type: "Ignored"
+Bald Move - Fargo:
+  type: "Ignored"
+MSF Doom Raids:
+  type: "Ignored"
+MSF DD4 (run 1):
+  type: "Ignored"
