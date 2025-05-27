@@ -28,5 +28,5 @@ start:
 
 .PHONY: test
 test:
-	python -m pytest tests -v
+	python -m pytest preprocessing/tests -v
 	python -m pytest app/tests -v
