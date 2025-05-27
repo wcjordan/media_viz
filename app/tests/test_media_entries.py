@@ -11,7 +11,7 @@ import pytest
 import streamlit as st
 
 
-from app.extract_timeline_spans import (
+from app.media_entries import (
     _extract_timeline_spans,
     _get_date_range,
     _generate_week_axis,
@@ -22,7 +22,7 @@ from app.extract_timeline_spans import (
 @pytest.fixture(autouse=True, name="mock_streamlit_error")
 def fixture_mock_streamlit_error():
     """Fixture to mock streamlit error call."""
-    with patch("app.extract_timeline_spans.st.error") as mock_error:
+    with patch("app.media_entries.st.error") as mock_error:
         yield mock_error
 
 

@@ -6,7 +6,7 @@ import logging
 
 import streamlit as st
 
-from app.extract_timeline_spans import load_media_entries, prepare_timeline_data
+from app.media_entries import load_media_entries, prepare_timeline_data
 from app.timeline_chart import create_timeline_chart
 
 
