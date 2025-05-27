@@ -10,10 +10,10 @@ from typing import List, Dict
 
 from pydantic import ValidationError
 
-from .media_extractor import RANGE_VERBS, extract_entries
-from .week_extractor import parse_row
-from .media_tagger import apply_tagging, get_media_db_api_calls
-from .models import MediaEntry
+from preprocessing.media_extractor import RANGE_VERBS, extract_entries
+from preprocessing.week_extractor import parse_row
+from preprocessing.media_tagger import apply_tagging, get_media_db_api_calls
+from preprocessing.models import MediaEntry
 
 
 logger = logging.getLogger(__name__)
