@@ -6,8 +6,9 @@ import logging
 
 import streamlit as st
 
-from app.media_entries import load_media_entries, prepare_timeline_data
+from app.media_entries import load_media_entries, extract_timeline_spans
 from app.timeline_chart import create_timeline_chart
+from app.timeline_data import prepare_timeline_data
 
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,8 @@ def main():
 
         with tab1:
             # Prepare data for timeline
-            weeks_df, bars_df = prepare_timeline_data(media_entries)
+            spans, min_date, max_date = extract_timeline_spans(media_entries)
+            weeks_df, bars_df = prepare_timeline_data(spans, min_date, max_date)
 
             # Create and display timeline chart
             fig = create_timeline_chart(weeks_df, bars_df)

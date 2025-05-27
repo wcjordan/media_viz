@@ -35,7 +35,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
 
     # Add year dividers
     years = weeks_df["year"].unique()
-    for i, year in enumerate(years):
+    for _, year in enumerate(years):
         year_weeks = weeks_df[weeks_df["year"] == year]
         min_week = year_weeks["week_index"].min()
         max_week = year_weeks["week_index"].max()
@@ -60,7 +60,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
     # Add bars for each entry
     for week_idx, group in grouped_bars:
         # Stack bars horizontally within each week
-        for i, (_, next_bar) in enumerate(group.iterrows()):
+        for _, (_, next_bar) in enumerate(group.iterrows()):
             # Calculate horizontal position for stacking
             x_offset = next_bar["entry_id"] * 0.2
 
@@ -87,9 +87,16 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
                 )
             )
 
+    # Drop tick text if same as prior week
+    # Since the tick text is the name of the month, this means we just show each month name once
+    tick_text = weeks_df["week_label"].tolist()
+    tick_text = [
+        tick_text[i] if i == 0 or tick_text[i] != tick_text[i - 1] else ""
+        for i in range(len(tick_text))
+    ]
+
     # Update layout
     fig.update_layout(
-        title="Media Timeline",
         height=len(weeks_df) * 15,  # Scale height based on number of weeks
         width=800,
         plot_bgcolor="rgba(25, 25, 25, 1)",
@@ -104,11 +111,10 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             "range": [-0.5, 5],
         },
         yaxis={
-            "title": "",
-            "showgrid": True,
+            "showgrid": False,
             "gridcolor": "rgba(100, 100, 100, 0.2)",
             "tickvals": weeks_df["week_index"].tolist(),
-            "ticktext": weeks_df["week_label"].tolist(),
+            "ticktext": tick_text,
             "autorange": "reversed",  # Reverse y-axis to have most recent at top
         },
         hoverlabel={

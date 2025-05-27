@@ -2,7 +2,6 @@
 Tests for the Streamlit app's media entries loading functionality.
 """
 
-from datetime import datetime
 import json
 import logging
 from unittest.mock import patch, mock_open
@@ -12,8 +11,7 @@ import streamlit as st
 
 
 from app.media_entries import (
-    _extract_timeline_spans,
-    _generate_week_axis,
+    extract_timeline_spans,
     _get_timeline_range,
     load_media_entries,
 )
@@ -86,26 +84,9 @@ def test_get_timeline_range(sample_entries):
     assert max_date.day == 4
 
 
-def test_generate_week_axis():
-    """Test generating week axis DataFrame."""
-    min_date = datetime(2023, 1, 1)
-    max_date = datetime(2023, 1, 31)
-
-    weeks_df = _generate_week_axis(min_date, max_date)
-
-    # Should have 5 weeks (Jan 1-7, 8-14, 15-21, 22-28, 29-31)
-    assert len(weeks_df) == 5
-    assert weeks_df["week_index"].tolist() == [0, 1, 2, 3, 4]
-    assert all(weeks_df["year"] == 2023)
-
-    # Check first and last week
-    assert weeks_df.iloc[0]["start_date"] == min_date
-    assert weeks_df.iloc[-1]["end_date"] >= max_date
-
-
 def test_extract_timeline_spans(sample_entries):
     """Test extracting timeline spans from entries."""
-    spans, min_date, max_date = _extract_timeline_spans(sample_entries)
+    spans, min_date, max_date = extract_timeline_spans(sample_entries)
 
     # Check min and max dates
     assert min_date is not None
@@ -119,7 +100,7 @@ def test_extract_timeline_spans(sample_entries):
 
 def test_extract_timeline_spans_empty():
     """Test extracting timeline spans with empty entries."""
-    spans, min_date, max_date = _extract_timeline_spans([])
+    spans, min_date, max_date = extract_timeline_spans([])
 
     # Check min and max dates
     assert min_date is None
@@ -138,7 +119,7 @@ def test_extract_timeline_spans_missing_dates():
         }
     ]
 
-    spans, min_date, max_date = _extract_timeline_spans(entries)
+    spans, min_date, max_date = extract_timeline_spans(entries)
 
     # Should have weeks but no spans
     assert min_date is None
