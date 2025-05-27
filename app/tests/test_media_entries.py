@@ -13,8 +13,8 @@ import streamlit as st
 
 from app.media_entries import (
     _extract_timeline_spans,
-    _get_date_range,
     _generate_week_axis,
+    _get_timeline_range,
     load_media_entries,
 )
 
@@ -71,9 +71,9 @@ def test_load_media_entries_invalid_json(caplog, mock_streamlit_error):
     assert "JSON decode error" in caplog.text
 
 
-def test_get_date_range(sample_entries):
+def test_get_timeline_range(sample_entries):
     """Test getting min and max dates from entries."""
-    min_date, max_date = _get_date_range(sample_entries)
+    min_date, max_date = _get_timeline_range(sample_entries)
 
     # Min date should be adjusted to start of week
     assert min_date.year == 2021
