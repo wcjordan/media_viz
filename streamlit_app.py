@@ -6,13 +6,9 @@ import logging
 
 import streamlit as st
 
-from app.extract_timeline_spans import (
-    load_media_entries,
-    prepare_timeline_data,
-    generate_week_axis,
-    generate_bars,
-)
+from app.media_entries import load_media_entries, extract_timeline_spans
 from app.timeline_chart import create_timeline_chart
+from app.timeline_data import prepare_timeline_data
 
 
 logger = logging.getLogger(__name__)
@@ -31,7 +27,6 @@ def main():
     # Set page title and header
     st.set_page_config(page_title="Media Timeline", page_icon="📚", layout="wide")
 
-    st.title("Media Timeline")
     st.subheader("Interactive Visualization of Media Consumption")
 
     # Add a reload button
@@ -50,9 +45,8 @@ def main():
 
         with tab1:
             # Prepare data for timeline
-            spans, min_date, max_date = prepare_timeline_data(media_entries)
-            weeks_df = generate_week_axis(min_date, max_date)
-            bars_df = generate_bars(spans)
+            spans, min_date, max_date = extract_timeline_spans(media_entries)
+            weeks_df, bars_df = prepare_timeline_data(spans, min_date, max_date)
 
             # Create and display timeline chart
             fig = create_timeline_chart(weeks_df, bars_df)
