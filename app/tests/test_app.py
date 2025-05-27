@@ -11,23 +11,6 @@ import streamlit as st
 
 from app import streamlit_app
 
-# Sample media entries for testing
-SAMPLE_MEDIA_ENTRIES = [
-    {
-        "title": "Test Movie",
-        "canonical_title": "Test Movie",
-        "type": "Movie",
-        "start_date": "2023-01-01",
-        "finish_date": "2023-01-01",
-        "duration_days": 0,
-        "status": "completed",
-        "tags": {"genre": ["Action"], "platform": ["Theater"], "mood": ["Exciting"]},
-        "confidence": 0.95,
-        "raw_text": "Watched Test Movie",
-        "warnings": [],
-    }
-]
-
 
 @pytest.fixture(autouse=True, name="mock_streamlit_error")
 def fixture_mock_streamlit_error():
@@ -43,15 +26,15 @@ def fixture_clear_cache():
     st.cache_data.clear()
 
 
-def test_load_media_entries_file_exists():
+def test_load_media_entries_file_exists(sample_entries):
     """Test loading media entries when the file exists."""
-    mock_json = json.dumps(SAMPLE_MEDIA_ENTRIES)
+    mock_json = json.dumps(sample_entries)
 
     with patch("os.path.exists", return_value=True), patch(
         "builtins.open", mock_open(read_data=mock_json)
     ):
         entries = streamlit_app.load_media_entries()
-        assert entries == SAMPLE_MEDIA_ENTRIES
+        assert entries == sample_entries
 
 
 def test_load_media_entries_file_not_found(mock_streamlit_error):

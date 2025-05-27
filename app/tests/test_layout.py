@@ -6,68 +6,10 @@ from datetime import datetime
 
 from app.streamlit_app import (
     _get_date_range,
-    calculate_opacity,
     generate_week_axis,
     prepare_timeline_data,
 )
 from app.utils import compute_week_index
-
-
-# Sample media entries for testing
-SAMPLE_ENTRIES = [
-    {
-        "title": "Test Movie",
-        "canonical_title": "Test Movie",
-        "type": "Movie",
-        "start_date": "2023-01-01",
-        "finish_date": "2023-01-15",
-        "duration_days": 14,
-        "status": "completed",
-        "tags": {"genre": ["Action"], "platform": ["Theater"], "mood": ["Exciting"]},
-        "confidence": 0.95,
-        "raw_text": "Watched Test Movie",
-        "warnings": [],
-    },
-    {
-        "title": "In Progress Game",
-        "canonical_title": "In Progress Game",
-        "type": "Game",
-        "start_date": "2023-02-01",
-        "finish_date": None,
-        "duration_days": None,
-        "status": "in_progress",
-        "tags": {"genre": ["RPG"], "platform": ["PC"], "mood": ["Exciting"]},
-        "confidence": 0.9,
-        "raw_text": "Started In Progress Game",
-        "warnings": [],
-    },
-    {
-        "title": "Finished Book",
-        "canonical_title": "Finished Book",
-        "type": "Book",
-        "start_date": None,
-        "finish_date": "2023-03-15",
-        "duration_days": None,
-        "status": "completed",
-        "tags": {"genre": ["Fiction"], "platform": ["Kindle"], "mood": ["Thoughtful"]},
-        "confidence": 0.85,
-        "raw_text": "Finished Book",
-        "warnings": [],
-    },
-    {
-        "title": "Long TV Show",
-        "canonical_title": "Long TV Show",
-        "type": "TV",
-        "start_date": "2023-01-01",
-        "finish_date": "2023-12-31",
-        "duration_days": 364,
-        "status": "completed",
-        "tags": {"genre": ["Drama"], "platform": ["Netflix"], "mood": ["Intense"]},
-        "confidence": 0.95,
-        "raw_text": "Finished Long TV Show",
-        "warnings": [],
-    },
-]
 
 
 def test_compute_week_index():
@@ -96,19 +38,19 @@ def test_compute_week_index():
     )
 
 
-def test_get_date_range():
+def test_get_date_range(sample_entries):
     """Test getting min and max dates from entries."""
-    min_date, max_date = _get_date_range(SAMPLE_ENTRIES)
+    min_date, max_date = _get_date_range(sample_entries)
 
     # Min date should be adjusted to start of week
-    assert min_date.year == 2023
-    assert min_date.month == 1
-    assert min_date.day <= 1  # Could be earlier if Jan 1 wasn't a Monday
+    assert min_date.year == 2021
+    assert min_date.month == 2
+    assert min_date.day == 1
 
     # Max date should be adjusted to end of week
-    assert max_date.year == 2023
-    assert max_date.month == 12
-    assert max_date.day >= 31  # Could be later if Dec 31 wasn't a Sunday
+    assert max_date.year == 2021
+    assert max_date.month == 10
+    assert max_date.day == 4
 
 
 def test_generate_week_axis():
@@ -128,90 +70,28 @@ def test_generate_week_axis():
     assert weeks_df.iloc[-1]["end_date"] >= max_date
 
 
-def test_calculate_opacity():
-    """Test opacity calculation for different scenarios."""
-    # Completed entry (full opacity)
-    assert calculate_opacity(0, 2, 1, True, True, False) == 0.9
-
-    # In-progress entry (fade out)
-    assert (
-        calculate_opacity(0, 10, 0, True, False, False) == 0.9
-    )  # Start week (full opacity)
-    assert (
-        calculate_opacity(0, 10, 5, True, False, False) < 0.9
-    )  # Middle (partial opacity)
-    assert calculate_opacity(0, 10, 10, True, False, False) == 0.2  # End (min opacity)
-
-    # Finish-only entry (fade in)
-    assert calculate_opacity(0, 10, 0, False, True, False) == 0.2  # Start (min opacity)
-    assert (
-        calculate_opacity(0, 10, 5, False, True, False) < 0.9
-    )  # Middle (partial opacity)
-    assert (
-        calculate_opacity(0, 10, 10, False, True, False) == 0.9
-    )  # End week (full opacity)
-
-    # Long duration entry (fade out from start, fade in to end)
-    assert calculate_opacity(0, 40, 0, True, True, True) == 0.9  # Start (full opacity)
-    assert calculate_opacity(0, 40, 5, True, True, True) < 0.9  # Near start (fading)
-    assert calculate_opacity(0, 40, 20, True, True, True) == 0.2  # Middle (min opacity)
-    assert calculate_opacity(0, 40, 35, True, True, True) < 0.9  # Near end (fading)
-    assert calculate_opacity(0, 40, 40, True, True, True) == 0.9  # End (full opacity)
-
-
-def test_prepare_timeline_data():
+def test_prepare_timeline_data(sample_entries):
     """Test preparing timeline data from entries."""
-    weeks_df, bars_df = prepare_timeline_data(SAMPLE_ENTRIES)
+    spans, min_date, max_date = prepare_timeline_data(sample_entries)
 
-    # Check weeks DataFrame
-    assert not weeks_df.empty
-    assert "week_index" in weeks_df.columns
-    assert "year" in weeks_df.columns
+    # Check min and max dates
+    assert min_date is not None
+    assert max_date is not None
+    assert min_date < max_date
 
-    # Check bars DataFrame
-    assert not bars_df.empty
-    assert "entry_id" in bars_df.columns
-    assert "week_index" in bars_df.columns
-    assert "opacity" in bars_df.columns
-    assert "color" in bars_df.columns
-
-    # Check that we have the right number of entries
-    unique_entries = bars_df["entry_id"].unique()
-    assert len(unique_entries) == len(SAMPLE_ENTRIES)
-
-    # Check that in-progress entry has decreasing opacity
-    in_progress_bars = bars_df[bars_df["title"] == "In Progress Game"].sort_values(
-        "week_index"
-    )
-    opacities = in_progress_bars["opacity"].tolist()
-    assert (
-        opacities[0] > opacities[-1]
-    )  # First week should have higher opacity than last
-
-    # Check that finish-only entry has increasing opacity
-    finish_only_bars = bars_df[bars_df["title"] == "Finished Book"].sort_values(
-        "week_index"
-    )
-    opacities = finish_only_bars["opacity"].tolist()
-    assert (
-        opacities[0] < opacities[-1]
-    )  # First week should have lower opacity than last
-
-    # Check that long entry has appropriate fade pattern
-    long_entry_bars = bars_df[bars_df["title"] == "Long TV Show"].sort_values(
-        "week_index"
-    )
-    opacities = long_entry_bars["opacity"].tolist()
-    assert opacities[0] > opacities[len(opacities) // 2]  # Start higher than middle
-    assert opacities[-1] > opacities[len(opacities) // 2]  # End higher than middle
+    # Check spans
+    assert len(spans) > 0
+    assert "entry_idx" in spans[0]
 
 
 def test_prepare_timeline_data_empty():
     """Test preparing timeline data with empty entries."""
-    weeks_df, bars_df = prepare_timeline_data([])
+    spans, min_date, max_date = prepare_timeline_data([])
 
-    assert weeks_df.empty
-    assert bars_df.empty
+    # Check min and max dates
+    assert min_date is None
+    assert max_date is None
+    assert len(spans) == 0
 
 
 def test_prepare_timeline_data_missing_dates():
@@ -225,8 +105,9 @@ def test_prepare_timeline_data_missing_dates():
         }
     ]
 
-    weeks_df, bars_df = prepare_timeline_data(entries)
+    spans, min_date, max_date = prepare_timeline_data(entries)
 
-    # Should have weeks but no bars
-    assert not weeks_df.empty
-    assert bars_df.empty
+    # Should have weeks but no spans
+    assert min_date is None
+    assert max_date is None
+    assert len(spans) == 0

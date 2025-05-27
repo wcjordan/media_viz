@@ -82,23 +82,33 @@ def _get_date_range(entries: List[Dict]) -> Tuple[datetime, datetime]:
     Returns:
         Tuple of (min_date, max_date) as datetime objects
     """
-    min_date = get_datetime("2021-03-01")  # Default minimum date
-    max_date = get_datetime("2021-05-31")  # Default maximum date
-    for entry in entries:
-        for date in entry.get("started_dates", []) + entry.get("finished_dates", []):
-            date_obj = get_datetime(date)
-            if date_obj < min_date:
-                min_date = date_obj
-            if date_obj > max_date:
-                max_date = date_obj
+    all_started_dates = [
+        get_datetime(item)
+        for sublist in [entry.get("started_dates", []) for entry in entries]
+        for item in sublist
+    ]
+    all_finished_dates = [
+        get_datetime(item)
+        for sublist in [entry.get("finished_dates", []) for entry in entries]
+        for item in sublist
+    ]
+    all_dates = all_started_dates + all_finished_dates
+
+    if not all_dates:
+        logger.warning("No dates provided for date range calculation.")
+        return None, None
+
+    min_date = min(all_dates)
+    max_date = max(all_dates)
+    print(max_date)
 
     # Ensure min_date is the start of a week (Monday)
     weekday = min_date.weekday()
     min_date = min_date - timedelta(days=weekday)
 
-    # Ensure max_date is the end of a week (Sunday)
+    # Ensure max_date is the start of a week (Monday)
     weekday = max_date.weekday()
-    max_date = max_date + timedelta(days=6 - weekday)
+    max_date = max_date - timedelta(days=weekday)
 
     return min_date, max_date
 
@@ -136,12 +146,10 @@ def generate_week_axis(min_date: datetime, max_date: datetime) -> pd.DataFrame:
     return pd.DataFrame(weeks)
 
 
-def calculate_opacity(
+def calculate_opacity(  # pylint: disable=too-many-return-statements
     start_week: int,
     end_week: int,
     current_week: int,
-    has_start: bool,
-    has_end: bool,
     long_duration: bool,
 ) -> float:
     """
@@ -151,14 +159,14 @@ def calculate_opacity(
         start_week: Week index for the start date
         end_week: Week index for the end date
         current_week: Current week being rendered
-        has_start: Whether the entry has a start date
-        has_end: Whether the entry has an end date
         long_duration: Whether this is a long duration entry
 
     Returns:
         Opacity value between MIN_OPACITY and MAX_OPACITY
     """
     # For entries with both start and end dates
+    has_start = start_week is not None
+    has_end = end_week is not None
     if has_start and has_end:
         if long_duration:
             # For long entries, fade out from start and fade in to end
@@ -166,36 +174,32 @@ def calculate_opacity(
                 # Fade out from start
                 progress = (current_week - start_week) / FADE_WEEKS_IN_PROGRESS
                 return MIN_OPACITY + (MAX_OPACITY - MIN_OPACITY) * (1 - progress)
-            elif end_week - current_week < FADE_WEEKS_FINISH_ONLY:
+            if end_week - current_week < FADE_WEEKS_FINISH_ONLY:
                 # Fade in to end
                 progress = (end_week - current_week) / FADE_WEEKS_FINISH_ONLY
                 return MIN_OPACITY + (MAX_OPACITY - MIN_OPACITY) * (1 - progress)
-            else:
-                # Middle section with minimum opacity
-                return MIN_OPACITY
-        else:
-            # Normal entry with full opacity
-            return MAX_OPACITY
+            # Middle section with minimum opacity
+            return MIN_OPACITY
+        # Normal entry with full opacity
+        return MAX_OPACITY
 
     # For in-progress entries (start only)
-    elif has_start and not has_end:
+    if has_start and not has_end:
         # Fade out over FADE_WEEKS_IN_PROGRESS weeks
         weeks_from_start = current_week - start_week
         if weeks_from_start < FADE_WEEKS_IN_PROGRESS:
             progress = weeks_from_start / FADE_WEEKS_IN_PROGRESS
             return MAX_OPACITY * (1 - progress)
-        else:
-            return MIN_OPACITY
+        return MIN_OPACITY
 
     # For finish-only entries
-    elif not has_start and has_end:
+    if not has_start and has_end:
         # Fade in over FADE_WEEKS_FINISH_ONLY weeks
         weeks_to_end = end_week - current_week
         if weeks_to_end < FADE_WEEKS_FINISH_ONLY:
             progress = weeks_to_end / FADE_WEEKS_FINISH_ONLY
             return MAX_OPACITY * (1 - progress)
-        else:
-            return MIN_OPACITY
+        return MIN_OPACITY
 
     # Default case
     return MAX_OPACITY
@@ -213,14 +217,14 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
     """
     if not entries:
         logger.warning("No media entries provided for timeline preparation.")
-        return pd.DataFrame(), pd.DataFrame()
+        return [], None, None
 
     # Get date range and generate week axis
     min_date, max_date = _get_date_range(entries)
     logger.warning(
         "Preparing timeline data from %s to %s",
-        min_date.strftime("%Y-%m-%d"),
-        max_date.strftime("%Y-%m-%d"),
+        min_date.strftime("%Y-%m-%d") if min_date else "None",
+        max_date.strftime("%Y-%m-%d") if max_date else "None",
     )
 
     # Collect spans data
@@ -274,13 +278,19 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
 
 
 def generate_bars(spans: List[Dict]) -> pd.DataFrame:
+    """
+    Generate a DataFrame of bars for the timeline visualization.
+    Args:
+        spans: List of dictionaries containing each span of media entry data for the timeline.
+    Returns:
+        DataFrame with columns: entry_id, title, type, week_index, color, opacity,
+        start_date, end_date, duration_days, tags
+    """
     bars = []
     for span in spans:
         start_week = span.get("start_week", None)
         end_week = span.get("end_week", None)
 
-        has_start = start_week is not None
-        has_end = end_week is not None
         duration_weeks = (
             end_week - start_week
             if start_week is not None and end_week is not None
@@ -295,9 +305,7 @@ def generate_bars(spans: List[Dict]) -> pd.DataFrame:
 
         # For each week in the entry's span
         for week in range(start_week, end_week + 1):
-            opacity = calculate_opacity(
-                start_week, end_week, week, has_start, has_end, long_duration
-            )
+            opacity = calculate_opacity(start_week, end_week, week, long_duration)
 
             if opacity > 0:
                 bars.append(
