@@ -24,8 +24,9 @@ preprocess:
 
 .PHONY: start
 start:
-	streamlit run app/streamlit_app.py
+	streamlit run streamlit_app.py
 
 .PHONY: test
 test:
 	python -m pytest tests -v
+	python -m pytest app/tests -v

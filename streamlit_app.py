@@ -2,10 +2,18 @@
 Streamlit application to visualize media consumption data.
 """
 
-import json
 import logging
-import os
+
 import streamlit as st
+
+from app.extract_timeline_spans import (
+    load_media_entries,
+    prepare_timeline_data,
+    generate_week_axis,
+    generate_bars,
+)
+from app.timeline_chart import create_timeline_chart
+
 
 logger = logging.getLogger(__name__)
 # Configure logging
@@ -15,30 +23,6 @@ logging.basicConfig(
     filename="app/app.log",
     filemode="w",
 )
-
-
-@st.cache_data
-def load_media_entries(file_path="preprocessing/processed_data/media_entries.json"):
-    """
-    Load media entries from the JSON file.
-
-    Args:
-        file_path: Path to the media entries JSON file
-
-    Returns:
-        List of media entry dictionaries
-    """
-    try:
-        if os.path.exists(file_path):
-            with open(file_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        else:
-            st.error(f"File not found: {file_path}")
-            return []
-    except json.JSONDecodeError as e:
-        st.error(f"Error decoding JSON from {file_path}")
-        logger.error("JSON decode error: %s", e)
-        return []
 
 
 def main():
@@ -60,7 +44,23 @@ def main():
 
     if media_entries:
         st.write(f"Loaded {len(media_entries)} media entries")
-        st.json(media_entries)
+
+        # Create tabs for different views
+        tab1, tab2 = st.tabs(["Timeline Visualization", "Raw JSON Data"])
+
+        with tab1:
+            # Prepare data for timeline
+            spans, min_date, max_date = prepare_timeline_data(media_entries)
+            weeks_df = generate_week_axis(min_date, max_date)
+            bars_df = generate_bars(spans)
+
+            # Create and display timeline chart
+            fig = create_timeline_chart(weeks_df, bars_df)
+            st.plotly_chart(fig, use_container_width=True)
+
+        with tab2:
+            # Display raw JSON data
+            st.json(media_entries)
     else:
         st.warning("No media entries found. Please run the preprocessing script first.")
 

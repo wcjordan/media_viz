@@ -45,18 +45,18 @@
 - [x] Write tests in `tests/test_models.py` for model instantiation and JSON output
 
 ## 6. Streamlit Skeleton
-- [ ] Create `app/streamlit_app.py`
-- [ ] Load `media_entries.json`
-- [ ] Display a header and JSON dump with `st.json()`
-- [ ] Add a "Reload Data" button
-- [ ] Write a smoke test in `tests/test_app.py`
+- [x] Create `app/streamlit_app.py`
+- [x] Load `media_entries.json`
+- [x] Display a header and JSON dump with `st.json()`
+- [x] Add a "Reload Data" button
+- [x] Write a smoke test in `tests/test_app.py`
 
 ## 7. Bar Layout & Fading Logic
-- [ ] Compute continuous weekly axis using Pandas or dateutil
-- [ ] Map entries to x-position (week index) and length (# of weeks)
-- [ ] Calculate fade parameters for in-progress and lead-in entries
-- [ ] Render bars via `st.plotly_chart` with a dark theme
-- [ ] Write tests in `tests/test_layout.py` for positions, lengths, and opacities
+- [x] Compute continuous weekly axis using Pandas or dateutil
+- [x] Map entries to x-position (week index) and length (# of weeks)
+- [x] Calculate fade parameters for in-progress and lead-in entries
+- [x] Render bars via `st.plotly_chart` with a dark theme
+- [x] Write tests in `tests/test_layout.py` for positions, lengths, and opacities
 
 ## 8. Filters & Search
 - [ ] Add Streamlit widgets:
