@@ -2,16 +2,18 @@
 Streamlit application to visualize media consumption data.
 """
 
-from datetime import datetime
 import json
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
+
+from app.timeline_chart import create_timeline_chart
+from app.utils import compute_week_index, get_datetime
+
 
 logger = logging.getLogger(__name__)
 # Configure logging
@@ -24,14 +26,17 @@ logging.basicConfig(
 
 
 # Constants for visualization
-
-FADE_WEEKS_IN_PROGRESS = 10 # Number of weeks for fade-out gradient for in-progress entries
-FADE_WEEKS_FINISH_ONLY = 12 # Number of weeks for fade-in gradient for finish-only entries
-LONG_DURATION_MONTHS = 8  # Entries longer than this will be split into separate segments
+FADE_WEEKS_IN_PROGRESS = (
+    10  # Number of weeks for fade-out gradient for in-progress entries
+)
+FADE_WEEKS_FINISH_ONLY = (
+    12  # Number of weeks for fade-in gradient for finish-only entries
+)
+LONG_DURATION_MONTHS = (
+    8  # Entries longer than this will be split into separate segments
+)
 MAX_OPACITY = 0.9  # Maximum opacity for bars
 MIN_OPACITY = 0.2  # Minimum opacity for faded bars
-BAR_HEIGHT = 2.0  # Height of each bar
-BAR_SPACING = 0.2  # Spacing between bars in the same week
 
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
@@ -41,16 +46,6 @@ MEDIA_TYPE_COLORS = {
     "Book": "#D433FF",  # Purple
     "Unknown": "#AAAAAA",  # Gray
 }
-
-
-def _get_datetime(date_str: str) -> datetime:
-    """
-    Convert a %Y-%m-%d date string to a naive datetime object.
-
-    Returns:
-        Datetime object
-    """
-    return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=None)
 
 
 @st.cache_data
@@ -77,21 +72,6 @@ def load_media_entries(file_path="preprocessing/processed_data/media_entries.jso
         return []
 
 
-def _compute_week_index(entry_date: datetime, min_date: datetime) -> int:
-    """
-    Compute the week index for a given date relative to the minimum date.
-
-    Args:
-        entry_date: datetime representing an entry start of finish date
-        min_date: Minimum date as a datetime object
-
-    Returns:
-        Week index (integer)
-    """
-    delta = entry_date - min_date
-    return delta.days // 7
-
-
 def _get_date_range(entries: List[Dict]) -> Tuple[datetime, datetime]:
     """
     Get the minimum and maximum dates from all entries.
@@ -102,11 +82,11 @@ def _get_date_range(entries: List[Dict]) -> Tuple[datetime, datetime]:
     Returns:
         Tuple of (min_date, max_date) as datetime objects
     """
-    min_date = _get_datetime("2021-03-01")  # Default minimum date
-    max_date = _get_datetime("2021-05-31")  # Default maximum date
+    min_date = get_datetime("2021-03-01")  # Default minimum date
+    max_date = get_datetime("2021-05-31")  # Default maximum date
     for entry in entries:
         for date in entry.get("started_dates", []) + entry.get("finished_dates", []):
-            date_obj = _get_datetime(date)
+            date_obj = get_datetime(date)
             if date_obj < min_date:
                 min_date = date_obj
             if date_obj > max_date:
@@ -229,7 +209,7 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
         entries: List of media entry dictionaries
 
     Returns:
-        Tuple of (weeks_df, bars_df) DataFrames
+        Tuple of (spans, min_date, max_date)
     """
     if not entries:
         logger.warning("No media entries provided for timeline preparation.")
@@ -238,17 +218,17 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
     # Get date range and generate week axis
     min_date, max_date = _get_date_range(entries)
     logger.warning(
-        "Preparing timeline data from %s to %s", min_date.strftime("%Y-%m-%d"), max_date.strftime("%Y-%m-%d")
+        "Preparing timeline data from %s to %s",
+        min_date.strftime("%Y-%m-%d"),
+        max_date.strftime("%Y-%m-%d"),
     )
-    weeks_df = generate_week_axis(min_date, max_date)
 
-    # Prepare bars data
-    bars = []
+    # Collect spans data
+    spans = []
 
     for entry_idx, entry in enumerate(entries):
         tagged_entry = entry.get("tagged", {})
         media_type = tagged_entry.get("type", "Unknown")
-        color = MEDIA_TYPE_COLORS.get(media_type, MEDIA_TYPE_COLORS["Unknown"])
 
         has_start = "started_dates" in entry and entry["started_dates"]
         has_end = "finished_dates" in entry and entry["finished_dates"]
@@ -258,18 +238,18 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
             continue
 
         # Calculate week indices
-        min_start_date = min(
-            _get_datetime(date) for date in entry.get("started_dates", [])
-        ) if has_start else None
-        min_end_date = min(
-            _get_datetime(date) for date in entry.get("finished_dates", [])
-        ) if has_end else None
-        start_week = (
-            _compute_week_index(min_start_date, min_date) if has_start else None
+        min_start_date = (
+            min(get_datetime(date) for date in entry.get("started_dates", []))
+            if has_start
+            else None
         )
-        end_week = (
-            _compute_week_index(min_end_date, min_date) if has_end else None
+        min_end_date = (
+            min(get_datetime(date) for date in entry.get("finished_dates", []))
+            if has_end
+            else None
         )
+        start_week = compute_week_index(min_start_date, min_date) if has_start else None
+        end_week = compute_week_index(min_end_date, min_date) if has_end else None
 
         # For finish-only entries, estimate a start date
         if not has_start and has_end:
@@ -279,7 +259,28 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
         if has_start and not has_end:
             end_week = start_week + FADE_WEEKS_IN_PROGRESS
 
-        # Check if this is a long duration entry
+        spans.append(
+            {
+                "entry_idx": entry_idx,
+                "title": tagged_entry.get("canonical_title", "Unknown"),
+                "type": media_type,
+                "start_week": start_week,
+                "end_week": end_week,
+                "tags": tagged_entry.get("tags", {}),
+            }
+        )
+
+    return spans, min_date, max_date
+
+
+def generate_bars(spans: List[Dict]) -> pd.DataFrame:
+    bars = []
+    for span in spans:
+        start_week = span.get("start_week", None)
+        end_week = span.get("end_week", None)
+
+        has_start = start_week is not None
+        has_end = end_week is not None
         duration_weeks = (
             end_week - start_week
             if start_week is not None and end_week is not None
@@ -288,6 +289,9 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
         long_duration = duration_weeks > (
             LONG_DURATION_MONTHS * 4
         )  # Approx. 4 weeks per month
+
+        media_type = span.get("type")
+        color = MEDIA_TYPE_COLORS.get(media_type, MEDIA_TYPE_COLORS["Unknown"])
 
         # For each week in the entry's span
         for week in range(start_week, end_week + 1):
@@ -298,131 +302,21 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
             if opacity > 0:
                 bars.append(
                     {
-                        "entry_id": entry_idx,
-                        "title": entry.get("title", "Unknown"),
-                        "canonical_title": entry.get(
-                            "canonical_title", entry.get("title", "Unknown")
-                        ),
+                        "entry_id": span.get("entry_idx"),
+                        "title": span.get("title"),
                         "type": media_type,
                         "week_index": week,
                         "color": color,
                         "opacity": opacity,
-                        "raw_text": entry.get("raw_text", ""),
-                        "start_date": entry.get("start_date", ""),
-                        "finish_date": entry.get("finish_date", ""),
-                        "duration_days": entry.get("duration_days", 0),
-                        "status": entry.get("status", "unknown"),
-                        "tags": entry.get("tags", {}),
+                        "start_date": start_week,
+                        "end_date": end_week,
+                        "duration_days": duration_weeks * 7,
+                        "tags": span.get("tags", {}),
                     }
                 )
 
     bars_df = pd.DataFrame(bars)
-    return weeks_df, bars_df
-
-
-def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.Figure:
-    """
-    Create a Plotly figure for the timeline visualization.
-
-    Args:
-        weeks_df: DataFrame with week information
-        bars_df: DataFrame with bar information
-
-    Returns:
-        Plotly Figure object
-    """
-    if weeks_df.empty or bars_df.empty:
-        # Return empty figure if no data
-        fig = go.Figure()
-        fig.update_layout(title="No data available for timeline", height=600)
-        return fig
-
-    # Create figure
-    fig = go.Figure()
-
-    # Add year dividers
-    years = weeks_df["year"].unique()
-    for i, year in enumerate(years):
-        year_weeks = weeks_df[weeks_df["year"] == year]
-        min_week = year_weeks["week_index"].min()
-        max_week = year_weeks["week_index"].max()
-        logger.warning(
-            "Adding year divider for %s: weeks %d to %d", year, min_week, max_week
-        )
-
-        # Add year label
-        fig.add_annotation(
-            x=-0.5,
-            y=min_week - 0.5,
-            text=str(year),
-            showarrow=False,
-            font=dict(size=16, color="white"),
-            xanchor="right",
-            yanchor="bottom",
-        )
-
-    # Group bars by week for horizontal stacking
-    grouped_bars = bars_df.groupby("week_index")
-
-    # Add bars for each entry
-    for week_idx, group in grouped_bars:
-        # Stack bars horizontally within each week
-        for i, (_, bar) in enumerate(group.iterrows()):
-            # Calculate horizontal position for stacking
-            x_offset = i * BAR_SPACING
-
-            # Add bar
-            fig.add_trace(
-                go.Scatter(
-                    x=[x_offset, x_offset + BAR_HEIGHT],
-                    y=[bar["week_index"], bar["week_index"]],
-                    mode="lines",
-                    line=dict(
-                        color=f"rgba{tuple(int(bar['color'].lstrip('#')[i:i+2], 16) for i in (0, 2, 4)) + (bar['opacity'],)}",
-                        width=10,
-                    ),
-                    name=bar["canonical_title"],
-                    text=f"{bar['canonical_title']} ({bar['type']})<br>"
-                    f"Status: {bar['status']}<br>"
-                    f"Start: {bar['start_date']}<br>"
-                    f"Finish: {bar['finish_date']}<br>"
-                    f"Duration: {bar['duration_days']} days<br>"
-                    f"Raw text: {bar['raw_text']}",
-                    hoverinfo="text",
-                    showlegend=False,
-                )
-            )
-
-    # Update layout
-    fig.update_layout(
-        title="Media Timeline",
-        height=len(weeks_df) * 15,  # Scale height based on number of weeks
-        width=800,
-        plot_bgcolor="rgba(25, 25, 25, 1)",
-        paper_bgcolor="rgba(25, 25, 25, 1)",
-        font=dict(color="white"),
-        margin=dict(l=100, r=50, t=50, b=50),
-        xaxis=dict(
-            title="",
-            showgrid=False,
-            zeroline=False,
-            showticklabels=False,
-            range=[-0.5, 5],  # Adjust based on maximum number of stacked items
-        ),
-        yaxis=dict(
-            title="",
-            showgrid=True,
-            gridcolor="rgba(100, 100, 100, 0.2)",
-            tickvals=weeks_df["week_index"].tolist(),
-            ticktext=weeks_df["week_label"].tolist(),
-            autorange="reversed",  # Reverse y-axis to have most recent at top
-        ),
-        hoverlabel=dict(
-            bgcolor="rgba(50, 50, 50, 0.9)", font_size=12, font_family="Arial"
-        ),
-    )
-
-    return fig
+    return bars_df
 
 
 def main():
@@ -450,7 +344,9 @@ def main():
 
         with tab1:
             # Prepare data for timeline
-            weeks_df, bars_df = prepare_timeline_data(media_entries)
+            spans, min_date, max_date = prepare_timeline_data(media_entries)
+            weeks_df = generate_week_axis(min_date, max_date)
+            bars_df = generate_bars(spans)
 
             # Create and display timeline chart
             fig = create_timeline_chart(weeks_df, bars_df)

@@ -2,20 +2,16 @@
 Tests for the timeline layout functionality.
 """
 
-import json
-from datetime import datetime, timedelta
-from unittest.mock import patch
-
-import pandas as pd
-import pytest
+from datetime import datetime
 
 from app.streamlit_app import (
-    calculate_opacity,
-    _compute_week_index,
-    generate_week_axis,
     _get_date_range,
+    calculate_opacity,
+    generate_week_axis,
     prepare_timeline_data,
 )
+from app.utils import compute_week_index
+
 
 # Sample media entries for testing
 SAMPLE_ENTRIES = [
@@ -79,15 +75,25 @@ def test_compute_week_index():
     min_date = datetime(2023, 1, 1)
 
     # Same week
-    assert _compute_week_index(datetime.strptime("2023-01-01", "%Y-%m-%d"), min_date) == 0
-    assert _compute_week_index(datetime.strptime("2023-01-07", "%Y-%m-%d"), min_date) == 0
+    assert (
+        compute_week_index(datetime.strptime("2023-01-01", "%Y-%m-%d"), min_date) == 0
+    )
+    assert (
+        compute_week_index(datetime.strptime("2023-01-07", "%Y-%m-%d"), min_date) == 0
+    )
 
     # Next week
-    assert _compute_week_index(datetime.strptime("2023-01-08", "%Y-%m-%d"), min_date) == 1
+    assert (
+        compute_week_index(datetime.strptime("2023-01-08", "%Y-%m-%d"), min_date) == 1
+    )
 
     # Several weeks later
-    assert _compute_week_index(datetime.strptime("2023-02-01", "%Y-%m-%d"), min_date) == 4
-    assert _compute_week_index(datetime.strptime("2023-12-31", "%Y-%m-%d"), min_date) == 52
+    assert (
+        compute_week_index(datetime.strptime("2023-02-01", "%Y-%m-%d"), min_date) == 4
+    )
+    assert (
+        compute_week_index(datetime.strptime("2023-12-31", "%Y-%m-%d"), min_date) == 52
+    )
 
 
 def test_get_date_range():
