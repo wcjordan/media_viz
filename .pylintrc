@@ -3,3 +3,7 @@ ignore=.venv
 
 [FORMAT]
 max-line-length=120
+
+[MESSAGES CONTROL]
+# Disable specific warnings
+disable=W0511

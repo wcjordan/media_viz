@@ -4,7 +4,7 @@ Tests for the timeline layout functionality.
 
 from datetime import datetime
 
-from app.streamlit_app import (
+from app.extract_timeline_spans import (
     _get_date_range,
     generate_week_axis,
     prepare_timeline_data,
