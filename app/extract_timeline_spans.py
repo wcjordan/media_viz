@@ -104,7 +104,7 @@ def _get_date_range(entries: List[Dict]) -> Tuple[datetime, datetime]:
     return min_date, max_date
 
 
-def generate_week_axis(min_date: datetime, max_date: datetime) -> pd.DataFrame:
+def _generate_week_axis(min_date: datetime, max_date: datetime) -> pd.DataFrame:
     """
     Generate a DataFrame with all weeks between min_date and max_date.
 
@@ -196,9 +196,9 @@ def calculate_opacity(  # pylint: disable=too-many-return-statements
     return MAX_OPACITY
 
 
-def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def _extract_timeline_spans(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Prepare data for the timeline visualization.
+    Extract timeline spans from media entries.
 
     Args:
         entries: List of media entry dictionaries
@@ -245,6 +245,18 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
         )
         start_week = compute_week_index(min_start_date, min_date) if has_start else None
         end_week = compute_week_index(min_end_date, min_date) if has_end else None
+        if len(entry.get("started_dates", [])) > 1:
+            logger.warning(
+                "Multiple start dates found for entry %s: %s",
+                entry_idx,
+                entry.get("started_dates", []),
+            )
+        if len(entry.get("finished_dates", [])) > 1:
+            logger.warning(
+                "Multiple end dates found for entry %s: %s",
+                entry_idx,
+                entry.get("finished_dates", []),
+            )
 
         # For finish-only entries, estimate a start date
         if not has_start and has_end:
@@ -259,18 +271,19 @@ def prepare_timeline_data(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFra
                 "entry_idx": entry_idx,
                 "title": tagged_entry.get("canonical_title", "Unknown"),
                 "type": media_type,
+                "tags": tagged_entry.get("tags", {}),
+                "poster_path": tagged_entry.get("poster_path", ""),
                 "start_date": min_start_date,
                 "end_date": min_end_date,
                 "start_week": start_week,
                 "end_week": end_week,
-                "tags": tagged_entry.get("tags", {}),
             }
         )
 
     return spans, min_date, max_date
 
 
-def generate_bars(spans: List[Dict]) -> pd.DataFrame:
+def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
     """
     Generate a DataFrame of bars for the timeline visualization.
     Args:
@@ -318,6 +331,23 @@ def generate_bars(spans: List[Dict]) -> pd.DataFrame:
 
     bars_df = pd.DataFrame(bars)
     return bars_df
+
+
+def prepare_timeline_data(media_entries):
+    """
+    Prepare data for the timeline visualization.
+    Args:
+        media_entries: List of media entry dictionaries
+
+    Returns:
+        Tuple of (weeks_df, bars_df) where weeks_df contains week axis data
+        and bars_df contains bar data for the timeline.
+    """
+    spans, min_date, max_date = _extract_timeline_spans(media_entries)
+    weeks_df = _generate_week_axis(min_date, max_date)
+    bars_df = _generate_bars(spans)
+
+    return weeks_df, bars_df
 
 
 if __name__ == "__main__":

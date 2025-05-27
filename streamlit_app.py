@@ -31,7 +31,6 @@ def main():
     # Set page title and header
     st.set_page_config(page_title="Media Timeline", page_icon="📚", layout="wide")
 
-    st.title("Media Timeline")
     st.subheader("Interactive Visualization of Media Consumption")
 
     # Add a reload button

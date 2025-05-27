@@ -7,7 +7,7 @@ from datetime import datetime
 from app.extract_timeline_spans import (
     _get_date_range,
     generate_week_axis,
-    prepare_timeline_data,
+    _extract_timeline_spans,
 )
 from app.utils import compute_week_index
 
@@ -70,9 +70,9 @@ def test_generate_week_axis():
     assert weeks_df.iloc[-1]["end_date"] >= max_date
 
 
-def test_prepare_timeline_data(sample_entries):
-    """Test preparing timeline data from entries."""
-    spans, min_date, max_date = prepare_timeline_data(sample_entries)
+def test_extract_timeline_spans(sample_entries):
+    """Test extracting timeline spans from entries."""
+    spans, min_date, max_date = _extract_timeline_spans(sample_entries)
 
     # Check min and max dates
     assert min_date is not None
@@ -84,9 +84,9 @@ def test_prepare_timeline_data(sample_entries):
     assert "entry_idx" in spans[0]
 
 
-def test_prepare_timeline_data_empty():
-    """Test preparing timeline data with empty entries."""
-    spans, min_date, max_date = prepare_timeline_data([])
+def test_extract_timeline_spans_empty():
+    """Test extracting timeline spans with empty entries."""
+    spans, min_date, max_date = _extract_timeline_spans([])
 
     # Check min and max dates
     assert min_date is None
@@ -94,7 +94,7 @@ def test_prepare_timeline_data_empty():
     assert len(spans) == 0
 
 
-def test_prepare_timeline_data_missing_dates():
+def test_extract_timeline_spans_missing_dates():
     """Test preparing timeline data with entries missing dates."""
     entries = [
         {
@@ -105,7 +105,7 @@ def test_prepare_timeline_data_missing_dates():
         }
     ]
 
-    spans, min_date, max_date = prepare_timeline_data(entries)
+    spans, min_date, max_date = _extract_timeline_spans(entries)
 
     # Should have weeks but no spans
     assert min_date is None
