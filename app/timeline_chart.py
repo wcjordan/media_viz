@@ -10,8 +10,9 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-BAR_WIDTH = 1.0  # Width of each bar
-BAR_SPACING = 0.1  # Spacing between bars in the same week
+BAR_HEIGHT = 0.001
+BAR_WIDTH = 0.10
+BAR_SPACING = 0.02  # Spacing between bars on the x-axis
 
 
 def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.Figure:
@@ -31,7 +32,6 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
         fig.update_layout(title="No data available for timeline", height=600)
         return fig
 
-    # Create figure
     fig = go.Figure()
 
     # Add year dividers
@@ -39,10 +39,6 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
     for _, year in enumerate(years):
         year_weeks = weeks_df[weeks_df["year"] == year]
         min_week = year_weeks["week_index"].min()
-        max_week = year_weeks["week_index"].max()
-        logger.warning(
-            "Adding year divider for %s: weeks %d to %d", year, min_week, max_week
-        )
 
         # Add year label
         fig.add_annotation(
@@ -55,40 +51,35 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             yanchor="bottom",
         )
 
+    # Add bars for entries
     for _, next_bar in bars_df.iterrows():
-        # Calculate horizontal position for stacking
-        x_offset = next_bar["entry_id"] * 0.8
+        x_offset = next_bar["entry_id"] * BAR_WIDTH
 
-        # Add bar
-        rgb_tuple = tuple(
+        rgba_tuple = tuple(
             int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
-        )
-        start_week = next_bar["start_week"]
-        week_idx = start_week if not np.isnan(start_week) else next_bar["end_week"]
+        ) + (next_bar['opacity'],)
+
+        tooltip_list = [f"{next_bar['title']} ({next_bar['type']})"]
+        if not np.isnan(next_bar['start_week']):
+            tooltip_list.append(f"Start: {next_bar['start_date']} ({next_bar['start_week']:.0f})")
+        if not np.isnan(next_bar['end_week']):
+            tooltip_list.append(f"Finish: {next_bar['end_date']} ({next_bar['end_week']:.0f})")
+        if not np.isnan(next_bar['duration_weeks']):
+            tooltip_list.append(f"Duration: {next_bar['duration_weeks']:.0f} week(s)")
+        tooltip = "<br>".join(tooltip_list)
 
         fig.add_trace(
             go.Bar(
-                x=[x_offset, x_offset + 0.001],
-                y=[next_bar['duration_weeks'] or 1],
-                base=[week_idx],
+                x=[x_offset, x_offset + BAR_HEIGHT],
+                y=[next_bar['bar_y']],
+                base=[next_bar['bar_base']],
                 orientation='v',
-                marker_color=f"rgba{rgb_tuple + (0.9,)}",
-                width=0.6,
-                text=f"{next_bar['title']} ({next_bar['type']})<br>"
-                f"Start: {next_bar['start_date']} ({next_bar['start_week']})<br>"
-                f"Finish: {next_bar['end_date']} ({next_bar['end_week']})<br>"
-                f"Duration: {next_bar['duration_weeks']} weeks<br>",
-                hoverinfo='text',
+                marker_color=f"rgba{rgba_tuple}",
+                width=BAR_WIDTH - BAR_SPACING,
+                hovertemplate=tooltip,
                 showlegend=False,
-                # x=[x_offset, x_offset + 0.05],
-                # y=[week_idx, week_idx],
-                # mode="lines",
-                # line={
-                #     "color": f"rgba{rgb_tuple + (next_bar['opacity'],)}",
-                #     "width": 1,
-                # },
-                )
             )
+        )
 
     # Drop tick text if same as prior week
     # Since the tick text is the name of the month, this means we just show each month name once
@@ -108,17 +99,17 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
         margin={"l": 100, "r": 50, "t": 50, "b": 50},
         xaxis={
             "title": "",
+            "range": [0, 5],
             "showgrid": False,
-            "zeroline": False,
             "showticklabels": False,
-            "range": [-0.5, 5],
+            "zeroline": False,
         },
         yaxis={
+            "autorange": "reversed",  # Reverse y-axis to have most recent at top
             "showgrid": False,
-            "gridcolor": "rgba(100, 100, 100, 0.2)",
             "tickvals": weeks_df["week_index"].tolist(),
             "ticktext": tick_text,
-            "autorange": "reversed",  # Reverse y-axis to have most recent at top
+            "zeroline": False,
         },
         hoverlabel={
             "bgcolor": "rgba(50, 50, 50, 0.9)",
