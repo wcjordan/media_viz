@@ -23,7 +23,7 @@ MIN_OPACITY = 0.2  # Minimum opacity for faded bars
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
     "Movie": "#FF5733",  # Orange-red
-    "TV": "#33A8FF",  # Blue
+    "TV Show": "#33A8FF",  # Blue
     "Game": "#33FF57",  # Green
     "Book": "#D433FF",  # Purple
     "Unknown": "#AAAAAA",  # Gray
@@ -149,36 +149,32 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
             LONG_DURATION_MONTHS * 4
         )  # Approx. 4 weeks per month
 
-        # For finish-only entries, estimate a start date
-        if start_week is None:
-            start_week = max(0, end_week - FADE_WEEKS_FINISH_ONLY)
+        # # For finish-only entries, estimate a start date
+        # if start_week is None:
+        #     start_week = max(0, end_week - FADE_WEEKS_FINISH_ONLY)
 
-        # For start-only entries, estimate an end date
-        if end_week is None:
-            end_week = start_week + FADE_WEEKS_IN_PROGRESS
+        # # For start-only entries, estimate an end date
+        # if end_week is None:
+        #     end_week = start_week + FADE_WEEKS_IN_PROGRESS
 
         media_type = span.get("type")
         color = MEDIA_TYPE_COLORS.get(media_type, MEDIA_TYPE_COLORS["Unknown"])
 
-        # For each week in the entry's span
-        for week in range(start_week, end_week + 1):
-            opacity = calculate_opacity(start_week, end_week, week, long_duration)
-
-            if opacity > 0:
-                bars.append(
-                    {
-                        "entry_id": span.get("entry_idx"),
-                        "title": span.get("title"),
-                        "type": media_type,
-                        "week_index": week,
-                        "color": color,
-                        "opacity": opacity,
-                        "start_date": span.get("start_date"),
-                        "end_date": span.get("end_date"),
-                        "duration_days": duration_weeks * 7,
-                        "tags": span.get("tags", {}),
-                    }
-                )
+        bars.append(
+            {
+                "entry_id": span.get("entry_idx"),
+                "title": span.get("title"),
+                "type": media_type,
+                "color": color,
+                "start_date": span.get("start_date"),
+                "start_week": start_week,
+                "end_date": span.get("end_date"),
+                "end_week": end_week,
+                "duration_days": duration_weeks * 7,
+                "duration_weeks": duration_weeks,
+                "tags": span.get("tags", {}),
+            }
+        )
 
     bars_df = pd.DataFrame(bars)
     return bars_df

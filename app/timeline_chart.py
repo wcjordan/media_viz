@@ -4,6 +4,7 @@ Generate a timeline chart using Plotly for vizualizing media entries.
 
 import logging
 
+import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
 
@@ -54,36 +55,38 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             yanchor="bottom",
         )
 
-    # Group bars by week for horizontal stacking
-    grouped_bars = bars_df.groupby("week_index")
+    for _, next_bar in bars_df.iterrows():
+        # Calculate horizontal position for stacking
+        x_offset = next_bar["entry_id"] * 0.8
 
-    # Add bars for each entry
-    for week_idx, group in grouped_bars:
-        # Stack bars horizontally within each week
-        for _, (_, next_bar) in enumerate(group.iterrows()):
-            # Calculate horizontal position for stacking
-            x_offset = next_bar["entry_id"] * 0.2
+        # Add bar
+        rgb_tuple = tuple(
+            int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
+        )
+        start_week = next_bar["start_week"]
+        week_idx = start_week if not np.isnan(start_week) else next_bar["end_week"]
 
-            # Add bar
-            rgb_tuple = tuple(
-                int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
-            )
-            fig.add_trace(
-                go.Scatter(
-                    x=[x_offset, x_offset + 0.1],
-                    y=[week_idx, week_idx],
-                    mode="lines",
-                    line={
-                        "color": f"rgba{rgb_tuple + (next_bar['opacity'],)}",
-                        "width": 10,
-                    },
-                    name=next_bar["title"],
-                    text=f"{next_bar['title']} ({next_bar['type']})<br>"
-                    f"Start: {next_bar['start_date']}<br>"
-                    f"Finish: {next_bar['end_date']}<br>"
-                    f"Duration: {next_bar['duration_days']} days<br>",
-                    hoverinfo="text",
-                    showlegend=False,
+        fig.add_trace(
+            go.Bar(
+                x=[x_offset, x_offset + 0.001],
+                y=[next_bar['duration_weeks'] or 1],
+                base=[week_idx],
+                orientation='v',
+                marker_color=f"rgba{rgb_tuple + (0.9,)}",
+                width=0.6,
+                text=f"{next_bar['title']} ({next_bar['type']})<br>"
+                f"Start: {next_bar['start_date']} ({next_bar['start_week']})<br>"
+                f"Finish: {next_bar['end_date']} ({next_bar['end_week']})<br>"
+                f"Duration: {next_bar['duration_weeks']} weeks<br>",
+                hoverinfo='text',
+                showlegend=False,
+                # x=[x_offset, x_offset + 0.05],
+                # y=[week_idx, week_idx],
+                # mode="lines",
+                # line={
+                #     "color": f"rgba{rgb_tuple + (next_bar['opacity'],)}",
+                #     "width": 1,
+                # },
                 )
             )
 
