@@ -118,13 +118,13 @@ def extract_timeline_spans(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFr
             if has_start
             else None
         )
-        min_end_date = (
-            min(get_datetime(date) for date in entry.get("finished_dates", []))
+        max_end_date = (
+            max(get_datetime(date) for date in entry.get("finished_dates", []))
             if has_end
             else None
         )
         start_week = compute_week_index(min_start_date, min_date) if has_start else None
-        end_week = compute_week_index(min_end_date, min_date) if has_end else None
+        end_week = compute_week_index(max_end_date, min_date) if has_end else None
         if len(entry.get("started_dates", [])) > 1:
             logger.warning(
                 "Multiple start dates found for entry %s: %s",
@@ -146,7 +146,7 @@ def extract_timeline_spans(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFr
                 "tags": tagged_entry.get("tags", {}),
                 "poster_path": tagged_entry.get("poster_path", ""),
                 "start_date": min_start_date,
-                "end_date": min_end_date,
+                "end_date": max_end_date,
                 "start_week": start_week,
                 "end_week": end_week,
             }
