@@ -97,11 +97,6 @@ def extract_timeline_spans(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFr
 
     # Get date range and generate week axis
     min_date, max_date = _get_timeline_range(entries)
-    logger.warning(
-        "Preparing timeline data from %s to %s",
-        min_date.strftime("%Y-%m-%d") if min_date else "None",
-        max_date.strftime("%Y-%m-%d") if max_date else "None",
-    )
 
     # Collect spans data
     spans = []
