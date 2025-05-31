@@ -8,19 +8,21 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
+from app.utils import SLICES_PER_WEEK
+
 # Constants for visualization
 FADE_WEEKS_IN_PROGRESS = 4  # Number of weeks for fade-out gradient for in-progress entries
 FADE_WEEKS_FINISH_ONLY = 4  # Number of weeks for fade-in gradient for finish-only entries
-LONG_DURATION_WEEKS = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY
+LONG_DURATION_WEEKS = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY - 2
 MAX_OPACITY = 0.9  # Maximum opacity for bars
-MIN_OPACITY = 0.2  # Minimum opacity for faded bars
+MIN_OPACITY = 0.0  # Minimum opacity for faded bars
 
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
-    "Movie": "#D1805F",  # Orange
-    "TV Show": "#75E4EC",  # Teal
-    "Game": "#33FF57",  # Green
     "Book": "#B478B4",  # Purple
+    "Game": "#D1805F",  # Orange
+    "Movie": "#33FF57",  # Green
+    "TV Show": "#75E4EC",  # Teal
     "Unknown": "#AAAAAA",  # Gray
 }
 
@@ -41,20 +43,16 @@ def _generate_week_axis(min_date: datetime, max_date: datetime) -> pd.DataFrame:
     week_index = 0
 
     while current_date <= max_date:
-        week_end = current_date + timedelta(days=6)
-        weeks.append(
-            {
-                "week_index": week_index,
-                "start_date": current_date,
-                "end_date": week_end,
-                "year": current_date.year,
-                "month": current_date.month,
-                "week_label": current_date.strftime("%b"),
-            }
-        )
-        current_date = week_end + timedelta(days=1)
-        week_index += 1
-
+        for _ in range(SLICES_PER_WEEK):
+            weeks.append(
+                {
+                    "week_index": week_index,
+                    "year": current_date.year,
+                    "week_label": current_date.strftime("%b"),
+                }
+            )
+            week_index += 1
+        current_date = current_date + timedelta(days=7)
     return pd.DataFrame(weeks)
 
 
@@ -89,12 +87,13 @@ def _fade_out_span(span_bars: List[Dict], span_bar_template: Dict, start_week: i
         span_bar_template: Template dict for the span bar
         start_week: The week index to start fading out from
     """
-    opacities = np.linspace(MAX_OPACITY, MIN_OPACITY, FADE_WEEKS_IN_PROGRESS)
+    bar_start = start_week * SLICES_PER_WEEK
+    opacities = np.linspace(MAX_OPACITY, MIN_OPACITY, FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK)
     for i, opacity in enumerate(opacities):
         _add_span_bar(
             span_bars,
             span_bar_template,
-            start_week + i,
+            bar_start + i,
             1,
             opacity,
         )
@@ -108,12 +107,13 @@ def _fade_in_span(span_bars: List[Dict], span_bar_template: Dict, end_week: int)
         span_bar_template: Template dict for the span bar
         end_week: The week index to end fading in at
     """
-    opacities = np.linspace(MIN_OPACITY, MAX_OPACITY, FADE_WEEKS_FINISH_ONLY)
+    bar_start = (end_week + 1 - FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK
+    opacities = np.linspace(MIN_OPACITY, MAX_OPACITY, FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK)
     for i, opacity in enumerate(opacities):
         _add_span_bar(
             span_bars,
             span_bar_template,
-            end_week + i - FADE_WEEKS_FINISH_ONLY - 1,
+            bar_start + i,
             1,
             opacity,
         )
@@ -154,7 +154,9 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
             span_bar_template["duration_weeks"] = duration_weeks
             if duration_weeks <= LONG_DURATION_WEEKS:
                 # Short duration, no fade needed
-                _add_span_bar(span_bars, span_bar_template, start_week, duration_weeks, MAX_OPACITY)
+                bar_start = start_week * SLICES_PER_WEEK
+                bar_duration = duration_weeks * SLICES_PER_WEEK
+                _add_span_bar(span_bars, span_bar_template, bar_start, bar_duration, MAX_OPACITY)
             else:
                 # Long duration, create 2 spans one fading out from the start and one fading in to the finish
                 _fade_out_span(span_bars, span_bar_template, start_week)

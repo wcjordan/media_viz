@@ -8,6 +8,8 @@ import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
 
+from app.utils import SLICES_PER_WEEK
+
 logger = logging.getLogger(__name__)
 
 BAR_HEIGHT = 0.001
@@ -42,7 +44,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
 
         # Add year label
         fig.add_annotation(
-            x=-0.5,
+            x=0,
             y=min_week - 0.5,
             text=str(year),
             showarrow=False,
@@ -91,7 +93,6 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
 
     # Update layout
     fig.update_layout(
-        height=len(weeks_df) * 15,  # Scale height based on number of weeks
         width=800,
         plot_bgcolor="rgba(25, 25, 25, 1)",
         paper_bgcolor="rgba(25, 25, 25, 1)",

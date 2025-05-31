@@ -2,7 +2,9 @@
 Utils for handling weeks and dates for preparing the timeline chart.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
+
+SLICES_PER_WEEK = 4  # Number of subslices per week for finer granularity of the opacity gradient
 
 
 def compute_week_index(entry_date: datetime, min_date: datetime) -> int:
@@ -16,6 +18,9 @@ def compute_week_index(entry_date: datetime, min_date: datetime) -> int:
     Returns:
         Week index (integer)
     """
+    # If entry_date is a Sunday, adjust to the next Monday
+    if entry_date.weekday() == 6:
+        entry_date = entry_date + timedelta(days=1)
     delta = entry_date - min_date
     return delta.days // 7
 
