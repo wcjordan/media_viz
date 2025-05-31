@@ -8,11 +8,8 @@ import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
 
-from app.utils import SLICES_PER_WEEK
-
 logger = logging.getLogger(__name__)
 
-BAR_HEIGHT = 0.001
 BAR_WIDTH = 0.10
 BAR_SPACING = 0.02  # Spacing between bars on the x-axis
 
@@ -72,7 +69,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
 
         fig.add_trace(
             go.Bar(
-                x=[x_offset, x_offset + BAR_HEIGHT],
+                x=[x_offset],
                 y=[next_bar['bar_y']],
                 base=[next_bar['bar_base']],
                 orientation='v',
@@ -97,7 +94,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
         plot_bgcolor="rgba(25, 25, 25, 1)",
         paper_bgcolor="rgba(25, 25, 25, 1)",
         font={"color": "white"},
-        margin={"l": 100, "r": 50, "t": 50, "b": 50},
+        margin={"l": 50, "r": 5, "t": 5, "b": 5},
         xaxis={
             "title": "",
             "range": [0, 5],

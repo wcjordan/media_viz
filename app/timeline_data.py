@@ -8,14 +8,13 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from app.utils import SLICES_PER_WEEK
-
 # Constants for visualization
 FADE_WEEKS_IN_PROGRESS = 4  # Number of weeks for fade-out gradient for in-progress entries
 FADE_WEEKS_FINISH_ONLY = 4  # Number of weeks for fade-in gradient for finish-only entries
 LONG_DURATION_WEEKS = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY - 2
 MAX_OPACITY = 0.9  # Maximum opacity for bars
 MIN_OPACITY = 0.0  # Minimum opacity for faded bars
+SLICES_PER_WEEK = 4  # Number of subslices per week for finer granularity of the opacity gradient
 
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
