@@ -29,6 +29,7 @@ def test_create_timeline_chart_happy_path():
             "opacity": [0.9, 0.7, 0.8],
             "bar_base": [0, 2, 4],
             "bar_y": [2, 1, 3],
+            "slot": [0, 1, 2],
             "start_week": [0, 2, 4],
             "end_week": [1, 2, 6],
             "start_date": ["2021-01-01", "2021-01-15", "2021-02-01"],
@@ -60,7 +61,7 @@ def test_create_timeline_chart_happy_path():
     assert layout.font.color == "white"
 
     # Check x-axis configuration
-    assert layout.xaxis.range == (0, 5)
+    assert layout.xaxis.range == (0, 0.5)  # 5 * BAR_WIDTH where BAR_WIDTH = 0.10
     assert layout.xaxis.showgrid is False
     assert layout.xaxis.showticklabels is False
     assert layout.xaxis.zeroline is False
@@ -116,6 +117,7 @@ def test_create_timeline_chart_with_nan_values():
             "opacity": [0.9, 0.8],
             "bar_base": [0, 1],
             "bar_y": [1, 1],
+            "slot": [0, 1],
             "start_week": [0, float("nan")],  # NaN for finish-only
             "end_week": [float("nan"), 1],  # NaN for in-progress
             "start_date": ["2021-01-01", None],
@@ -156,6 +158,7 @@ def test_create_timeline_chart_multiple_years():
             "opacity": [0.9],
             "bar_base": [0],
             "bar_y": [53],
+            "slot": [0],
             "start_week": [0],
             "end_week": [53],
             "start_date": ["2021-01-01"],

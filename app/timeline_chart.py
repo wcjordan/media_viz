@@ -52,7 +52,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
 
     # Add bars for entries
     for _, next_bar in bars_df.iterrows():
-        x_offset = next_bar["entry_id"] * BAR_WIDTH
+        x_offset = next_bar["slot"] * BAR_WIDTH
 
         rgba_tuple = tuple(
             int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
@@ -101,7 +101,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
         margin={"l": 50, "r": 5, "t": 5, "b": 5},
         xaxis={
             "title": "",
-            "range": [0, 5],
+            "range": [0, 5 * BAR_WIDTH],
             "showgrid": False,
             "showticklabels": False,
             "zeroline": False,

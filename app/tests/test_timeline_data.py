@@ -9,12 +9,14 @@ from app.timeline_data import (
     _generate_bars,
     _fade_in_span,
     _fade_out_span,
+    _allocate_slots,
     SLICES_PER_WEEK,
     FADE_WEEKS_IN_PROGRESS,
     FADE_WEEKS_FINISH_ONLY,
     MAX_OPACITY,
     MIN_OPACITY,
     MEDIA_TYPE_COLORS,
+    MAX_SLOTS,
 )
 
 
@@ -112,6 +114,7 @@ def test_generate_bars_short_duration_span():
     total_weeks = 4
     spans = [
         {
+            "entry_idx": 0,
             "title": "Short Movie",
             "start_week": start_week,
             "end_week": total_weeks,  # Use an odd number to ensure the fade out and in match mid week
@@ -131,6 +134,7 @@ def test_generate_bars_short_duration_span():
     assert first_bar["bar_base"] == start_week * SLICES_PER_WEEK
     assert first_bar["bar_y"] == 1
     assert first_bar["opacity"] == MAX_OPACITY
+    assert first_bar["slot"] == 0  # Should be assigned to first slot
 
     assert bars_df.iloc[-1]["opacity"] == MAX_OPACITY
     midpoint = len(bars_df) // 2
@@ -148,6 +152,7 @@ def test_generate_bars_long_duration_span():
 
     spans = [
         {
+            "entry_idx": 0,
             "title": "Long TV Show",
             "start_week": start_week,
             "end_week": total_weeks,
@@ -168,12 +173,18 @@ def test_generate_bars_long_duration_span():
     assert before_mid_bar["opacity"] == MIN_OPACITY
     assert after_mid_bar["opacity"] == MIN_OPACITY
     assert before_mid_bar["bar_base"] + 1 < after_mid_bar["bar_base"]
+    
+    # Check that slots are assigned (could be same or different for fade-out/fade-in)
+    assert "slot" in bars_df.columns
+    assert all(bars_df["slot"] >= 0)
+    assert all(bars_df["slot"] < MAX_SLOTS)
 
 
 def test_generate_bars_in_progress_span():
     """Test generating bars for in-progress spans (start_week only)."""
     spans = [
         {
+            "entry_idx": 0,
             "title": "In Progress Game",
             "start_week": 5,
             "end_week": None,
@@ -195,12 +206,14 @@ def test_generate_bars_in_progress_span():
         assert next_bar["title"] == "In Progress Game"
         assert next_bar["start_week"] == 5
         assert next_bar["end_week"] is None
+        assert next_bar["slot"] == 0  # Should be assigned to first slot
 
 
 def test_generate_bars_finish_only_span():
     """Test generating bars for finish-only spans (end_week only)."""
     spans = [
         {
+            "entry_idx": 0,
             "title": "Finished Book",
             "start_week": None,
             "end_week": 8,
@@ -222,12 +235,14 @@ def test_generate_bars_finish_only_span():
         assert next_bar["title"] == "Finished Book"
         assert next_bar["start_week"] is None
         assert next_bar["end_week"] == 8
+        assert next_bar["slot"] == 0  # Should be assigned to first slot
 
 
 def test_generate_bars_no_dates():
     """Test generating bars for spans with no dates (should be skipped)."""
     spans = [
         {
+            "entry_idx": 0,
             "title": "No Dates Entry",
             "start_week": None,
             "end_week": None,
@@ -244,6 +259,7 @@ def test_generate_bars_unknown_media_type():
     """Test generating bars for unknown media type."""
     spans = [
         {
+            "entry_idx": 0,
             "title": "Unknown Media",
             "type": "Podcast",  # Unknown type not in MEDIA_TYPE_COLORS
             "start_week": 0,
@@ -256,6 +272,7 @@ def test_generate_bars_unknown_media_type():
     first_bar = bars_df.iloc[0]
     assert first_bar["color"] == MEDIA_TYPE_COLORS["Unknown"]
     assert first_bar["type"] == "Podcast"
+    assert first_bar["slot"] == 0
 
 
 def test_generate_bars_mixed_spans():
@@ -303,11 +320,111 @@ def test_generate_bars_mixed_spans():
     movie_bars = bars_df[bars_df["entry_id"] == 0]
     assert all(movie_bars["color"] == MEDIA_TYPE_COLORS["Movie"])
     assert len(movie_bars) == 2 * SLICES_PER_WEEK  # 2 weeks fading
+    assert all(movie_bars["slot"] >= 0)
+    assert all(movie_bars["slot"] < MAX_SLOTS)
 
     game_bars = bars_df[bars_df["entry_id"] == 1]
     assert all(game_bars["color"] == MEDIA_TYPE_COLORS["Game"])
     assert len(game_bars) == FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK
+    assert all(game_bars["slot"] >= 0)
+    assert all(game_bars["slot"] < MAX_SLOTS)
 
     book_bars = bars_df[bars_df["entry_id"] == 2]
     assert all(book_bars["color"] == MEDIA_TYPE_COLORS["Book"])
     assert len(book_bars) == FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK
+    assert all(book_bars["slot"] >= 0)
+    assert all(book_bars["slot"] < MAX_SLOTS)
+
+
+def test_allocate_slots_basic():
+    """Test basic slot allocation functionality."""
+    spans = [
+        {
+            "entry_idx": 0,
+            "title": "First Entry",
+            "start_week": 0,
+            "end_week": 2,
+        },
+        {
+            "entry_idx": 1,
+            "title": "Second Entry",
+            "start_week": 1,
+            "end_week": 3,
+        },
+        {
+            "entry_idx": 2,
+            "title": "Third Entry",
+            "start_week": 4,
+            "end_week": 6,
+        },
+    ]
+
+    slot_allocations = _allocate_slots(spans)
+
+    # All entries should get slots
+    assert len(slot_allocations) == 3
+    assert 0 in slot_allocations
+    assert 1 in slot_allocations
+    assert 2 in slot_allocations
+
+    # First entry should get slot 0
+    assert slot_allocations[0] == 0
+    # Second entry overlaps with first, should get slot 1
+    assert slot_allocations[1] == 1
+    # Third entry doesn't overlap, can reuse slot 0
+    assert slot_allocations[2] == 0
+
+
+def test_allocate_slots_overflow():
+    """Test slot allocation when there are more overlapping spans than slots."""
+    # Create more overlapping spans than we have slots
+    spans = []
+    for i in range(MAX_SLOTS + 2):
+        spans.append({
+            "entry_idx": i,
+            "title": f"Entry {i}",
+            "start_week": 0,
+            "end_week": 2,
+        })
+
+    slot_allocations = _allocate_slots(spans)
+
+    # Only MAX_SLOTS entries should get allocated
+    assert len(slot_allocations) == MAX_SLOTS
+    
+    # Check that allocated slots are valid
+    for slot in slot_allocations.values():
+        assert 0 <= slot < MAX_SLOTS
+
+
+def test_allocate_slots_long_span_reuse():
+    """Test that long spans can reuse slots for fade-in after fade-out."""
+    long_duration = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY + 2
+    spans = [
+        {
+            "entry_idx": 0,
+            "title": "Long Span",
+            "start_week": 0,
+            "end_week": long_duration,
+        },
+        {
+            "entry_idx": 1,
+            "title": "Middle Span",
+            "start_week": FADE_WEEKS_IN_PROGRESS + 1,
+            "end_week": FADE_WEEKS_IN_PROGRESS + 2,
+        },
+    ]
+
+    slot_allocations = _allocate_slots(spans)
+
+    # Both should get allocated
+    assert len(slot_allocations) == 2
+    
+    # Long span should have separate slots for fade-out and fade-in
+    long_span_slots = slot_allocations[0]
+    assert isinstance(long_span_slots, dict)
+    assert 'fade_out_slot' in long_span_slots
+    assert 'fade_in_slot' in long_span_slots
+    
+    # Middle span should get a regular slot
+    assert isinstance(slot_allocations[1], int)
