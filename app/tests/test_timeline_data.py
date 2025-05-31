@@ -173,7 +173,7 @@ def test_generate_bars_long_duration_span():
     assert before_mid_bar["opacity"] == MIN_OPACITY
     assert after_mid_bar["opacity"] == MIN_OPACITY
     assert before_mid_bar["bar_base"] + 1 < after_mid_bar["bar_base"]
-    
+
     # Check that slots are assigned (could be same or different for fade-out/fade-in)
     assert "slot" in bars_df.columns
     assert all(bars_df["slot"] >= 0)
@@ -380,18 +380,20 @@ def test_allocate_slots_overflow():
     # Create more overlapping spans than we have slots
     spans = []
     for i in range(MAX_SLOTS + 2):
-        spans.append({
-            "entry_idx": i,
-            "title": f"Entry {i}",
-            "start_week": 0,
-            "end_week": 2,
-        })
+        spans.append(
+            {
+                "entry_idx": i,
+                "title": f"Entry {i}",
+                "start_week": 0,
+                "end_week": 2,
+            }
+        )
 
     slot_allocations = _allocate_slots(spans)
 
     # Only MAX_SLOTS entries should get allocated
     assert len(slot_allocations) == MAX_SLOTS
-    
+
     # Check that allocated slots are valid
     for slot in slot_allocations.values():
         assert 0 <= slot < MAX_SLOTS
@@ -419,12 +421,12 @@ def test_allocate_slots_long_span_reuse():
 
     # Both should get allocated
     assert len(slot_allocations) == 2
-    
+
     # Long span should have separate slots for fade-out and fade-in
     long_span_slots = slot_allocations[0]
     assert isinstance(long_span_slots, dict)
-    assert 'fade_out_slot' in long_span_slots
-    assert 'fade_in_slot' in long_span_slots
-    
+    assert "fade_out_slot" in long_span_slots
+    assert "fade_in_slot" in long_span_slots
+
     # Middle span should get a regular slot
     assert isinstance(slot_allocations[1], int)

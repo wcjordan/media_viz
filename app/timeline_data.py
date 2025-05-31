@@ -146,41 +146,45 @@ def _fade_in_span(
 def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
     """
     Allocate horizontal slots for spans to prevent overlapping.
-    
+
     Args:
         spans: List of span dictionaries sorted by start time
-        
+
     Returns:
         Dictionary mapping entry_idx to slot number (0 to MAX_SLOTS-1)
     """
     slot_allocations = {}
     # Track when each slot becomes free (slice index)
     slot_free_at = [0] * MAX_SLOTS
-    
+
     for span in spans:
         start_week = span.get("start_week")
         end_week = span.get("end_week")
         entry_idx = span.get("entry_idx")
-        
+
         if start_week is None and end_week is None:
             continue
-            
+
         # Calculate the time range this span will occupy
         if start_week is not None and end_week is not None:
             # Full span - occupies from start to end
             start_slice = start_week * SLICES_PER_WEEK
             duration_weeks = end_week - start_week + 1
             duration_slices = duration_weeks * SLICES_PER_WEEK
-            
+
             # Check if span is long enough to have a gap between fade-out and fade-in
-            duration_in = min(duration_slices // 2, FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK)
-            duration_out = min(duration_slices - duration_in, FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK)
-            
+            duration_in = min(
+                duration_slices // 2, FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK
+            )
+            duration_out = min(
+                duration_slices - duration_in, FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK
+            )
+
             if duration_out + duration_in < duration_slices:
                 # Long span with gap - can reuse slot for fade-in
                 fade_out_end = start_slice + duration_out
                 fade_in_start = (end_week + 1) * SLICES_PER_WEEK - duration_in
-                
+
                 # Find slot for fade-out
                 fade_out_slot = None
                 for slot in range(MAX_SLOTS):
@@ -188,7 +192,7 @@ def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
                         fade_out_slot = slot
                         slot_free_at[slot] = fade_out_end
                         break
-                
+
                 # Find slot for fade-in (can be different)
                 fade_in_slot = None
                 for slot in range(MAX_SLOTS):
@@ -196,15 +200,17 @@ def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
                         fade_in_slot = slot
                         slot_free_at[slot] = fade_in_start + duration_in
                         break
-                
+
                 if fade_out_slot is not None and fade_in_slot is not None:
                     # Store both slots for this entry
                     slot_allocations[entry_idx] = {
-                        'fade_out_slot': fade_out_slot,
-                        'fade_in_slot': fade_in_slot
+                        "fade_out_slot": fade_out_slot,
+                        "fade_in_slot": fade_in_slot,
                     }
                 else:
-                    logger.warning(f"No available slots for span '{span.get('title')}' - skipping")
+                    logger.warning(
+                        f"No available slots for span '{span.get('title')}' - skipping"
+                    )
             else:
                 # Short span - needs single slot for entire duration
                 end_slice = start_slice + duration_slices
@@ -214,46 +220,52 @@ def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
                         slot = s
                         slot_free_at[s] = end_slice
                         break
-                
+
                 if slot is not None:
                     slot_allocations[entry_idx] = slot
                 else:
-                    logger.warning(f"No available slots for span '{span.get('title')}' - skipping")
-                    
+                    logger.warning(
+                        f"No available slots for span '{span.get('title')}' - skipping"
+                    )
+
         elif start_week is not None:
             # In-progress span
             start_slice = start_week * SLICES_PER_WEEK
             end_slice = start_slice + FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK
-            
+
             slot = None
             for s in range(MAX_SLOTS):
                 if slot_free_at[s] <= start_slice:
                     slot = s
                     slot_free_at[s] = end_slice
                     break
-            
+
             if slot is not None:
                 slot_allocations[entry_idx] = slot
             else:
-                logger.warning(f"No available slots for in-progress span '{span.get('title')}' - skipping")
-                
+                logger.warning(
+                    f"No available slots for in-progress span '{span.get('title')}' - skipping"
+                )
+
         else:
             # Finish-only span
             end_slice = (end_week + 1) * SLICES_PER_WEEK
             start_slice = end_slice - FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK
-            
+
             slot = None
             for s in range(MAX_SLOTS):
                 if slot_free_at[s] <= start_slice:
                     slot = s
                     slot_free_at[s] = end_slice
                     break
-            
+
             if slot is not None:
                 slot_allocations[entry_idx] = slot
             else:
-                logger.warning(f"No available slots for finish-only span '{span.get('title')}' - skipping")
-    
+                logger.warning(
+                    f"No available slots for finish-only span '{span.get('title')}' - skipping"
+                )
+
     return slot_allocations
 
 
@@ -267,23 +279,30 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
             duration_weeks, tags, bar_base, bar_y, opacity, slot.
     """
     # Sort spans by start time for slot allocation
-    sorted_spans = sorted(spans, key=lambda x: (
-        x.get("start_week") if x.get("start_week") is not None else x.get("end_week", float('inf')),
-        x.get("end_week") if x.get("end_week") is not None else float('inf')
-    ))
-    
+    sorted_spans = sorted(
+        spans,
+        key=lambda x: (
+            (
+                x.get("start_week")
+                if x.get("start_week") is not None
+                else x.get("end_week", float("inf"))
+            ),
+            x.get("end_week") if x.get("end_week") is not None else float("inf"),
+        ),
+    )
+
     # Allocate slots
     slot_allocations = _allocate_slots(sorted_spans)
-    
+
     span_bars = []
     for span in spans:
         start_week = span.get("start_week", None)
         end_week = span.get("end_week", None)
         entry_idx = span.get("entry_idx")
-        
+
         if start_week is None and end_week is None:
             continue
-            
+
         # Skip if no slot was allocated
         if entry_idx not in slot_allocations:
             continue
@@ -303,7 +322,7 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
         }
 
         slot_info = slot_allocations[entry_idx]
-        
+
         # Create spans for each week in a range when fading is needed
         if start_week is not None and end_week is not None:
             duration_weeks = end_week - start_week + 1
@@ -321,17 +340,21 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
                 # Long span with separate slots for fade-out and fade-in
                 if duration_out > 0:
                     fade_out_template = span_bar_template.copy()
-                    fade_out_template["slot"] = slot_info['fade_out_slot']
-                    _fade_out_span(span_bars, fade_out_template, start_week, duration_out)
+                    fade_out_template["slot"] = slot_info["fade_out_slot"]
+                    _fade_out_span(
+                        span_bars, fade_out_template, start_week, duration_out
+                    )
                 if duration_in > 0:
                     fade_in_template = span_bar_template.copy()
-                    fade_in_template["slot"] = slot_info['fade_in_slot']
+                    fade_in_template["slot"] = slot_info["fade_in_slot"]
                     _fade_in_span(span_bars, fade_in_template, end_week, duration_in)
             else:
                 # Short span with single slot
                 span_bar_template["slot"] = slot_info
                 if duration_out > 0:
-                    _fade_out_span(span_bars, span_bar_template, start_week, duration_out)
+                    _fade_out_span(
+                        span_bars, span_bar_template, start_week, duration_out
+                    )
                 if duration_in > 0:
                     _fade_in_span(span_bars, span_bar_template, end_week, duration_in)
 
