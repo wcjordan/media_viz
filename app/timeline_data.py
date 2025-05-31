@@ -9,18 +9,17 @@ import numpy as np
 import pandas as pd
 
 # Constants for visualization
-FADE_WEEKS_IN_PROGRESS = (
-    4  # Number of weeks for fade-out gradient for in-progress entries
-)
-FADE_WEEKS_FINISH_ONLY = (
-    4  # Number of weeks for fade-in gradient for finish-only entries
-)
-LONG_DURATION_WEEKS = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY - 2
+# Number of weeks for fade-out gradient for in-progress entries
+FADE_WEEKS_IN_PROGRESS = 4
+# Number of weeks for fade-in gradient for finish-only entries
+FADE_WEEKS_FINISH_ONLY = 4
+# Long duration threshold in weeks for applying fade effects,
+# calculated as the sum of fade weeks minus 2 to encourage some overlap
+MAX_SHORT_DURATION_WEEKS = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY - 2
 MAX_OPACITY = 0.9  # Maximum opacity for bars
 MIN_OPACITY = 0.0  # Minimum opacity for faded bars
-SLICES_PER_WEEK = (
-    4  # Number of subslices per week for finer granularity of the opacity gradient
-)
+# Number of subslices per week for finer granularity of the opacity gradient
+SLICES_PER_WEEK = 4
 
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
@@ -162,7 +161,7 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
         if start_week is not None and end_week is not None:
             duration_weeks = end_week - start_week + 1
             span_bar_template["duration_weeks"] = duration_weeks
-            if duration_weeks <= LONG_DURATION_WEEKS:
+            if duration_weeks <= MAX_SHORT_DURATION_WEEKS:
                 # Short duration, no fade needed
                 bar_start = start_week * SLICES_PER_WEEK
                 bar_duration = duration_weeks * SLICES_PER_WEEK

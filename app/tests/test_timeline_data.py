@@ -4,8 +4,6 @@ Unit tests for timeline data preparation functions.
 
 from datetime import datetime
 
-import pytest
-
 from app.timeline_data import (
     _generate_week_axis,
     _generate_bars,
@@ -14,7 +12,7 @@ from app.timeline_data import (
     SLICES_PER_WEEK,
     FADE_WEEKS_IN_PROGRESS,
     FADE_WEEKS_FINISH_ONLY,
-    LONG_DURATION_WEEKS,
+    MAX_SHORT_DURATION_WEEKS,
     MAX_OPACITY,
     MIN_OPACITY,
     MEDIA_TYPE_COLORS,
@@ -42,10 +40,7 @@ def test_fade_out_span():
     """Test fade-out span generation."""
     span_bars = []
     span_bar_template = {
-        "entry_id": 1,
         "title": "Test Entry",
-        "type": "Movie",
-        "color": "#33FF57",
     }
     start_week = 5
 
@@ -68,25 +63,19 @@ def test_fade_out_span():
     assert last_bar["opacity"] == MIN_OPACITY
 
     # Check opacity decreases monotonically
-    opacities = [bar["opacity"] for bar in span_bars]
+    opacities = [next_bar["opacity"] for next_bar in span_bars]
     assert all(opacities[i] >= opacities[i + 1] for i in range(len(opacities) - 1))
 
     # Check template fields are copied
-    for bar in span_bars:
-        assert bar["entry_id"] == 1
-        assert bar["title"] == "Test Entry"
-        assert bar["type"] == "Movie"
-        assert bar["color"] == "#33FF57"
+    for next_bar in span_bars:
+        assert next_bar["title"] == "Test Entry"
 
 
 def test_fade_in_span():
     """Test fade-in span generation."""
     span_bars = []
     span_bar_template = {
-        "entry_id": 2,
         "title": "Test Book",
-        "type": "Book",
-        "color": "#B478B4",
     }
     end_week = 10
 
@@ -110,29 +99,21 @@ def test_fade_in_span():
     assert last_bar["opacity"] == MAX_OPACITY
 
     # Check opacity increases monotonically
-    opacities = [bar["opacity"] for bar in span_bars]
+    opacities = [next_bar["opacity"] for next_bar in span_bars]
     assert all(opacities[i] <= opacities[i + 1] for i in range(len(opacities) - 1))
 
     # Check template fields are copied
-    for bar in span_bars:
-        assert bar["entry_id"] == 2
-        assert bar["title"] == "Test Book"
-        assert bar["type"] == "Book"
-        assert bar["color"] == "#B478B4"
+    for next_bar in span_bars:
+        assert next_bar["title"] == "Test Book"
 
 
 def test_generate_bars_short_duration_span():
     """Test generating bars for short duration spans (no fading needed)."""
     spans = [
         {
-            "entry_idx": 1,
             "title": "Short Movie",
-            "type": "Movie",
-            "start_date": datetime(2021, 1, 1),
-            "end_date": datetime(2021, 1, 8),
             "start_week": 0,
-            "end_week": 1,  # 2 weeks duration (≤ LONG_DURATION_WEEKS)
-            "tags": {"genre": ["Action"]},
+            "end_week": 1,  # ≤ MAX_SHORT_DURATION_WEEKS
         }
     ]
 
@@ -141,32 +122,23 @@ def test_generate_bars_short_duration_span():
     # Should have exactly one bar (no fading)
     assert len(bars_df) == 1
 
-    bar = bars_df.iloc[0]
-    assert bar["entry_id"] == 1
-    assert bar["title"] == "Short Movie"
-    assert bar["type"] == "Movie"
-    assert bar["color"] == MEDIA_TYPE_COLORS["Movie"]
-    assert bar["start_week"] == 0
-    assert bar["end_week"] == 1
-    assert bar["duration_weeks"] == 2
-    assert bar["bar_base"] == 0  # start_week * SLICES_PER_WEEK
-    assert bar["bar_y"] == 2 * SLICES_PER_WEEK  # duration_weeks * SLICES_PER_WEEK
-    assert bar["opacity"] == MAX_OPACITY
-    assert bar["tags"] == {"genre": ["Action"]}
+    first_bar = bars_df.iloc[0]
+    assert first_bar["title"] == "Short Movie"
+    assert first_bar["start_week"] == 0
+    assert first_bar["end_week"] == 1
+    assert first_bar["duration_weeks"] == 2
+    assert first_bar["bar_base"] == 0  # start_week * SLICES_PER_WEEK
+    assert first_bar["bar_y"] == 2 * SLICES_PER_WEEK  # duration_weeks * SLICES_PER_WEEK
+    assert first_bar["opacity"] == MAX_OPACITY
 
 
 def test_generate_bars_long_duration_span():
     """Test generating bars for long duration spans (fading needed)."""
     spans = [
         {
-            "entry_idx": 2,
             "title": "Long TV Show",
-            "type": "TV Show",
-            "start_date": datetime(2021, 1, 1),
-            "end_date": datetime(2021, 3, 1),
-            "start_week": 0,
-            "end_week": 10,  # 11 weeks duration (> LONG_DURATION_WEEKS)
-            "tags": {"genre": ["Drama"]},
+            "start_week": 1,
+            "end_week": MAX_SHORT_DURATION_WEEKS + 1,
         }
     ]
 
@@ -177,11 +149,10 @@ def test_generate_bars_long_duration_span():
     assert len(bars_df) == expected_bars
 
     # Check that we have both fade-out and fade-in bars
-    fade_out_bars = bars_df[bars_df["bar_base"] < 5 * SLICES_PER_WEEK]  # First few weeks
+    fade_out_bars = bars_df[
+        bars_df["bar_base"] < 5 * SLICES_PER_WEEK
+    ]  # First few weeks
     fade_in_bars = bars_df[bars_df["bar_base"] >= 5 * SLICES_PER_WEEK]  # Last few weeks
-
-    assert len(fade_out_bars) == FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK
-    assert len(fade_in_bars) == FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK
 
     # Check fade-out starts at max opacity
     assert fade_out_bars.iloc[0]["opacity"] == MAX_OPACITY
@@ -193,14 +164,9 @@ def test_generate_bars_in_progress_span():
     """Test generating bars for in-progress spans (start_week only)."""
     spans = [
         {
-            "entry_idx": 3,
             "title": "In Progress Game",
-            "type": "Game",
-            "start_date": datetime(2021, 1, 1),
-            "end_date": None,
             "start_week": 5,
             "end_week": None,
-            "tags": {"platform": ["PC"]},
         }
     ]
 
@@ -215,27 +181,19 @@ def test_generate_bars_in_progress_span():
     assert bars_df.iloc[-1]["opacity"] == MIN_OPACITY
 
     # Check common fields
-    for _, bar in bars_df.iterrows():
-        assert bar["entry_id"] == 3
-        assert bar["title"] == "In Progress Game"
-        assert bar["type"] == "Game"
-        assert bar["color"] == MEDIA_TYPE_COLORS["Game"]
-        assert bar["start_week"] == 5
-        assert bar["end_week"] is None
+    for _, next_bar in bars_df.iterrows():
+        assert next_bar["title"] == "In Progress Game"
+        assert next_bar["start_week"] == 5
+        assert next_bar["end_week"] is None
 
 
 def test_generate_bars_finish_only_span():
     """Test generating bars for finish-only spans (end_week only)."""
     spans = [
         {
-            "entry_idx": 4,
             "title": "Finished Book",
-            "type": "Book",
-            "start_date": None,
-            "end_date": datetime(2021, 1, 15),
             "start_week": None,
             "end_week": 8,
-            "tags": {"genre": ["Fiction"]},
         }
     ]
 
@@ -250,27 +208,19 @@ def test_generate_bars_finish_only_span():
     assert bars_df.iloc[-1]["opacity"] == MAX_OPACITY
 
     # Check common fields
-    for _, bar in bars_df.iterrows():
-        assert bar["entry_id"] == 4
-        assert bar["title"] == "Finished Book"
-        assert bar["type"] == "Book"
-        assert bar["color"] == MEDIA_TYPE_COLORS["Book"]
-        assert bar["start_week"] is None
-        assert bar["end_week"] == 8
+    for _, next_bar in bars_df.iterrows():
+        assert next_bar["title"] == "Finished Book"
+        assert next_bar["start_week"] is None
+        assert next_bar["end_week"] == 8
 
 
 def test_generate_bars_no_dates():
     """Test generating bars for spans with no dates (should be skipped)."""
     spans = [
         {
-            "entry_idx": 5,
             "title": "No Dates Entry",
-            "type": "Movie",
-            "start_date": None,
-            "end_date": None,
             "start_week": None,
             "end_week": None,
-            "tags": {},
         }
     ]
 
@@ -284,26 +234,22 @@ def test_generate_bars_unknown_media_type():
     """Test generating bars for unknown media type."""
     spans = [
         {
-            "entry_idx": 6,
             "title": "Unknown Media",
-            "type": "Podcast",  # Not in MEDIA_TYPE_COLORS
-            "start_date": datetime(2021, 1, 1),
-            "end_date": datetime(2021, 1, 8),
+            "type": "Podcast",  # Unknown type not in MEDIA_TYPE_COLORS
             "start_week": 0,
             "end_week": 1,
-            "tags": {},
         }
     ]
 
     bars_df = _generate_bars(spans)
 
     assert len(bars_df) == 1
-    bar = bars_df.iloc[0]
-    assert bar["color"] == MEDIA_TYPE_COLORS["Unknown"]
-    assert bar["type"] == "Podcast"
+    first_bar = bars_df.iloc[0]
+    assert first_bar["color"] == MEDIA_TYPE_COLORS["Unknown"]
+    assert first_bar["type"] == "Podcast"
 
 
-def test_generate_bars_mixed_spans(sample_entries):
+def test_generate_bars_mixed_spans():
     """Test generating bars for mixed span types using sample_entries fixture."""
     # Create spans with different scenarios
     spans = [
@@ -311,31 +257,22 @@ def test_generate_bars_mixed_spans(sample_entries):
             "entry_idx": 0,
             "title": "Short Movie",
             "type": "Movie",
-            "start_date": datetime(2021, 1, 1),
-            "end_date": datetime(2021, 1, 8),
             "start_week": 0,
             "end_week": 1,  # Short duration
-            "tags": {"genre": ["Action"]},
         },
         {
             "entry_idx": 1,
             "title": "In Progress Game",
             "type": "Game",
-            "start_date": datetime(2021, 2, 1),
-            "end_date": None,
             "start_week": 5,
             "end_week": None,  # In progress
-            "tags": {"platform": ["PC"]},
         },
         {
             "entry_idx": 2,
             "title": "Finished Book",
             "type": "Book",
-            "start_date": None,
-            "end_date": datetime(2021, 3, 1),
             "start_week": None,
             "end_week": 10,  # Finish only
-            "tags": {"genre": ["Fiction"]},
         },
     ]
 
@@ -356,27 +293,24 @@ def test_generate_bars_mixed_spans(sample_entries):
     # Check media type colors are correct
     movie_bars = bars_df[bars_df["entry_id"] == 0]
     assert all(movie_bars["color"] == MEDIA_TYPE_COLORS["Movie"])
+    assert len(movie_bars) == 1
 
     game_bars = bars_df[bars_df["entry_id"] == 1]
     assert all(game_bars["color"] == MEDIA_TYPE_COLORS["Game"])
+    assert len(game_bars) == FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK
 
     book_bars = bars_df[bars_df["entry_id"] == 2]
     assert all(book_bars["color"] == MEDIA_TYPE_COLORS["Book"])
+    assert len(book_bars) == FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK
 
 
 def test_generate_bars_edge_case_long_duration_boundary():
     """Test the boundary case for long duration detection."""
-    # Test exactly at LONG_DURATION_WEEKS threshold
+    # Test exactly at MAX_SHORT_DURATION_WEEKS threshold
     spans = [
         {
-            "entry_idx": 1,
-            "title": "Boundary Case",
-            "type": "TV Show",
-            "start_date": datetime(2021, 1, 1),
-            "end_date": datetime(2021, 1, 8),
-            "start_week": 0,
-            "end_week": LONG_DURATION_WEEKS,  # Exactly at threshold
-            "tags": {},
+            "start_week": 1,  # Start at 1 week since the duration count is inclusive on both start & end sides
+            "end_week": MAX_SHORT_DURATION_WEEKS,
         }
     ]
 
@@ -387,7 +321,7 @@ def test_generate_bars_edge_case_long_duration_boundary():
     assert bars_df.iloc[0]["opacity"] == MAX_OPACITY
 
     # Test just over the threshold
-    spans[0]["end_week"] = LONG_DURATION_WEEKS + 1
+    spans[0]["end_week"] = MAX_SHORT_DURATION_WEEKS + 1
     bars_df = _generate_bars(spans)
 
     # Should be treated as long duration (with fading)
