@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 BAR_WIDTH = 1.0
 BAR_SPACING = 0.05  # Spacing between bars on the x-axis
 HEIGHT_FACTOR = 4  # Increase this to stretch the chart vertically
+IMAGE_Y_OFFSET = 0.5
 MIN_CHART_HEIGHT = 480
 
 
@@ -54,6 +55,8 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
         )
 
     # Add bars for entries
+    poster_images = []
+    poster_added = set()  # To track unique poster paths
     for _, next_bar in bars_df.iterrows():
         rgba_tuple = tuple(
             int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
@@ -76,11 +79,13 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             math.pow(1 - next_bar["opacity"], 2) / 12
         )
 
+        x = next_bar["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing
+        y_base = next_bar["bar_base"]
         fig.add_trace(
             go.Bar(
-                x=[next_bar["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing],
+                x=[x],
                 y=[next_bar["bar_y"]],
-                base=[next_bar["bar_base"]],
+                base=[y_base],
                 orientation="v",
                 marker_color=f"rgba{rgba_tuple}",
                 width=BAR_WIDTH - BAR_SPACING - 2 * extra_spacing,
@@ -90,6 +95,23 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
                 offset=0,
             )
         )
+
+        entry_id = next_bar["entry_id"]
+        poster_path = next_bar.get("poster_path")
+        if poster_path and entry_id not in poster_added:
+            image_width = (BAR_WIDTH - BAR_SPACING)
+            poster_images.append({
+                "source": poster_path,
+                "xref": "x",
+                "yref": "y",
+                "x": x + image_width / 8,
+                "y": y_base + IMAGE_Y_OFFSET,
+                "sizing": "contain",
+                "sizex": image_width * 3 / 4,
+                "sizey": 1000,  # A large number so the width does the constraining
+                "layer": "above",
+            })
+            poster_added.add(entry_id)
 
     # Drop tick text if same as prior week
     # Since the tick text is the name of the month, this means we just show each month name once
@@ -126,6 +148,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             "font_size": 12,
             "font_family": "Arial",
         },
+        images=poster_images,
     )
 
     return fig

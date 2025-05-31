@@ -328,6 +328,7 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
             "end_week": end_week,
             "slot": slot_allocations[entry_idx],
             "tags": span.get("tags", {}),
+            "poster_path": span.get("poster_path"),
         }
 
         # Create spans for each week in a range when fading is needed
