@@ -92,7 +92,7 @@ def _fade_out_span(
         span_bars: List to append the created span bar dict
         span_bar_template: Template dict for the span bar
         start_week: The week index to start fading out from
-        duration_slices: Optional; the duration in weeks for the fade-out effect
+        duration_slices: Optional; the duration for the fade-out effect specified in slices
     """
     bar_start = start_week * SLICES_PER_WEEK
     opacities = np.linspace(
@@ -121,7 +121,7 @@ def _fade_in_span(
         span_bars: List to append the created span bar dict
         span_bar_template: Template dict for the span bar
         end_week: The week index to end fading in at
-        duration_slices: Optional; the duration in weeks to fade in
+        duration_slices: Optional; the duration for the fade-in effect specified in slices
     """
     bar_start = (end_week + 1) * SLICES_PER_WEEK - duration_slices
     opacities = np.linspace(
