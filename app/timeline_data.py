@@ -2,11 +2,17 @@
 This module prepares media entries into spans for the timeline visualization
 """
 
+import logging
 from datetime import datetime, timedelta
+import random
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+
+from app.utils import MAX_SLOTS, is_debug_mode
+
+logger = logging.getLogger(__name__)
 
 # Constants for visualization
 # Number of weeks for fade-out gradient for in-progress entries
@@ -17,6 +23,8 @@ MAX_OPACITY = 0.9  # Maximum opacity for bars
 MIN_OPACITY = 0.0  # Minimum opacity for faded bars
 # Number of subslices per week for finer granularity of the opacity gradient
 SLICES_PER_WEEK = 4
+# Number of weeks to skip before freeing a slot for a new entry
+VERTICAL_SPACING_WEEKS = 1
 
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
@@ -49,7 +57,9 @@ def _generate_week_axis(min_date: datetime, max_date: datetime) -> pd.DataFrame:
                 {
                     "week_index": week_index,
                     "year": current_date.year,
-                    "week_label": current_date.strftime("%b"),
+                    "week_label": current_date.strftime(
+                        "%b %d" if is_debug_mode() else "%b"
+                    ),
                 }
             )
             week_index += 1
@@ -138,6 +148,149 @@ def _fade_in_span(
         )
 
 
+def _future_blocks_clear(
+    future_blocks: List[Dict], start_slice: int, free_slice: int
+) -> bool:
+    """
+    Check if the future blocks do not overlap with the given slice range.
+
+    Args:
+        future_blocks: List of future block dictionaries
+        start_slice: Start slice index
+        free_slice: Free slice index
+
+    Returns:
+        True if no overlaps, False otherwise
+    """
+    for block in future_blocks:
+        if not (
+            block["free_slice"] <= start_slice or block["start_slice"] >= free_slice
+        ):
+            return False
+    return True
+
+
+def _allocate_slot_to_span(
+    slot_allocations: Dict[int, int],
+    future_blocks_by_slot: List[List[Dict]],
+    slot_free_at: List[int],
+    span: Dict,
+):
+    """
+    Allocate a slot to a span, ensuring no overlaps with existing spans.
+    Args:
+        slot_allocations: Dictionary mapping entry_idx to slot number
+        future_blocks_by_slot: List of future blocks for each slot
+        slot_free_at: List tracking when each slot will be free
+        span: Span dictionary containing entry_idx, start_week, and end_week
+
+    Returns:
+        None; modifies slot_allocations in place
+    """
+    start_week = span.get("start_week")
+    end_week = span.get("end_week")
+    entry_idx = span.get("entry_idx")
+
+    if start_week is None and end_week is None:
+        return
+
+    # Calculate the time range this span will occupy
+    # Handles prepping a future block if this span will fade out and back in
+    if end_week is None:
+        end_week = start_week + FADE_WEEKS_IN_PROGRESS - 1
+    elif start_week is None:
+        start_week = end_week + 1 - FADE_WEEKS_FINISH_ONLY
+
+    start_slice = start_week * SLICES_PER_WEEK
+    free_week = end_week + 1 + VERTICAL_SPACING_WEEKS
+    free_slice = free_week * SLICES_PER_WEEK
+
+    next_future_block = None
+    if free_week - start_week > FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY:
+        next_future_block = {
+            "start_slice": (free_week - FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK,
+            "free_slice": free_slice,
+            "entry_idx": entry_idx,
+        }
+        free_week = start_week + FADE_WEEKS_IN_PROGRESS + VERTICAL_SPACING_WEEKS
+        free_slice = free_week * SLICES_PER_WEEK
+
+    # Find a free slot for this span
+    # Sort slots by the first slot which is free earliest
+    sorted_slot_free_at = sorted(
+        enumerate(slot_free_at), key=lambda x: (x[1], random.random())
+    )
+
+    slot = None
+    for slot_to_check, _ in sorted_slot_free_at:
+        logger.debug(
+            "Checking slot %s, it will be free at %s. %s requires start_slice %s and will block til free_slice %s",
+            slot_to_check,
+            slot_free_at[slot_to_check],
+            span.get("title"),
+            start_slice,
+            free_slice,
+        )
+        if slot_free_at[slot_to_check] <= start_slice and _future_blocks_clear(
+            future_blocks_by_slot[slot_to_check], start_slice, free_slice
+        ):
+
+            slot = slot_to_check
+            slot_free_at[slot] = free_slice
+            break
+
+    if slot is None:
+        logger.warning(
+            "No available slots for span '%s' - skipping, start_date: %s, end_date: %s",
+            span.get("title"),
+            span.get("start_date"),
+            span.get("end_date"),
+        )
+        return
+
+    slot_allocations[entry_idx] = slot
+    if next_future_block:
+        future_blocks_by_slot[slot].append(next_future_block)
+
+
+def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
+    """
+    Allocate horizontal slots for spans to prevent overlapping.
+    Note we also pad out spans by an extra VERTICAL_SPACING_WEEKS to allow vertical spacing
+
+    Args:
+        spans: List of span dictionaries
+
+    Returns:
+        Dictionary mapping entry_idx to slot number (0 to MAX_SLOTS-1)
+    """
+    slot_allocations = {}
+
+    # Track any future fade-in blocks by slot to avoid collisions
+    future_blocks_by_slot = [[] for _ in range(MAX_SLOTS)]
+
+    # Track when each slot will be free (by slice index)
+    slot_free_at = [0] * MAX_SLOTS
+
+    # Sort spans by start time (including fade-in starts)
+    # This ensures that we can schedule by packing the earliest spans first
+    sorted_spans = sorted(
+        spans,
+        key=lambda x: (
+            x.get("start_week")
+            if x.get("start_week") is not None
+            else x.get("end_week", 0) + 1 - FADE_WEEKS_FINISH_ONLY
+        ),
+    )
+
+    for span in sorted_spans:
+        _allocate_slot_to_span(
+            slot_allocations, future_blocks_by_slot, slot_free_at, span
+        )
+
+    return slot_allocations
+
+
 def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
     """
     Generate a DataFrame of bars for the timeline visualization.
@@ -145,19 +298,27 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
         spans: List of dictionaries containing each span of media entry data for the timeline.
     Returns:
         DataFrame with columns: entry_id, title, type, color, start_date, start_week, end_date, end_week,
-            duration_weeks, tags, bar_base, bar_y, & opacity.
+            duration_weeks, tags, bar_base, bar_y, opacity, & slot.
     """
+    slot_allocations = _allocate_slots(spans)
+
     span_bars = []
     for span in spans:
         start_week = span.get("start_week", None)
         end_week = span.get("end_week", None)
+        entry_idx = span.get("entry_idx")
+
         if start_week is None and end_week is None:
+            continue
+
+        # Skip if no slot was allocated
+        if entry_idx not in slot_allocations:
             continue
 
         media_type = span.get("type")
         color = MEDIA_TYPE_COLORS.get(media_type, MEDIA_TYPE_COLORS["Unknown"])
         span_bar_template = {
-            "entry_id": span.get("entry_idx"),
+            "entry_id": entry_idx,
             "title": span.get("title"),
             "type": media_type,
             "color": color,
@@ -165,6 +326,7 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
             "start_week": start_week,
             "end_date": span.get("end_date"),
             "end_week": end_week,
+            "slot": slot_allocations[entry_idx],
             "tags": span.get("tags", {}),
         }
 

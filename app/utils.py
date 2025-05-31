@@ -3,6 +3,12 @@ Utils for handling weeks and dates for preparing the timeline chart.
 """
 
 from datetime import datetime, timedelta
+import os
+
+# Maximum number of slots along the x-axis for the timeline
+# Increase this value to fit more media entries in a given timeframe,
+# Decrease this to make individual media entries larger on the x-axis
+MAX_SLOTS = 20
 
 
 def compute_week_index(entry_date: datetime, min_date: datetime) -> int:
@@ -31,3 +37,13 @@ def get_datetime(date_str: str) -> datetime:
         Datetime object
     """
     return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=None)
+
+
+def is_debug_mode() -> bool:
+    """
+    Check if the application is running in debug mode.
+
+    Returns:
+        True if in debug mode, False otherwise
+    """
+    return os.getenv("DEBUG", "false").lower() == "true"

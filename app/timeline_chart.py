@@ -3,15 +3,20 @@ Generate a timeline chart using Plotly for vizualizing media entries.
 """
 
 import logging
+import math
 
 import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
 
+from app.utils import MAX_SLOTS, is_debug_mode
+
 logger = logging.getLogger(__name__)
 
-BAR_WIDTH = 0.10
-BAR_SPACING = 0.02  # Spacing between bars on the x-axis
+BAR_WIDTH = 1.0
+BAR_SPACING = 0.05  # Spacing between bars on the x-axis
+HEIGHT_FACTOR = 4  # Increase this to stretch the chart vertically
+MIN_CHART_HEIGHT = 480
 
 
 def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.Figure:
@@ -25,13 +30,11 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
     Returns:
         Plotly Figure object
     """
+    fig = go.Figure()
     if weeks_df.empty or bars_df.empty:
         # Return empty figure if no data
-        fig = go.Figure()
         fig.update_layout(title="No data available for timeline", height=600)
         return fig
-
-    fig = go.Figure()
 
     # Add year dividers
     years = weeks_df["year"].unique()
@@ -52,8 +55,6 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
 
     # Add bars for entries
     for _, next_bar in bars_df.iterrows():
-        x_offset = next_bar["entry_id"] * BAR_WIDTH
-
         rgba_tuple = tuple(
             int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
         ) + (next_bar["opacity"],)
@@ -71,16 +72,22 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             tooltip_list.append(f"Duration: {next_bar['duration_weeks']:.0f} week(s)")
         tooltip = "<br>".join(tooltip_list)
 
+        extra_spacing = (BAR_WIDTH - BAR_SPACING) * (
+            math.pow(1 - next_bar["opacity"], 2) / 12
+        )
+
         fig.add_trace(
             go.Bar(
-                x=[x_offset],
+                x=[next_bar["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing],
                 y=[next_bar["bar_y"]],
                 base=[next_bar["bar_base"]],
                 orientation="v",
                 marker_color=f"rgba{rgba_tuple}",
-                width=BAR_WIDTH - BAR_SPACING,
+                width=BAR_WIDTH - BAR_SPACING - 2 * extra_spacing,
                 hovertemplate=tooltip,
                 showlegend=False,
+                offsetgroup=1,
+                offset=0,
             )
         )
 
@@ -93,22 +100,23 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
     ]
 
     # Update layout
+    min_week = weeks_df["week_index"].min()
+    max_week = weeks_df["week_index"].max()
     fig.update_layout(
-        width=800,
+        height=max(HEIGHT_FACTOR * max_week, MIN_CHART_HEIGHT),
         plot_bgcolor="rgba(25, 25, 25, 1)",
         paper_bgcolor="rgba(25, 25, 25, 1)",
         font={"color": "white"},
-        margin={"l": 50, "r": 5, "t": 5, "b": 5},
+        margin={"l": 50, "r": 5, "t": 0, "b": 0},
         xaxis={
-            "title": "",
-            "range": [0, 5],
+            "range": [0, MAX_SLOTS * BAR_WIDTH],
             "showgrid": False,
             "showticklabels": False,
             "zeroline": False,
         },
         yaxis={
-            "autorange": "reversed",  # Reverse y-axis to have most recent at top
-            "showgrid": False,
+            "range": [max_week + 10, min_week - 10],
+            "showgrid": is_debug_mode(),
             "tickvals": weeks_df["week_index"].tolist(),
             "ticktext": tick_text,
             "zeroline": False,
