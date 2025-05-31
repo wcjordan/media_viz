@@ -26,6 +26,10 @@ preprocess:
 start:
 	streamlit run streamlit_app.py
 
+.PHONY: debug-start
+debug-start:
+	DEBUG=true streamlit run streamlit_app.py
+
 .PHONY: test
 test:
 	python -m pytest preprocessing/tests -v

@@ -9,12 +9,13 @@ import streamlit as st
 from app.media_entries import load_media_entries, extract_timeline_spans
 from app.timeline_chart import create_timeline_chart
 from app.timeline_data import prepare_timeline_data
+from app.utils import is_debug_mode
 
 
 logger = logging.getLogger(__name__)
 # Configure logging
 logging.basicConfig(
-    level=logging.WARN,
+    level=logging.DEBUG if is_debug_mode() else logging.WARN,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     filename="app/app.log",
     filemode="w",

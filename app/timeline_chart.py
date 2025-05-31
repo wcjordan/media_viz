@@ -3,12 +3,13 @@ Generate a timeline chart using Plotly for vizualizing media entries.
 """
 
 import logging
+import math
 
 import numpy as np
 import plotly.graph_objects as go
 import pandas as pd
 
-from app.utils import MAX_SLOTS
+from app.utils import MAX_SLOTS, is_debug_mode
 
 logger = logging.getLogger(__name__)
 
@@ -69,14 +70,18 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             tooltip_list.append(f"Duration: {next_bar['duration_weeks']:.0f} week(s)")
         tooltip = "<br>".join(tooltip_list)
 
+        extra_spacing = (BAR_WIDTH - BAR_SPACING) * (
+            math.pow(1 - next_bar["opacity"], 2) / 12
+        )
+
         fig.add_trace(
             go.Bar(
-                x=[next_bar["slot"] * BAR_WIDTH + BAR_SPACING],
+                x=[next_bar["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing],
                 y=[next_bar["bar_y"]],
                 base=[next_bar["bar_base"]],
                 orientation="v",
                 marker_color=f"rgba{rgba_tuple}",
-                width=BAR_WIDTH - BAR_SPACING,
+                width=BAR_WIDTH - BAR_SPACING - 2 * extra_spacing,
                 hovertemplate=tooltip,
                 showlegend=False,
                 offsetgroup=1,
@@ -109,7 +114,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
         },
         yaxis={
             "range": [max_week + 10, min_week - 10],
-            "showgrid": False,
+            "showgrid": is_debug_mode(),
             "tickvals": weeks_df["week_index"].tolist(),
             "ticktext": tick_text,
             "zeroline": False,
