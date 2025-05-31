@@ -9,12 +9,18 @@ import numpy as np
 import pandas as pd
 
 # Constants for visualization
-FADE_WEEKS_IN_PROGRESS = 4  # Number of weeks for fade-out gradient for in-progress entries
-FADE_WEEKS_FINISH_ONLY = 4  # Number of weeks for fade-in gradient for finish-only entries
+FADE_WEEKS_IN_PROGRESS = (
+    4  # Number of weeks for fade-out gradient for in-progress entries
+)
+FADE_WEEKS_FINISH_ONLY = (
+    4  # Number of weeks for fade-in gradient for finish-only entries
+)
 LONG_DURATION_WEEKS = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY - 2
 MAX_OPACITY = 0.9  # Maximum opacity for bars
 MIN_OPACITY = 0.0  # Minimum opacity for faded bars
-SLICES_PER_WEEK = 4  # Number of subslices per week for finer granularity of the opacity gradient
+SLICES_PER_WEEK = (
+    4  # Number of subslices per week for finer granularity of the opacity gradient
+)
 
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
@@ -87,7 +93,9 @@ def _fade_out_span(span_bars: List[Dict], span_bar_template: Dict, start_week: i
         start_week: The week index to start fading out from
     """
     bar_start = start_week * SLICES_PER_WEEK
-    opacities = np.linspace(MAX_OPACITY, MIN_OPACITY, FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK)
+    opacities = np.linspace(
+        MAX_OPACITY, MIN_OPACITY, FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK
+    )
     for i, opacity in enumerate(opacities):
         _add_span_bar(
             span_bars,
@@ -107,7 +115,9 @@ def _fade_in_span(span_bars: List[Dict], span_bar_template: Dict, end_week: int)
         end_week: The week index to end fading in at
     """
     bar_start = (end_week + 1 - FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK
-    opacities = np.linspace(MIN_OPACITY, MAX_OPACITY, FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK)
+    opacities = np.linspace(
+        MIN_OPACITY, MAX_OPACITY, FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK
+    )
     for i, opacity in enumerate(opacities):
         _add_span_bar(
             span_bars,
@@ -155,7 +165,9 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
                 # Short duration, no fade needed
                 bar_start = start_week * SLICES_PER_WEEK
                 bar_duration = duration_weeks * SLICES_PER_WEEK
-                _add_span_bar(span_bars, span_bar_template, bar_start, bar_duration, MAX_OPACITY)
+                _add_span_bar(
+                    span_bars, span_bar_template, bar_start, bar_duration, MAX_OPACITY
+                )
             else:
                 # Long duration, create 2 spans one fading out from the start and one fading in to the finish
                 _fade_out_span(span_bars, span_bar_template, start_week)

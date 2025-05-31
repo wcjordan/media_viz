@@ -56,23 +56,27 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
 
         rgba_tuple = tuple(
             int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
-        ) + (next_bar['opacity'],)
+        ) + (next_bar["opacity"],)
 
         tooltip_list = [f"{next_bar['title']} ({next_bar['type']})"]
-        if not np.isnan(next_bar['start_week']):
-            tooltip_list.append(f"Start: {next_bar['start_date']} ({next_bar['start_week']:.0f})")
-        if not np.isnan(next_bar['end_week']):
-            tooltip_list.append(f"Finish: {next_bar['end_date']} ({next_bar['end_week']:.0f})")
-        if not np.isnan(next_bar['duration_weeks']):
+        if not np.isnan(next_bar["start_week"]):
+            tooltip_list.append(
+                f"Start: {next_bar['start_date']} ({next_bar['start_week']:.0f})"
+            )
+        if not np.isnan(next_bar["end_week"]):
+            tooltip_list.append(
+                f"Finish: {next_bar['end_date']} ({next_bar['end_week']:.0f})"
+            )
+        if not np.isnan(next_bar["duration_weeks"]):
             tooltip_list.append(f"Duration: {next_bar['duration_weeks']:.0f} week(s)")
         tooltip = "<br>".join(tooltip_list)
 
         fig.add_trace(
             go.Bar(
                 x=[x_offset],
-                y=[next_bar['bar_y']],
-                base=[next_bar['bar_base']],
-                orientation='v',
+                y=[next_bar["bar_y"]],
+                base=[next_bar["bar_base"]],
+                orientation="v",
                 marker_color=f"rgba{rgba_tuple}",
                 width=BAR_WIDTH - BAR_SPACING,
                 hovertemplate=tooltip,
