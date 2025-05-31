@@ -170,6 +170,89 @@ def _future_blocks_clear(
     return True
 
 
+def _allocate_slot_to_span(
+    slot_allocations: Dict[int, int],
+    future_blocks_by_slot: List[List[Dict]],
+    slot_free_at: List[int],
+    span: Dict,
+):
+    """
+    Allocate a slot to a span, ensuring no overlaps with existing spans.
+    Args:
+        slot_allocations: Dictionary mapping entry_idx to slot number
+        future_blocks_by_slot: List of future blocks for each slot
+        slot_free_at: List tracking when each slot will be free
+        span: Span dictionary containing entry_idx, start_week, and end_week
+
+    Returns:
+        None; modifies slot_allocations in place
+    """
+    start_week = span.get("start_week")
+    end_week = span.get("end_week")
+    entry_idx = span.get("entry_idx")
+
+    if start_week is None and end_week is None:
+        return
+
+    # Calculate the time range this span will occupy
+    # Handles prepping a future block if this span will fade out and back in
+    if end_week is None:
+        end_week = start_week + FADE_WEEKS_IN_PROGRESS - 1
+    elif start_week is None:
+        start_week = end_week + 1 - FADE_WEEKS_FINISH_ONLY
+
+    start_slice = start_week * SLICES_PER_WEEK
+    free_week = end_week + 1 + VERTICAL_SPACING_WEEKS
+    free_slice = free_week * SLICES_PER_WEEK
+
+    next_future_block = None
+    if free_week - start_week > FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY:
+        next_future_block = {
+            "start_slice": (free_week - FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK,
+            "free_slice": free_slice,
+            "entry_idx": entry_idx,
+        }
+        free_week = start_week + FADE_WEEKS_IN_PROGRESS + VERTICAL_SPACING_WEEKS
+        free_slice = free_week * SLICES_PER_WEEK
+
+    # Find a free slot for this span
+    # Sort slots by the first slot which is free earliest
+    sorted_slot_free_at = sorted(
+        enumerate(slot_free_at), key=lambda x: (x[1], random.random())
+    )
+
+    slot = None
+    for slot_to_check, _ in sorted_slot_free_at:
+        logger.debug(
+            "Checking slot %s, it will be free at %s. %s requires start_slice %s and will block til free_slice %s",
+            slot_to_check,
+            slot_free_at[slot_to_check],
+            span.get("title"),
+            start_slice,
+            free_slice,
+        )
+        if slot_free_at[slot_to_check] <= start_slice and _future_blocks_clear(
+            future_blocks_by_slot[slot_to_check], start_slice, free_slice
+        ):
+
+            slot = slot_to_check
+            slot_free_at[slot] = free_slice
+            break
+
+    if slot is None:
+        logger.warning(
+            "No available slots for span '%s' - skipping, start_date: %s, end_date: %s",
+            span.get("title"),
+            span.get("start_date"),
+            span.get("end_date"),
+        )
+        return
+
+    slot_allocations[entry_idx] = slot
+    if next_future_block:
+        future_blocks_by_slot[slot].append(next_future_block)
+
+
 def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
     """
     Allocate horizontal slots for spans to prevent overlapping.
@@ -201,62 +284,9 @@ def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
     )
 
     for span in sorted_spans:
-        start_week = span.get("start_week")
-        end_week = span.get("end_week")
-        entry_idx = span.get("entry_idx")
-
-        if start_week is None and end_week is None:
-            continue
-
-        # Calculate the time range this span will occupy
-        # Handles prepping a future block if this span will fade out and back in
-        if end_week is None:
-            end_week = start_week + FADE_WEEKS_IN_PROGRESS - 1
-        elif start_week is None:
-            start_week = end_week + 1 - FADE_WEEKS_FINISH_ONLY
-
-        start_slice = start_week * SLICES_PER_WEEK
-        free_week = end_week + 1 + VERTICAL_SPACING_WEEKS
-        free_slice = free_week * SLICES_PER_WEEK
-
-        next_future_block = None
-        if free_week - start_week > FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY:
-            next_future_block = {
-                "start_slice": (free_week - FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK,
-                "free_slice": free_slice,
-                "entry_idx": entry_idx,
-            }
-            free_week = start_week + FADE_WEEKS_IN_PROGRESS + VERTICAL_SPACING_WEEKS
-            free_slice = free_week * SLICES_PER_WEEK
-
-        # Find a free slot for this span
-        # Sort slots by the first slot which is free earliest
-        sorted_slot_free_at = sorted(
-            enumerate(slot_free_at), key=lambda x: (x[1], random.random())
+        _allocate_slot_to_span(
+            slot_allocations, future_blocks_by_slot, slot_free_at, span
         )
-
-        slot = None
-        for slot_to_check, _ in sorted_slot_free_at:
-            logger.info(
-                f"Checking slot {slot_to_check}, it will be free at {slot_free_at[slot_to_check]}.  {span.get('title')} requires start_slice {start_slice} and will block til free_slice {free_slice}"
-            )
-            if slot_free_at[slot_to_check] <= start_slice and _future_blocks_clear(
-                future_blocks_by_slot[slot_to_check], start_slice, free_slice
-            ):
-
-                slot = slot_to_check
-                slot_free_at[slot] = free_slice
-                break
-
-        if slot is None:
-            logger.warning(
-                f"No available slots for span '{span.get('title')}' - skipping, start_date: {span.get('start_date')}, end_date: {span.get('end_date')}"
-            )
-            continue
-
-        slot_allocations[entry_idx] = slot
-        if next_future_block:
-            future_blocks_by_slot[slot].append(next_future_block)
 
     return slot_allocations
 
