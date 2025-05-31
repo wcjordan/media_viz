@@ -134,7 +134,8 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
     Args:
         spans: List of dictionaries containing each span of media entry data for the timeline.
     Returns:
-        DataFrame with columns: entry_id, title, type, bar_base, bar_y, color, opacity, start_date, start_week, end_date, end_week, duration_weeks, & tags.
+        DataFrame with columns: entry_id, title, type, color, start_date, start_week, end_date, end_week,
+            duration_weeks, tags, bar_base, bar_y, & opacity.
     """
     span_bars = []
     for span in spans:
