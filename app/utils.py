@@ -4,6 +4,9 @@ Utils for handling weeks and dates for preparing the timeline chart.
 
 from datetime import datetime, timedelta
 
+# Maximum number of horizontal slots for the timeline
+MAX_SLOTS = 10
+
 
 def compute_week_index(entry_date: datetime, min_date: datetime) -> int:
     """

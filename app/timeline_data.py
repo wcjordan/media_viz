@@ -9,6 +9,8 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
+from app.utils import MAX_SLOTS
+
 logger = logging.getLogger(__name__)
 
 # Constants for visualization
@@ -20,8 +22,6 @@ MAX_OPACITY = 0.9  # Maximum opacity for bars
 MIN_OPACITY = 0.0  # Minimum opacity for faded bars
 # Number of subslices per week for finer granularity of the opacity gradient
 SLICES_PER_WEEK = 4
-# Maximum number of horizontal slots for the timeline
-MAX_SLOTS = 5
 
 # Color mapping for media types
 MEDIA_TYPE_COLORS = {
