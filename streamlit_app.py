@@ -25,9 +25,9 @@ def main():
     """Main Streamlit application."""
 
     # Set page title and header
-    st.set_page_config(page_title="Media Timeline", page_icon="📚", layout="wide")
-
-    st.subheader("Interactive Visualization of Media Consumption")
+    st.set_page_config(
+        page_title="Media Timeline", page_icon=":umbrella:", layout="wide"
+    )
 
     # Add a reload button
     if st.button("Reload Data"):
@@ -38,23 +38,14 @@ def main():
     media_entries = load_media_entries()
 
     if media_entries:
-        st.write(f"Loaded {len(media_entries)} media entries")
+        # Prepare data for timeline
+        spans, min_date, max_date = extract_timeline_spans(media_entries)
+        weeks_df, bars_df = prepare_timeline_data(spans, min_date, max_date)
 
-        # Create tabs for different views
-        tab1, tab2 = st.tabs(["Timeline Visualization", "Raw JSON Data"])
+        # Create and display timeline chart
+        fig = create_timeline_chart(weeks_df, bars_df)
+        st.plotly_chart(fig, use_container_width=True)
 
-        with tab1:
-            # Prepare data for timeline
-            spans, min_date, max_date = extract_timeline_spans(media_entries)
-            weeks_df, bars_df = prepare_timeline_data(spans, min_date, max_date)
-
-            # Create and display timeline chart
-            fig = create_timeline_chart(weeks_df, bars_df)
-            st.plotly_chart(fig, use_container_width=True)
-
-        with tab2:
-            # Display raw JSON data
-            st.json(media_entries)
     else:
         st.warning("No media entries found. Please run the preprocessing script first.")
 

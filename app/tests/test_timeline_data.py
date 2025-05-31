@@ -12,7 +12,6 @@ from app.timeline_data import (
     SLICES_PER_WEEK,
     FADE_WEEKS_IN_PROGRESS,
     FADE_WEEKS_FINISH_ONLY,
-    MAX_SHORT_DURATION_WEEKS,
     MAX_OPACITY,
     MIN_OPACITY,
     MEDIA_TYPE_COLORS,
@@ -108,56 +107,67 @@ def test_fade_in_span():
 
 
 def test_generate_bars_short_duration_span():
-    """Test generating bars for short duration spans (no fading needed)."""
+    """Test generating bars for short duration spans so that the fade out and in are contiguous."""
+    start_week = 1
+    total_weeks = 4
     spans = [
         {
             "title": "Short Movie",
-            "start_week": 0,
-            "end_week": 1,  # ≤ MAX_SHORT_DURATION_WEEKS
+            "start_week": start_week,
+            "end_week": total_weeks,  # Use an odd number to ensure the fade out and in match mid week
         }
     ]
 
     bars_df = _generate_bars(spans)
 
     # Should have exactly one bar (no fading)
-    assert len(bars_df) == 1
+    assert len(bars_df) == total_weeks * SLICES_PER_WEEK
 
     first_bar = bars_df.iloc[0]
     assert first_bar["title"] == "Short Movie"
-    assert first_bar["start_week"] == 0
-    assert first_bar["end_week"] == 1
-    assert first_bar["duration_weeks"] == 2
-    assert first_bar["bar_base"] == 0  # start_week * SLICES_PER_WEEK
-    assert first_bar["bar_y"] == 2 * SLICES_PER_WEEK  # duration_weeks * SLICES_PER_WEEK
+    assert first_bar["start_week"] == start_week
+    assert first_bar["end_week"] == total_weeks
+    assert first_bar["duration_weeks"] == total_weeks
+    assert first_bar["bar_base"] == start_week * SLICES_PER_WEEK
+    assert first_bar["bar_y"] == 1
     assert first_bar["opacity"] == MAX_OPACITY
+
+    assert bars_df.iloc[-1]["opacity"] == MAX_OPACITY
+    midpoint = len(bars_df) // 2
+    assert bars_df.iloc[midpoint - 1]["opacity"] == bars_df.iloc[midpoint]["opacity"]
+
+    opacity_group_sizes = bars_df.groupby("opacity").size()
+    for size in opacity_group_sizes:
+        assert size == 2
 
 
 def test_generate_bars_long_duration_span():
-    """Test generating bars for long duration spans (fading needed)."""
+    """Test generating bars for long duration spans so that the fade out and in have a gap."""
+    start_week = 1
+    total_weeks = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY + 1
+
     spans = [
         {
             "title": "Long TV Show",
-            "start_week": 1,
-            "end_week": MAX_SHORT_DURATION_WEEKS + 1,
+            "start_week": start_week,
+            "end_week": total_weeks,
         }
     ]
 
     bars_df = _generate_bars(spans)
 
-    # Should have fade-out + fade-in bars
-    expected_bars = (FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK
-    assert len(bars_df) == expected_bars
+    # Should have a less than the full duration due to the gap between fade-out & fade-in segments
+    assert len(bars_df) < total_weeks * SLICES_PER_WEEK
 
-    # Check that we have both fade-out and fade-in bars
-    fade_out_bars = bars_df[
-        bars_df["bar_base"] < 5 * SLICES_PER_WEEK
-    ]  # First few weeks
-    fade_in_bars = bars_df[bars_df["bar_base"] >= 5 * SLICES_PER_WEEK]  # Last few weeks
+    assert bars_df.iloc[0]["opacity"] == MAX_OPACITY
+    assert bars_df.iloc[-1]["opacity"] == MAX_OPACITY
 
-    # Check fade-out starts at max opacity
-    assert fade_out_bars.iloc[0]["opacity"] == MAX_OPACITY
-    # Check fade-in ends at max opacity
-    assert fade_in_bars.iloc[-1]["opacity"] == MAX_OPACITY
+    midpoint = len(bars_df) // 2
+    before_mid_bar = bars_df.iloc[midpoint - 1]
+    after_mid_bar = bars_df.iloc[midpoint]
+    assert before_mid_bar["opacity"] == MIN_OPACITY
+    assert after_mid_bar["opacity"] == MIN_OPACITY
+    assert before_mid_bar["bar_base"] + 1 < after_mid_bar["bar_base"]
 
 
 def test_generate_bars_in_progress_span():
@@ -243,7 +253,6 @@ def test_generate_bars_unknown_media_type():
 
     bars_df = _generate_bars(spans)
 
-    assert len(bars_df) == 1
     first_bar = bars_df.iloc[0]
     assert first_bar["color"] == MEDIA_TYPE_COLORS["Unknown"]
     assert first_bar["type"] == "Podcast"
@@ -280,7 +289,7 @@ def test_generate_bars_mixed_spans():
 
     # Should have bars for all three types
     expected_bars = (
-        1  # Short movie (1 bar)
+        2 * SLICES_PER_WEEK  # 2 weeks fading in and out
         + FADE_WEEKS_IN_PROGRESS * SLICES_PER_WEEK  # In progress game
         + FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK  # Finished book
     )
@@ -293,7 +302,7 @@ def test_generate_bars_mixed_spans():
     # Check media type colors are correct
     movie_bars = bars_df[bars_df["entry_id"] == 0]
     assert all(movie_bars["color"] == MEDIA_TYPE_COLORS["Movie"])
-    assert len(movie_bars) == 1
+    assert len(movie_bars) == 2 * SLICES_PER_WEEK  # 2 weeks fading
 
     game_bars = bars_df[bars_df["entry_id"] == 1]
     assert all(game_bars["color"] == MEDIA_TYPE_COLORS["Game"])
@@ -302,28 +311,3 @@ def test_generate_bars_mixed_spans():
     book_bars = bars_df[bars_df["entry_id"] == 2]
     assert all(book_bars["color"] == MEDIA_TYPE_COLORS["Book"])
     assert len(book_bars) == FADE_WEEKS_FINISH_ONLY * SLICES_PER_WEEK
-
-
-def test_generate_bars_edge_case_long_duration_boundary():
-    """Test the boundary case for long duration detection."""
-    # Test exactly at MAX_SHORT_DURATION_WEEKS threshold
-    spans = [
-        {
-            "start_week": 1,  # Start at 1 week since the duration count is inclusive on both start & end sides
-            "end_week": MAX_SHORT_DURATION_WEEKS,
-        }
-    ]
-
-    bars_df = _generate_bars(spans)
-
-    # Should be treated as short duration (no fading)
-    assert len(bars_df) == 1
-    assert bars_df.iloc[0]["opacity"] == MAX_OPACITY
-
-    # Test just over the threshold
-    spans[0]["end_week"] = MAX_SHORT_DURATION_WEEKS + 1
-    bars_df = _generate_bars(spans)
-
-    # Should be treated as long duration (with fading)
-    expected_bars = (FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK
-    assert len(bars_df) == expected_bars
