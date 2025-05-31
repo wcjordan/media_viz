@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 BAR_WIDTH = 1.0
 BAR_SPACING = 0.05  # Spacing between bars on the x-axis
+HEIGHT_FACTOR = 4  # Increase this to stretch the chart vertically
+MIN_CHART_HEIGHT = 480
 
 
 def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.Figure:
@@ -101,7 +103,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
     min_week = weeks_df["week_index"].min()
     max_week = weeks_df["week_index"].max()
     fig.update_layout(
-        height=4000,
+        height=max(HEIGHT_FACTOR * max_week, MIN_CHART_HEIGHT),
         plot_bgcolor="rgba(25, 25, 25, 1)",
         paper_bgcolor="rgba(25, 25, 25, 1)",
         font={"color": "white"},

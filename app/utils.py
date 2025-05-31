@@ -5,7 +5,9 @@ Utils for handling weeks and dates for preparing the timeline chart.
 from datetime import datetime, timedelta
 import os
 
-# Maximum number of horizontal slots for the timeline
+# Maximum number of slots along the x-axis for the timeline
+# Increase this value to fit more media entries in a given timeframe,
+# Decrease this to make individual media entries larger on the x-axis
 MAX_SLOTS = 20
 
 

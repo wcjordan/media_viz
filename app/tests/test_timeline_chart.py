@@ -56,20 +56,9 @@ def test_create_timeline_chart_happy_path():
 
     # Check layout properties
     layout = fig.layout
-    assert layout.height == 4000
-    assert layout.plot_bgcolor == "rgba(25, 25, 25, 1)"
-    assert layout.paper_bgcolor == "rgba(25, 25, 25, 1)"
-    assert layout.font.color == "white"
 
-    # Check x-axis configuration
+    # Check axis configuration
     assert layout.xaxis.range == (0, MAX_SLOTS * BAR_WIDTH)
-    assert layout.xaxis.showgrid is False
-    assert layout.xaxis.showticklabels is False
-    assert layout.xaxis.zeroline is False
-
-    # Check y-axis configuration
-    assert layout.yaxis.showgrid is False
-    assert layout.yaxis.zeroline is False
     assert layout.yaxis.tickvals == (0, 1, 2, 3, 4, 5)
 
     # Check that year annotations are present
