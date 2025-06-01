@@ -21,7 +21,7 @@ MIN_CHART_HEIGHT = 480
 
 
 def _add_bar(
-    fig: go.Figure, poster_images: list, posters_added: set, next_bar: pd.Series
+    fig: go.Figure, poster_images: list, posters_added: set, bar_data: pd.Series
 ):
     """
     Add a single bar to the Plotly figure.
@@ -29,35 +29,35 @@ def _add_bar(
         fig: Plotly figure to add the bar to
         poster_images: List to store poster image data
         posters_added: Set to track unique poster paths
-        next_bar: Series containing bar data
+        bar_data: Series containing bar data
     """
     rgba_tuple = tuple(
-        int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
-    ) + (next_bar["opacity"],)
+        int(bar_data["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
+    ) + (bar_data["opacity"],)
 
-    tooltip_list = [f"{next_bar['title']} ({next_bar['type']})"]
-    if not np.isnan(next_bar["start_week"]):
+    tooltip_list = [f"{bar_data['title']} ({bar_data['type']})"]
+    if not np.isnan(bar_data["start_week"]):
         tooltip_list.append(
-            f"Start: {next_bar['start_date']} ({next_bar['start_week']:.0f})"
+            f"Start: {bar_data['start_date']} ({bar_data['start_week']:.0f})"
         )
-    if not np.isnan(next_bar["end_week"]):
+    if not np.isnan(bar_data["end_week"]):
         tooltip_list.append(
-            f"Finish: {next_bar['end_date']} ({next_bar['end_week']:.0f})"
+            f"Finish: {bar_data['end_date']} ({bar_data['end_week']:.0f})"
         )
-    if not np.isnan(next_bar["duration_weeks"]):
-        tooltip_list.append(f"Duration: {next_bar['duration_weeks']:.0f} week(s)")
+    if not np.isnan(bar_data["duration_weeks"]):
+        tooltip_list.append(f"Duration: {bar_data['duration_weeks']:.0f} week(s)")
     tooltip = "<br>".join(tooltip_list)
 
     extra_spacing = (BAR_WIDTH - BAR_SPACING) * (
-        math.pow(1 - next_bar["opacity"], 2) / 12
+        math.pow(1 - bar_data["opacity"], 2) / 12
     )
 
-    x = next_bar["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing
-    y_base = next_bar["bar_base"]
+    x = bar_data["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing
+    y_base = bar_data["bar_base"]
     fig.add_trace(
         go.Bar(
             x=[x],
-            y=[next_bar["bar_y"]],
+            y=[bar_data["bar_y"]],
             base=[y_base],
             orientation="v",
             marker_color=f"rgba{rgba_tuple}",
@@ -69,8 +69,8 @@ def _add_bar(
         )
     )
 
-    entry_id = next_bar["entry_id"]
-    poster_path = next_bar.get("poster_path")
+    entry_id = bar_data["entry_id"]
+    poster_path = bar_data.get("poster_path")
     if poster_path and entry_id not in posters_added:
         image_width = BAR_WIDTH - BAR_SPACING
         poster_images.append(
