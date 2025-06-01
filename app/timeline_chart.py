@@ -15,8 +15,78 @@ logger = logging.getLogger(__name__)
 
 BAR_WIDTH = 1.0
 BAR_SPACING = 0.05  # Spacing between bars on the x-axis
-HEIGHT_FACTOR = 4  # Increase this to stretch the chart vertically
+HEIGHT_FACTOR = 8  # Increase this to stretch the chart vertically
+IMAGE_Y_OFFSET = 0.5
 MIN_CHART_HEIGHT = 480
+
+
+def _add_bar(
+    fig: go.Figure, poster_images: list, posters_added: set, bar_data: pd.Series
+):
+    """
+    Add a single bar to the Plotly figure.
+    Args:
+        fig: Plotly figure to add the bar to
+        poster_images: List to store poster image data
+        posters_added: Set to track unique poster paths
+        bar_data: Series containing bar data
+    """
+    rgba_tuple = tuple(
+        int(bar_data["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
+    ) + (bar_data["opacity"],)
+
+    tooltip_list = [f"{bar_data['title']} ({bar_data['type']})"]
+    if not np.isnan(bar_data["start_week"]):
+        tooltip_list.append(
+            f"Start: {bar_data['start_date']} ({bar_data['start_week']:.0f})"
+        )
+    if not np.isnan(bar_data["end_week"]):
+        tooltip_list.append(
+            f"Finish: {bar_data['end_date']} ({bar_data['end_week']:.0f})"
+        )
+    if not np.isnan(bar_data["duration_weeks"]):
+        tooltip_list.append(f"Duration: {bar_data['duration_weeks']:.0f} week(s)")
+    tooltip = "<br>".join(tooltip_list)
+
+    extra_spacing = (BAR_WIDTH - BAR_SPACING) * (
+        math.pow(1 - bar_data["opacity"], 2) / 12
+    )
+
+    x = bar_data["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing
+    y_base = bar_data["bar_base"]
+    fig.add_trace(
+        go.Bar(
+            x=[x],
+            y=[bar_data["bar_y"]],
+            base=[y_base],
+            orientation="v",
+            marker_color=f"rgba{rgba_tuple}",
+            width=BAR_WIDTH - BAR_SPACING - 2 * extra_spacing,
+            hovertemplate=tooltip,
+            showlegend=False,
+            offsetgroup=1,
+            offset=0,
+        )
+    )
+
+    entry_id = bar_data["entry_id"]
+    poster_path = bar_data.get("poster_path")
+    if poster_path and entry_id not in posters_added:
+        image_width = BAR_WIDTH - BAR_SPACING
+        poster_images.append(
+            {
+                "source": poster_path,
+                "xref": "x",
+                "yref": "y",
+                "x": x + image_width / 8 - extra_spacing,
+                "y": y_base + IMAGE_Y_OFFSET,
+                "sizing": "contain",
+                "sizex": image_width * 3 / 4,
+                "sizey": 1000,  # A large number so the width does the constraining
+                "layer": "above",
+            }
+        )
+        posters_added.add(entry_id)
 
 
 def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.Figure:
@@ -54,42 +124,10 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
         )
 
     # Add bars for entries
+    poster_images = []
+    posters_added = set()  # To track unique poster paths
     for _, next_bar in bars_df.iterrows():
-        rgba_tuple = tuple(
-            int(next_bar["color"].lstrip("#")[i : (i + 2)], 16) for i in (0, 2, 4)
-        ) + (next_bar["opacity"],)
-
-        tooltip_list = [f"{next_bar['title']} ({next_bar['type']})"]
-        if not np.isnan(next_bar["start_week"]):
-            tooltip_list.append(
-                f"Start: {next_bar['start_date']} ({next_bar['start_week']:.0f})"
-            )
-        if not np.isnan(next_bar["end_week"]):
-            tooltip_list.append(
-                f"Finish: {next_bar['end_date']} ({next_bar['end_week']:.0f})"
-            )
-        if not np.isnan(next_bar["duration_weeks"]):
-            tooltip_list.append(f"Duration: {next_bar['duration_weeks']:.0f} week(s)")
-        tooltip = "<br>".join(tooltip_list)
-
-        extra_spacing = (BAR_WIDTH - BAR_SPACING) * (
-            math.pow(1 - next_bar["opacity"], 2) / 12
-        )
-
-        fig.add_trace(
-            go.Bar(
-                x=[next_bar["slot"] * BAR_WIDTH + BAR_SPACING + extra_spacing],
-                y=[next_bar["bar_y"]],
-                base=[next_bar["bar_base"]],
-                orientation="v",
-                marker_color=f"rgba{rgba_tuple}",
-                width=BAR_WIDTH - BAR_SPACING - 2 * extra_spacing,
-                hovertemplate=tooltip,
-                showlegend=False,
-                offsetgroup=1,
-                offset=0,
-            )
-        )
+        _add_bar(fig, poster_images, posters_added, next_bar)
 
     # Drop tick text if same as prior week
     # Since the tick text is the name of the month, this means we just show each month name once
@@ -126,6 +164,7 @@ def create_timeline_chart(weeks_df: pd.DataFrame, bars_df: pd.DataFrame) -> go.F
             "font_size": 12,
             "font_family": "Arial",
         },
+        images=poster_images,
     )
 
     return fig

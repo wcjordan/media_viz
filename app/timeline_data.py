@@ -208,7 +208,10 @@ def _allocate_slot_to_span(
     next_future_block = None
     if free_week - start_week > FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY:
         next_future_block = {
-            "start_slice": (free_week - FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK,
+            "start_slice": (
+                (free_week - FADE_WEEKS_FINISH_ONLY - VERTICAL_SPACING_WEEKS)
+                * SLICES_PER_WEEK
+            ),
             "free_slice": free_slice,
             "entry_idx": entry_idx,
         }
@@ -291,6 +294,34 @@ def _allocate_slots(spans: List[Dict]) -> Dict[int, int]:
     return slot_allocations
 
 
+def _create_bar_template_from_span(
+    slot_allocations: Dict[int, int], span: Dict
+) -> Dict:
+    """
+    Create a template dictionary for a span bar from the given span data.
+    Args:
+        slot_allocations: Dictionary mapping entry_idx to slot number
+        span: Dictionary containing span data
+    Returns:
+        Template dictionary with keys: entry_id, title, type, color, start_date,
+            start_week, end_date, end_week, tags, poster_path.
+    """
+    entry_idx = span.get("entry_idx")
+    return {
+        "entry_id": entry_idx,
+        "title": span.get("title"),
+        "type": span.get("type"),
+        "color": MEDIA_TYPE_COLORS.get(span.get("type"), MEDIA_TYPE_COLORS["Unknown"]),
+        "start_date": span.get("start_date"),
+        "start_week": span.get("start_week"),
+        "end_date": span.get("end_date"),
+        "end_week": span.get("end_week"),
+        "tags": span.get("tags", {}),
+        "slot": slot_allocations[entry_idx],
+        "poster_path": span.get("poster_path"),
+    }
+
+
 def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
     """
     Generate a DataFrame of bars for the timeline visualization.
@@ -315,22 +346,8 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
         if entry_idx not in slot_allocations:
             continue
 
-        media_type = span.get("type")
-        color = MEDIA_TYPE_COLORS.get(media_type, MEDIA_TYPE_COLORS["Unknown"])
-        span_bar_template = {
-            "entry_id": entry_idx,
-            "title": span.get("title"),
-            "type": media_type,
-            "color": color,
-            "start_date": span.get("start_date"),
-            "start_week": start_week,
-            "end_date": span.get("end_date"),
-            "end_week": end_week,
-            "slot": slot_allocations[entry_idx],
-            "tags": span.get("tags", {}),
-        }
-
         # Create spans for each week in a range when fading is needed
+        span_bar_template = _create_bar_template_from_span(slot_allocations, span)
         if start_week is not None and end_week is not None:
             duration_weeks = end_week - start_week + 1
             span_bar_template["duration_weeks"] = duration_weeks
@@ -346,7 +363,11 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
             if duration_out > 0:
                 _fade_out_span(span_bars, span_bar_template, start_week, duration_out)
             if duration_in > 0:
-                _fade_in_span(span_bars, span_bar_template, end_week, duration_in)
+                # Modify the entry_idx so we show the poster again if the duration is long enough
+                span_bar_copy = span_bar_template.copy()
+                if duration_weeks > FADE_WEEKS_IN_PROGRESS * 3:
+                    span_bar_copy["entry_id"] = f"{entry_idx} (end)"
+                _fade_in_span(span_bars, span_bar_copy, end_week, duration_in)
 
         elif start_week is not None:
             _fade_out_span(span_bars, span_bar_template, start_week)
