@@ -104,6 +104,9 @@ def extract_timeline_spans(entries: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFr
     for entry_idx, entry in enumerate(entries):
         tagged_entry = entry.get("tagged", {})
         media_type = tagged_entry.get("type", "Unknown")
+        if media_type != "TV Show":
+            # Skip non-TV Show entries
+            continue
 
         has_start = "started_dates" in entry and entry["started_dates"]
         has_end = "finished_dates" in entry and entry["finished_dates"]

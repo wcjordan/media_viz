@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 BAR_WIDTH = 1.0
 BAR_SPACING = 0.05  # Spacing between bars on the x-axis
-HEIGHT_FACTOR = 8  # Increase this to stretch the chart vertically
+HEIGHT_FACTOR = 12  # Increase this to stretch the chart vertically
 IMAGE_Y_OFFSET = 0.5
 MIN_CHART_HEIGHT = 480
 

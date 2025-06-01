@@ -22,7 +22,7 @@ FADE_WEEKS_FINISH_ONLY = 4
 MAX_OPACITY = 0.9  # Maximum opacity for bars
 MIN_OPACITY = 0.0  # Minimum opacity for faded bars
 # Number of subslices per week for finer granularity of the opacity gradient
-SLICES_PER_WEEK = 4
+SLICES_PER_WEEK = 7
 # Number of weeks to skip before freeing a slot for a new entry
 VERTICAL_SPACING_WEEKS = 1
 

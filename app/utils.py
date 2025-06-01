@@ -8,7 +8,7 @@ import os
 # Maximum number of slots along the x-axis for the timeline
 # Increase this value to fit more media entries in a given timeframe,
 # Decrease this to make individual media entries larger on the x-axis
-MAX_SLOTS = 20
+MAX_SLOTS = 8
 
 
 def compute_week_index(entry_date: datetime, min_date: datetime) -> int:
