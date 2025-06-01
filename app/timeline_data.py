@@ -208,7 +208,8 @@ def _allocate_slot_to_span(
     next_future_block = None
     if free_week - start_week > FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY:
         next_future_block = {
-            "start_slice": (free_week - FADE_WEEKS_FINISH_ONLY) * SLICES_PER_WEEK,
+            "start_slice": (free_week - FADE_WEEKS_FINISH_ONLY - VERTICAL_SPACING_WEEKS)
+            * SLICES_PER_WEEK,
             "free_slice": free_slice,
             "entry_idx": entry_idx,
         }
@@ -347,6 +348,9 @@ def _generate_bars(spans: List[Dict]) -> pd.DataFrame:
             if duration_out > 0:
                 _fade_out_span(span_bars, span_bar_template, start_week, duration_out)
             if duration_in > 0:
+                # Modify the entry_idx so we show the poster again if the duration is long enough
+                if duration_weeks > FADE_WEEKS_IN_PROGRESS * 3:
+                    span_bar_template["entry_id"] = f"{entry_idx} (end)"
                 _fade_in_span(span_bars, span_bar_template, end_week, duration_in)
 
         elif start_week is not None:

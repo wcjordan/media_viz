@@ -395,7 +395,7 @@ def test_allocate_slots_overflow(caplog):
 def test_allocate_slots_long_span_reuse():
     """Test that long spans can reuse slots for fade-in after fade-out."""
     with patch("app.timeline_data.MAX_SLOTS", 1):
-        long_duration = FADE_WEEKS_IN_PROGRESS + FADE_WEEKS_FINISH_ONLY + 2
+        long_duration = FADE_WEEKS_IN_PROGRESS * 3
         spans = [
             {
                 "entry_idx": 0,
