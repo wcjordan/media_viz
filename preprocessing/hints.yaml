@@ -12,13 +12,46 @@
 BioShock:
   canonical_title: "BioShock"
   type: "Game"
+  release_year: "2007"
+
+Black Widow:
+  canonical_title: "Black Widow"
+  type: "Game"
+  release_year: "1983"
+
+Die Hard:
+  canonical_title: "Die Hard"
+  type: "Game"
+  release_year: "1989"
+
+Endgame:
+  canonical_title: "Endgame"
+  type: "Game"
+  release_year: "2002"
 
 FF7:
   canonical_title: "Final Fantasy VII Remake"
   type: "Game"
 
 Hades:
+  canonical_title: "Hades"
   type: "Game"
+  release_year: "2020"
+
+Kate:
+  canonical_title: "Kate"
+  type: "Game"
+  release_year: "2023"
+
+Prey:
+  canonical_title: "Prey"
+  type: "Game"
+  release_year: "2017"
+
+Superman:
+  canonical_title: "Superman"
+  type: "Game"
+  release_year: "1992"
 
 The Avengers:
   canonical_title: "Marvel's Avengers"
@@ -28,15 +61,170 @@ The Avengers w/ Danyi:
   canonical_title: "Marvel's Avengers"
   type: "Game"
 
+Top Gun:
+  canonical_title: "Top Gun"
+  type: "Game"
+  release_year: "1987"
+
+Zodiac:
+  canonical_title: "Zodiac"
+  type: "Game"
+  release_year: "2021"
+
 # Books
+Abaddon's Gate:
+  canonical_title: "Abaddon's Gate"
+  type: "Book"
+  release_year: "2013"
+
+Be Prepared:
+  canonical_title: "Be Prepared"
+  type: "Book"
+  release_year: "2018"
+
+Blood of Elves:
+  canonical_title: "Blood of Elves"
+  type: "Book"
+  release_year: "2009"
+
+Caliban's War:
+  canonical_title: "Caliban's war"
+  type: "Book"
+  release_year: "2012"
+
+Data Mesh:
+  canonical_title: "Data Mesh"
+  type: "Book"
+  release_year: "2022"
+
+Don Quixote:
+  canonical_title: "Don Quixote"
+  type: "Book"
+  release_year: "1600"
+
+Hamilton:
+  canonical_title: "Hamilton"
+  type: "Book"
+  release_year: "2016"
+
+Hidden Brain:
+  canonical_title: "The hidden brain"
+  type: "Book"
+  release_year: "2009"
+
+Losers:
+  canonical_title: "Losers"
+  type: "Book"
+  release_year: "2022"
+
+Midnight Mass:
+  canonical_title: "Midnight Mass"
+  type: "Book"
+  release_year: "2005"
+
+Off the Clock:
+  canonical_title: "Off the clock"
+  type: "Book"
+  release_year: "2018"
+
+Pieces of Her:
+  canonical_title: "Pieces of Her"
+  type: "Book"
+  release_year: "2018"
+
+Radical Candor:
+  canonical_title: "Radical Candor"
+  type: "Book"
+  release_year: "2017"
+
 Sapiens:
   type: "Book"
   release_year: "2011"
 
+Soon I Will Be Invincible:
+  canonical_title: "Soon I Will Be Invincible"
+  type: "Book"
+  release_year: "2007"
+
+Super Pumped:
+  canonical_title: "Super Pumped"
+  type: "Book"
+  release_year: "2019"
+
+Sword of Destiny:
+  canonical_title: "Sword of Destiny"
+  type: "Book"
+  release_year: "2015"
+
+The Harder They Fall:
+  canonical_title: "The harder they fall"
+  type: "Book"
+  release_year: "1947"
+
+The King's Man:
+  canonical_title: "The King's Man"
+  type: "Book"
+  release_year: "2007"
+
+The Library of Babel:
+  canonical_title: "The Library of Babel"
+  type: "Book"
+  release_year: "1991"
+
+The Phantom Menace:
+  canonical_title: "The Phantom Menace"
+  type: "Book"
+  release_year: "1999"
+
+Thinking Fast:
+  canonical_title: "Thinking, fast and slow"
+  type: "Book"
+  release_year: "2011"
+
+Tombstone:
+  canonical_title: "Tombstone"
+  type: "Book"
+  release_year: "2020"
+
+We Own This City:
+  canonical_title: "We Own This City"
+  type: "Book"
+  release_year: "2021"
+
 # TV Shows
+Archer S1:
+  canonical_title: "Archer"
+  type: "TV Show"
+  release_year: "2009"
+
+Archer S10:
+  canonical_title: "Archer"
+  type: "TV Show"
+  release_year: "2009"
+
+Big Sky S1:
+  canonical_title: "Big Sky"
+  type: "TV Show"
+  release_year: "2020"
+
 Captain Falcon & the Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
   type: "TV Show"
+
+Dark Matter S1:
+  canonical_title: "Dark Matter"
+  type: "TV Show"
+  release_year: "2015"
+
+Dark Matter S2:
+  canonical_title: "Dark Matter"
+  type: "TV Show"
+  release_year: "2015"
+
+Dark Matter S3:
+  canonical_title: "Dark Matter"
+  type: "TV Show"
+  release_year: "2015"
 
 Falcon & Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
@@ -46,19 +234,49 @@ Finished WandaVision:
   canonical_title: "WandaVision"
   type: "TV Show"
 
+Goliath S4:
+  canonical_title: "Goliath"
+  type: "TV Show"
+  release_year: "2016"
+
 Loki:
   type: "TV Show"
 
+Lost in Space S3:
+  canonical_title: "Lost in Space"
+  type: "TV Show"
+  release_year: "2018"
+
 Love, Death, & Robots:
   type: "TV Show"
+
+Lupin S1:
+  canonical_title: "Lupin"
+  type: "TV Show"
+  release_year: "2021"
+
+MODOK S1:
+  canonical_title: "Marvel's M.O.D.O.K."
+  type: "TV Show"
+  release_year: "2021"
 
 Nevers:
   canonical_title: "The Nevers"
   type: "TV Show"
 
+Search Party S1:
+  canonical_title: "Search Party"
+  type: "TV Show"
+  release_year: "2016"
+
 Shadow & Bone:
   canonical_title: "Shadow and Bone"
   type: "TV Show"
+
+Sisyphus S1:
+  canonical_title: "Sisyphus"
+  type: "TV Show"
+  release_year: "2021"
 
 Snowpiercer:
   type: "TV Show"
@@ -67,10 +285,180 @@ Star Trek Discovery:
   canonical_title: "Star Trek: Discovery"
   type: "TV Show"
 
+Startup S1:
+  canonical_title: "StartUp"
+  type: "TV Show"
+  release_year: "2016"
+
+The Last Kingdom:
+  canonical_title: "The Last Kingdom"
+  type: "TV Show"
+  release_year: "2015"
+
+The Witcher S1:
+  canonical_title: "The Witcher"
+  type: "TV Show"
+  release_year: "2019"
+
+The Witcher S2:
+  canonical_title: "The Witcher"
+  type: "TV Show"
+  release_year: "2019"
+
+Unnatural Selection S1:
+  canonical_title: "Unnatural Selection"
+  type: "TV Show"
+  release_year: "2019"
+
+X-Men s2:
+  canonical_title: "X-Men"
+  type: "TV Show"
+  release_year: "1992"
+
 # Movies
+3:10 to Yuma:
+  canonical_title: "3:10 to Yuma"
+  type: "Movie"
+  release_year: "2007"
+
+Barry:
+  canonical_title: "Barry"
+  type: "Movie"
+  release_year: "2016"
+
+Black Monday:
+  canonical_title: "Black Monday"
+  type: "Movie"
+  release_year: "1988"
+
+Cowboy Bebop:
+  canonical_title: "Cowboy Bebop"
+  type: "Movie"
+  release_year: "2001"
+
+Fargo:
+  canonical_title: "Fargo"
+  type: "Movie"
+  release_year: "1996"
+
+Gentleman Jack:
+  canonical_title: "Gentleman Jack"
+  type: "Movie"
+  release_year: "1999"
+
+Jungle Cruise:
+  canonical_title: "Jungle Cruise"
+  type: "Movie"
+  release_year: "2021"
+
+Lois:
+  canonical_title: "Lois"
+  type: "Movie"
+  release_year: "2012"
+
+Moon Knight:
+  canonical_title: "Moon Knight"
+  type: "Movie"
+  release_year: "2009"
+
 Mortal Combat:
   canonical_title: "Mortal Kombat"
   type: "Movie"
+
+Nobody:
+  canonical_title: "Nobody"
+  type: "Movie"
+  release_year: "2021"
+
+No Time to Die:
+  canonical_title: "No Time to Die"
+  type: "Movie"
+  release_year: "2021"
+
+Only Murders in the Building:
+  canonical_title: "Only Murders in the Building"
+  type: "Movie"
+  release_year: "2021"
+
+Players:
+  canonical_title: "Players"
+  type: "Movie"
+  release_year: "2024"
+
+Porco Rosso:
+  canonical_title: "Porco Rosso"
+  type: "Movie"
+  release_year: "1992"
+
+Raising Arizona:
+  canonical_title: "Raising Arizona"
+  type: "Movie"
+  release_year: "1987"
+
+Six Feet Under:
+  canonical_title: "Six Feet Under"
+  type: "Movie"
+  release_year: "2023"
+
+Slow:
+  canonical_title: "Slow"
+  type: "Movie"
+  release_year: "2021"
+
+Spider-Man: No Way Home:
+  canonical_title: "Spider-Man: No Way Home"
+  type: "Movie"
+  release_year: "2021"
+
+Star Trek: Strange New Worlds:
+  canonical_title: "Star Trek: Strange New Worlds"
+  type: "Movie"
+  release_year: "2022"
+
+Tenet:
+  canonical_title: "Tenet"
+  type: "Movie"
+  release_year: "2020"
+
+The Batman:
+  canonical_title: "The Batman"
+  type: "Movie"
+  release_year: "2022"
+
+The Big Lebowski:
+  canonical_title: "The Big Lebowski"
+  type: "Movie"
+  release_year: "1998"
+
+The Eternals:
+  canonical_title: "The Eternals"
+  type: "Movie"
+  release_year: "2017"
+
+The Master:
+  canonical_title: "The Master"
+  type: "Movie"
+  release_year: "2012"
+
+The Old Man:
+  canonical_title: "The Old Man"
+  type: "Movie"
+  release_year: "2019"
+
+Uncharted:
+  canonical_title: "Uncharted"
+  type: "Movie"
+  release_year: "2022"
+
+We Own this City:
+  canonical_title: "We Own This City"
+  type: "Movie"
+  release_year: "2022"
+
+Yellowjackets:
+  canonical_title: "Yellowjackets"
+  type: "Movie"
+  release_year: "2021"
 
 # Other
 Ant Design:
