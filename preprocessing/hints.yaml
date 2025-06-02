@@ -197,6 +197,10 @@ Startup S1:
   type: "TV Show"
   release_year: "2016"
 
+Superman & Lois:
+  canonical_title: "Superman & Lois"
+  type: "TV Show"
+
 The Last Kingdom:
   canonical_title: "The Last Kingdom"
   type: "TV Show"
