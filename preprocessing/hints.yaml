@@ -232,11 +232,6 @@ X-Men s2:
   type: "Movie"
   release_year: "2007"
 
-Black Monday:
-  canonical_title: "Black Monday"
-  type: "Movie"
-  release_year: "1988"
-
 Black Widow:
   canonical_title: "Black Widow"
   type: "Movie"
@@ -275,7 +270,7 @@ Kate:
 Losers:
   canonical_title: "Losers"
   type: "Movie"
-  release_year: "2022"
+  release_year: "2019"
 
 Mortal Combat:
   canonical_title: "Mortal Kombat"
@@ -337,9 +332,9 @@ The Big Lebowski:
   release_year: "1998"
 
 The Eternals:
-  canonical_title: "The Eternals"
+  canonical_title: "Eternals"
   type: "Movie"
-  release_year: "2017"
+  release_year: "2021"
 
 The Harder They Fall:
   canonical_title: "The Harder They Fall"
