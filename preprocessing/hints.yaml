@@ -14,21 +14,6 @@ BioShock:
   type: "Game"
   release_year: "2007"
 
-Black Widow:
-  canonical_title: "Black Widow"
-  type: "Game"
-  release_year: "1983"
-
-Die Hard:
-  canonical_title: "Die Hard"
-  type: "Game"
-  release_year: "1989"
-
-Endgame:
-  canonical_title: "Endgame"
-  type: "Game"
-  release_year: "2002"
-
 FF7:
   canonical_title: "Final Fantasy VII Remake"
   type: "Game"
@@ -37,11 +22,6 @@ Hades:
   canonical_title: "Hades"
   type: "Game"
   release_year: "2020"
-
-Kate:
-  canonical_title: "Kate"
-  type: "Game"
-  release_year: "2023"
 
 Prey:
   canonical_title: "Prey"
@@ -60,16 +40,6 @@ The Avengers:
 The Avengers w/ Danyi:
   canonical_title: "Marvel's Avengers"
   type: "Game"
-
-Top Gun:
-  canonical_title: "Top Gun"
-  type: "Game"
-  release_year: "1987"
-
-Zodiac:
-  canonical_title: "Zodiac"
-  type: "Game"
-  release_year: "2021"
 
 # Books
 Abaddon's Gate:
@@ -102,32 +72,6 @@ Don Quixote:
   type: "Book"
   release_year: "1600"
 
-Hamilton:
-  canonical_title: "Hamilton"
-  type: "Book"
-  release_year: "2016"
-
-Hidden Brain:
-  canonical_title: "The hidden brain"
-  type: "Book"
-  release_year: "2009"
-
-Losers:
-  canonical_title: "Losers"
-  type: "Book"
-  release_year: "2022"
-
-Midnight Mass:
-  canonical_title: "Midnight Mass"
-  type: "Book"
-  release_year: "2005"
-
-Off the Clock:
-  canonical_title: "Off the clock"
-  type: "Book"
-  release_year: "2018"
-
-
 Radical Candor:
   canonical_title: "Radical Candor"
   type: "Book"
@@ -141,7 +85,6 @@ Soon I Will Be Invincible:
   canonical_title: "Soon I Will Be Invincible"
   type: "Book"
   release_year: "2007"
-
 
 Sword of Destiny:
   canonical_title: "Sword of Destiny"
@@ -289,11 +232,6 @@ X-Men s2:
   type: "Movie"
   release_year: "2007"
 
-Barry:
-  canonical_title: "Barry"
-  type: "TV Show"
-  release_year: "2018"
-
 Black Monday:
   canonical_title: "Black Monday"
   type: "Movie"
@@ -303,11 +241,6 @@ Black Widow:
   canonical_title: "Black Widow"
   type: "Movie"
   release_year: "2021"
-
-Cowboy Bebop:
-  canonical_title: "Cowboy Bebop"
-  type: "TV Show"
-  release_year: "1998"
 
 Die Hard:
   canonical_title: "Die Hard"
@@ -324,10 +257,10 @@ Fargo:
   type: "Movie"
   release_year: "1996"
 
-Gentleman Jack:
-  canonical_title: "Gentleman Jack"
-  type: "TV Show"
-  release_year: "2019"
+Hamilton:
+  canonical_title: "Hamilton"
+  type: "Movie"
+  release_year: "2020"
 
 Jungle Cruise:
   canonical_title: "Jungle Cruise"
@@ -338,6 +271,11 @@ Kate:
   canonical_title: "Kate"
   type: "Movie"
   release_year: "2021"
+
+Losers:
+  canonical_title: "Losers"
+  type: "Movie"
+  release_year: "2022"
 
 Mortal Combat:
   canonical_title: "Mortal Kombat"
@@ -351,21 +289,6 @@ Nobody:
 No Time to Die:
   canonical_title: "No Time to Die"
   type: "Movie"
-  release_year: "2021"
-
-Midnight Mass:
-  canonical_title: "Midnight Mass"
-  type: "TV Show"
-  release_year: "2021"
-
-Moon Knight:
-  canonical_title: "Moon Knight"
-  type: "TV Show"
-  release_year: "2022"
-
-Only Murders in the Building:
-  canonical_title: "Only Murders in the Building"
-  type: "TV Show"
   release_year: "2021"
 
 Players:
@@ -382,16 +305,6 @@ Raising Arizona:
   canonical_title: "Raising Arizona"
   type: "Movie"
   release_year: "1987"
-
-Pieces of Her:
-  canonical_title: "Pieces of Her"
-  type: "TV Show"
-  release_year: "2022"
-
-Six Feet Under:
-  canonical_title: "Six Feet Under"
-  type: "TV Show"
-  release_year: "2001"
 
 Slow:
   canonical_title: "Slow"
@@ -428,30 +341,40 @@ The Eternals:
   type: "Movie"
   release_year: "2017"
 
+The Harder They Fall:
+  canonical_title: "The Harder They Fall"
+  type: "Movie"
+  release_year: "2021"
+
+The King's Man:
+  canonical_title: "The King's Man"
+  type: "Movie"
+  release_year: "2021"
+
 The Master:
   canonical_title: "The Master"
   type: "Movie"
   release_year: "2012"
 
-The Old Man:
-  canonical_title: "The Old Man"
+The Phantom Menace:
+  canonical_title: "Star Wars: Episode I – The Phantom Menace"
   type: "Movie"
-  release_year: "2019"
+  release_year: "1999"
+
+Tombstone:
+  canonical_title: "Tombstone"
+  type: "Movie"
+  release_year: "1993"
+
+Top Gun:
+  canonical_title: "Top Gun"
+  type: "Movie"
+  release_year: "1986"
 
 Uncharted:
   canonical_title: "Uncharted"
   type: "Movie"
   release_year: "2022"
-
-We Own This City:
-  canonical_title: "We Own This City"
-  type: "TV Show"
-  release_year: "2022"
-
-Yellowjackets:
-  canonical_title: "Yellowjackets"
-  type: "TV Show"
-  release_year: "2021"
 
 Zodiac:
   canonical_title: "Zodiac"
