@@ -78,7 +78,7 @@ Abaddon's Gate:
   release_year: "2013"
 
 Be Prepared:
-  canonical_title: "Be Prepared"
+  canonical_title: "Be Prepared: A Practical Handbook for New Dads"
   type: "Book"
   release_year: "2018"
 
@@ -127,10 +127,6 @@ Off the Clock:
   type: "Book"
   release_year: "2018"
 
-Pieces of Her:
-  canonical_title: "Pieces of Her"
-  type: "Book"
-  release_year: "2018"
 
 Radical Candor:
   canonical_title: "Radical Candor"
@@ -146,50 +142,22 @@ Soon I Will Be Invincible:
   type: "Book"
   release_year: "2007"
 
-Super Pumped:
-  canonical_title: "Super Pumped"
-  type: "Book"
-  release_year: "2019"
 
 Sword of Destiny:
   canonical_title: "Sword of Destiny"
   type: "Book"
   release_year: "2015"
 
-The Harder They Fall:
-  canonical_title: "The harder they fall"
-  type: "Book"
-  release_year: "1947"
-
-The King's Man:
-  canonical_title: "The King's Man"
-  type: "Book"
-  release_year: "2007"
-
 The Library of Babel:
   canonical_title: "The Library of Babel"
   type: "Book"
   release_year: "1991"
-
-The Phantom Menace:
-  canonical_title: "The Phantom Menace"
-  type: "Book"
-  release_year: "1999"
 
 Thinking Fast:
   canonical_title: "Thinking, fast and slow"
   type: "Book"
   release_year: "2011"
 
-Tombstone:
-  canonical_title: "Tombstone"
-  type: "Book"
-  release_year: "2020"
-
-We Own This City:
-  canonical_title: "We Own This City"
-  type: "Book"
-  release_year: "2021"
 
 # TV Shows
 Archer S1:
@@ -323,18 +291,33 @@ X-Men s2:
 
 Barry:
   canonical_title: "Barry"
-  type: "Movie"
-  release_year: "2016"
+  type: "TV Show"
+  release_year: "2018"
 
 Black Monday:
   canonical_title: "Black Monday"
   type: "Movie"
   release_year: "1988"
 
+Black Widow:
+  canonical_title: "Black Widow"
+  type: "Movie"
+  release_year: "2021"
+
 Cowboy Bebop:
   canonical_title: "Cowboy Bebop"
+  type: "TV Show"
+  release_year: "1998"
+
+Die Hard:
+  canonical_title: "Die Hard"
   type: "Movie"
-  release_year: "2001"
+  release_year: "1988"
+
+Endgame:
+  canonical_title: "Avengers: Endgame"
+  type: "Movie"
+  release_year: "2019"
 
 Fargo:
   canonical_title: "Fargo"
@@ -343,23 +326,18 @@ Fargo:
 
 Gentleman Jack:
   canonical_title: "Gentleman Jack"
-  type: "Movie"
-  release_year: "1999"
+  type: "TV Show"
+  release_year: "2019"
 
 Jungle Cruise:
   canonical_title: "Jungle Cruise"
   type: "Movie"
   release_year: "2021"
 
-Lois:
-  canonical_title: "Lois"
+Kate:
+  canonical_title: "Kate"
   type: "Movie"
-  release_year: "2012"
-
-Moon Knight:
-  canonical_title: "Moon Knight"
-  type: "Movie"
-  release_year: "2009"
+  release_year: "2021"
 
 Mortal Combat:
   canonical_title: "Mortal Kombat"
@@ -375,9 +353,19 @@ No Time to Die:
   type: "Movie"
   release_year: "2021"
 
+Midnight Mass:
+  canonical_title: "Midnight Mass"
+  type: "TV Show"
+  release_year: "2021"
+
+Moon Knight:
+  canonical_title: "Moon Knight"
+  type: "TV Show"
+  release_year: "2022"
+
 Only Murders in the Building:
   canonical_title: "Only Murders in the Building"
-  type: "Movie"
+  type: "TV Show"
   release_year: "2021"
 
 Players:
@@ -395,10 +383,15 @@ Raising Arizona:
   type: "Movie"
   release_year: "1987"
 
+Pieces of Her:
+  canonical_title: "Pieces of Her"
+  type: "TV Show"
+  release_year: "2022"
+
 Six Feet Under:
   canonical_title: "Six Feet Under"
-  type: "Movie"
-  release_year: "2023"
+  type: "TV Show"
+  release_year: "2001"
 
 Slow:
   canonical_title: "Slow"
@@ -450,15 +443,20 @@ Uncharted:
   type: "Movie"
   release_year: "2022"
 
-We Own this City:
+We Own This City:
   canonical_title: "We Own This City"
-  type: "Movie"
+  type: "TV Show"
   release_year: "2022"
 
 Yellowjackets:
   canonical_title: "Yellowjackets"
-  type: "Movie"
+  type: "TV Show"
   release_year: "2021"
+
+Zodiac:
+  canonical_title: "Zodiac"
+  type: "Movie"
+  release_year: "2007"
 
 # Other
 Ant Design:
@@ -476,4 +474,8 @@ Bald Move - Fargo:
 MSF Doom Raids:
   type: "Ignored"
 MSF DD4 (run 1):
+  type: "Ignored"
+Hidden Brain:
+  type: "Ignored"
+Off the Clock:
   type: "Ignored"
