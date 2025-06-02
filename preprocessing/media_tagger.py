@@ -6,10 +6,12 @@ This module includes functions to apply tagging with metadata from APIs and hint
 import copy
 import logging
 import re
-from typing import Dict, List, Optional
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 from preprocessing.media_apis import query_tmdb, query_igdb, query_openlibrary
 from preprocessing.utils import load_hints
+from app.utils import compute_week_index, get_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -144,19 +146,144 @@ def _query_with_cache(
     return results
 
 
-def _tag_entry(title: str, hints: Dict) -> Dict:
+def _get_entry_weeks(entry: Dict, min_date: datetime) -> List[int]:
+    """
+    Get all weeks covered by an entry based on its started and finished dates.
+    
+    Args:
+        entry: The media entry with started_dates and finished_dates
+        min_date: The minimum date to calculate week indices from
+        
+    Returns:
+        List of week indices covered by the entry
+    """
+    weeks = set()
+    
+    # Add weeks from started dates
+    for date_str in entry.get("started_dates", []):
+        try:
+            date = get_datetime(date_str)
+            week = compute_week_index(date, min_date)
+            weeks.add(week)
+        except (ValueError, TypeError):
+            logger.warning("Invalid date format in started_dates: %s", date_str)
+            continue
+    
+    # Add weeks from finished dates
+    for date_str in entry.get("finished_dates", []):
+        try:
+            date = get_datetime(date_str)
+            week = compute_week_index(date, min_date)
+            weeks.add(week)
+        except (ValueError, TypeError):
+            logger.warning("Invalid date format in finished_dates: %s", date_str)
+            continue
+    
+    return sorted(list(weeks))
+
+
+def _find_matching_hint(title: str, entry_weeks: List[int], hints: Dict) -> Optional[Dict]:
+    """
+    Find a matching hint for the given title and weeks.
+    
+    Args:
+        title: The title to match
+        entry_weeks: List of week indices for the entry
+        hints: Dictionary of hints
+        
+    Returns:
+        Matching hint dictionary or None if no match
+    """
+    hint = hints.get(title)
+    if not hint:
+        return None
+        
+    # If hint has no week specification, it matches any week
+    if "week" not in hint:
+        return hint
+        
+    # If hint has week specification, check if any entry week matches
+    hint_week = hint["week"]
+    if hint_week in entry_weeks:
+        return hint
+        
+    return None
+
+
+def _split_entry_by_weeks(entry: Dict, matching_weeks: List[int], non_matching_weeks: List[int]) -> Tuple[Dict, Dict]:
+    """
+    Split an entry into two based on which weeks match a hint.
+    
+    Args:
+        entry: The original entry to split
+        matching_weeks: Week indices that match the hint
+        non_matching_weeks: Week indices that don't match the hint
+        
+    Returns:
+        Tuple of (matching_entry, non_matching_entry)
+    """
+    # Create base entries
+    matching_entry = entry.copy()
+    non_matching_entry = entry.copy()
+    
+    # Split dates based on weeks
+    matching_started = []
+    matching_finished = []
+    non_matching_started = []
+    non_matching_finished = []
+    
+    # We need a reference date to calculate weeks - use a reasonable default
+    # This should ideally be passed in, but for now we'll use a default
+    min_date = datetime(2020, 1, 1)  # Adjust as needed based on your data
+    
+    for date_str in entry.get("started_dates", []):
+        try:
+            date = get_datetime(date_str)
+            week = compute_week_index(date, min_date)
+            if week in matching_weeks:
+                matching_started.append(date_str)
+            else:
+                non_matching_started.append(date_str)
+        except (ValueError, TypeError):
+            # If we can't parse the date, put it in non-matching to be safe
+            non_matching_started.append(date_str)
+    
+    for date_str in entry.get("finished_dates", []):
+        try:
+            date = get_datetime(date_str)
+            week = compute_week_index(date, min_date)
+            if week in matching_weeks:
+                matching_finished.append(date_str)
+            else:
+                non_matching_finished.append(date_str)
+        except (ValueError, TypeError):
+            # If we can't parse the date, put it in non-matching to be safe
+            non_matching_finished.append(date_str)
+    
+    matching_entry["started_dates"] = matching_started
+    matching_entry["finished_dates"] = matching_finished
+    non_matching_entry["started_dates"] = non_matching_started
+    non_matching_entry["finished_dates"] = non_matching_finished
+    
+    return matching_entry, non_matching_entry
+
+
+def _tag_entry(title: str, hints: Dict, entry: Optional[Dict] = None) -> Dict:
     """
     Process a single media entry to extract relevant information.
 
     Args:
         title: The title of the media entry.
         hints: A dictionary containing hints for tagging.
+        entry: Optional full entry dict with dates for week-based hint matching.
 
     Returns:
         A dictionary with the entry tagged with additional metadata: canonical_title, type, tags, confidence.
     """
     # Remove and re-add any season data.
-    entry = {"title": title}
+    if entry is None:
+        entry = {"title": title}
+    
     season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
     if season_match:
         title = season_match.group(1).strip()
@@ -164,8 +291,16 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
         entry["type"] = "TV Show"
         logger.info("Extracted season from title: %s", entry)
 
-    # Apply hints if available
-    hint = hints.get(title, None)
+    # Apply hints if available - now considering week matching
+    hint = None
+    if entry.get("started_dates") or entry.get("finished_dates"):
+        # We have date information, so we can do week-based matching
+        min_date = datetime(2020, 1, 1)  # This should ideally be passed as a parameter
+        entry_weeks = _get_entry_weeks(entry, min_date)
+        hint = _find_matching_hint(title, entry_weeks, hints)
+    else:
+        # No date information, fall back to simple title matching
+        hint = hints.get(title, None)
     release_year_query_term = None
     if hint:
         logger.info("Applying hint for '%s' to entry '%s'", title, entry)
@@ -335,12 +470,53 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
         Added metadata includes canonical_title, type, tags, confidence.
     """
     hints = load_hints(hints_path)
+    processed_entries = []
+    
     for entry in entries:
-        tagged_entry = _tag_entry(entry["title"], hints)
+        # Check if we need to split the entry based on week-specific hints
+        title = entry["title"]
+        
+        # Get all weeks for this entry
+        min_date = datetime(2020, 1, 1)  # This should ideally be configurable
+        entry_weeks = _get_entry_weeks(entry, min_date)
+        
+        # Check if there's a week-specific hint
+        hint = hints.get(title)
+        if hint and "week" in hint and len(entry_weeks) > 1:
+            hint_week = hint["week"]
+            matching_weeks = [w for w in entry_weeks if w == hint_week]
+            non_matching_weeks = [w for w in entry_weeks if w != hint_week]
+            
+            if matching_weeks and non_matching_weeks:
+                # Split the entry
+                logger.warning(
+                    "Splitting entry '%s' because hint with week %d only applies to some weeks. "
+                    "Entry spans weeks %s, hint applies to weeks %s",
+                    title, hint_week, entry_weeks, matching_weeks
+                )
+                
+                matching_entry, non_matching_entry = _split_entry_by_weeks(
+                    entry, matching_weeks, non_matching_weeks
+                )
+                
+                # Tag both entries
+                matching_tagged = _tag_entry(title, hints, matching_entry)
+                matching_entry["tagged"] = matching_tagged
+                processed_entries.append(matching_entry)
+                
+                non_matching_tagged = _tag_entry(title, hints, non_matching_entry)
+                non_matching_entry["tagged"] = non_matching_tagged
+                processed_entries.append(non_matching_entry)
+                
+                continue
+        
+        # Normal processing for entries that don't need splitting
+        tagged_entry = _tag_entry(title, hints, entry)
         entry["tagged"] = tagged_entry
+        processed_entries.append(entry)
 
-    logger.info("Tagged %d entries with metadata", len(entries))
-    return _combine_similar_entries(entries)
+    logger.info("Tagged %d entries with metadata", len(processed_entries))
+    return _combine_similar_entries(processed_entries)
 
 
 if __name__ == "__main__":

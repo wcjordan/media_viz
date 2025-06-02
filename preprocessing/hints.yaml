@@ -212,6 +212,13 @@ X-Men:
   type: "TV Show"
   release_year: "1992"
 
+# Week-specific entries for disambiguation  
+X-Men:
+  canonical_title: "X-Men"
+  type: "Movie"
+  release_year: "2000"
+  week: 200  # Example week number for movie
+
 # Movies
 3:10 to Yuma:
   canonical_title: "3:10 to Yuma"
@@ -237,6 +244,13 @@ Fargo:
   canonical_title: "Fargo"
   type: "Movie"
   release_year: "1996"
+
+# Week-specific entries for disambiguation
+Fargo:
+  canonical_title: "Fargo"
+  type: "TV Show"
+  release_year: "2014"
+  week: 150  # Example week number for TV show
 
 Hamilton:
   canonical_title: "Hamilton"
