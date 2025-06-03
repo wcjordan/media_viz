@@ -291,7 +291,7 @@ def test_apply_tagging_api_failure(
         tagged_entries = apply_tagging(ff7_entry)
 
     # Check that fallback values are used
-    assert "No API hits found for entry: {'title': 'FF7'}" in caplog.text
+    assert "No API hits found for entry: {'title': 'FF7'" in caplog.text
     assert "Low confidence match for entry: {'title': 'FF7'," in caplog.text
     assert len(tagged_entries) == 1
     for entry in tagged_entries:
@@ -356,7 +356,7 @@ def test_apply_tagging_with_narrow_confidence(
 
     # Check for warnings about close confidence scores
     assert (
-        "Multiple API hits with close confidence for {'title': 'The Hobbit'}"
+        "Multiple API hits with close confidence for {'title': 'The Hobbit'"
         in caplog.text
     )
 
@@ -701,3 +701,97 @@ def test_combine_similar_entries_edge_cases(caplog):
     # Dates should be combined
     assert ff7_entry["started_dates"] == ["2023-01-01"]
     assert ff7_entry["finished_dates"] == ["2023-02-01"]
+
+
+def test_week_based_hint_matching(
+    sample_multi_match_hints, setup_hints_mock, setup_api_mocks
+):
+    """Test that hints with week specifications only match entries from those weeks."""
+    # Setup hint with week specification
+    setup_hints_mock(sample_multi_match_hints)
+    setup_api_mocks(
+        movie_response=[], tv_response=[], game_response=[], book_response=[]
+    )
+
+    # Entry that spans multiple weeks, only one matches hint
+    entry = {
+        "title": "Fargo",
+        "started_dates": ["2021-02-03"],
+        "finished_dates": ["2023-10-23"],
+    }
+
+    tagged_entries = apply_tagging([entry])
+
+    # Should result in 2 entries - one for each subpart of the hint matched
+    assert len(tagged_entries) == 2
+
+    # Find the entries
+    tv_entry = next(
+        (e for e in tagged_entries if e["tagged"]["type"] == "TV Show"), None
+    )
+    movie_entry = next(
+        (e for e in tagged_entries if e["tagged"]["type"] == "Movie"), None
+    )
+
+    assert tv_entry is not None
+    assert movie_entry is not None
+    assert tv_entry["canonical_title"] == "Fargo"
+    assert movie_entry["canonical_title"] == "Fargo"
+
+
+def test_week_based_hint_no_split_needed(
+    sample_multi_match_hints, setup_hints_mock, setup_api_mocks
+):
+    """Test that entries don't get split when all weeks match the hint."""
+    # Setup hint with week specification
+    setup_hints_mock(sample_multi_match_hints)
+    setup_api_mocks(
+        tv_response=[
+            {
+                "canonical_title": "Fargo",
+                "type": "TV Show",
+                "confidence": 0.9,
+            }
+        ]
+    )
+
+    # Entry that only has dates in the matching week
+    entry = {
+        "title": "Fargo",
+        "started_dates": ["2023-10-23"],
+        "finished_dates": ["2023-10-23"],
+    }
+
+    tagged_entries = apply_tagging([entry])
+
+    # Should result in 1 entry
+    assert len(tagged_entries) == 1
+    assert tagged_entries[0]["tagged"]["type"] == "TV Show"
+    assert tagged_entries[0]["canonical_title"] == "Fargo"
+
+
+def test_entry_unmatched_warning(
+    caplog, sample_multi_match_hints, setup_hints_mock, setup_api_mocks
+):
+    """Test that a warning is logged when entries are split due to date-specific hints."""
+    setup_hints_mock(sample_multi_match_hints)
+    setup_api_mocks(
+        movie_response=[], tv_response=[], game_response=[], book_response=[]
+    )
+
+    entry = {
+        "title": "Fargo",
+        "started_dates": ["2023-10-30"],
+        "finished_dates": ["2021-02-03"],
+    }
+
+    with caplog.at_level(logging.INFO):
+        apply_tagging([entry])
+
+    assert "Multiple hints found for 'Fargo'" in caplog.text
+    assert "Applying hint for 'Fargo'" in caplog.text
+
+    caplog.clear()
+    with caplog.at_level(logging.WARN):
+        apply_tagging([entry])
+    assert "Unmatched dates after pairing: 2023-10-30" in caplog.text

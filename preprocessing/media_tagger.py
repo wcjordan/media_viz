@@ -6,7 +6,7 @@ This module includes functions to apply tagging with metadata from APIs and hint
 import copy
 import logging
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from preprocessing.media_apis import query_tmdb, query_igdb, query_openlibrary
 from preprocessing.utils import load_hints
@@ -144,43 +144,32 @@ def _query_with_cache(
     return results
 
 
-def _tag_entry(title: str, hints: Dict) -> Dict:
+def _tag_with_hint(title: str, entry: Dict, hint: Dict) -> None:
     """
-    Process a single media entry to extract relevant information.
-
+    Tag an entry with metadata from hints and API calls.
     Args:
-        title: The title of the media entry.
-        hints: A dictionary containing hints for tagging.
-
-    Returns:
-        A dictionary with the entry tagged with additional metadata: canonical_title, type, tags, confidence.
+        title: The title of the media entry.  If the season is in the title, it will be removed here.
+        entry: The media entry to tag.
+        hint: Optional dictionary with metadata from hints.
     """
-    # Remove and re-add any season data.
-    entry = {"title": title}
-    season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
-    if season_match:
-        title = season_match.group(1).strip()
-        entry["season"] = season_match.group(2).lower()
-        entry["type"] = "TV Show"
-        logger.info("Extracted season from title: %s", entry)
-
-    # Apply hints if available
-    hint = hints.get(title, None)
+    # Apply hint if available
     release_year_query_term = None
     if hint:
         logger.info("Applying hint for '%s' to entry '%s'", title, entry)
         if hint.get("type") == "Ignored":
-            return None
+            return
         title = hint.get("canonical_title", title)
+
         # Extract release_year from hint if available
         if "release_year" in hint:
             release_year_query_term = hint["release_year"]
 
     api_hits = []
     types_to_query = ["Movie", "TV Show", "Game", "Book"]
-    # If hint specifies the type, only query the appropriate database
+    # If entry already has a type, only query that type (used for specifying TV Show if there's a season in the title)
     if "type" in entry:
         types_to_query = [entry["type"]]
+    # If hint specifies the type, only query the appropriate database
     elif hint and "type" in hint:
         types_to_query = [hint["type"]]
 
@@ -207,7 +196,93 @@ def _tag_entry(title: str, hints: Dict) -> Dict:
         logger.info(
             "Added season to canonical title: %s", tagged_entry["canonical_title"]
         )
-    return tagged_entry
+
+    entry["tagged"] = tagged_entry
+
+
+def _pair_dates_with_hints(hints: List[Dict], entry: Dict) -> List[Tuple[Dict, Dict]]:
+    """
+    Pair dates from the entry with hints based on title.
+
+    Args:
+        hints: List of hint dictionaries to match against.
+        entry: The media entry to process.
+
+    Returns:
+        A list of tuples of (matching_hint, entry_with_matching_dates)
+        matching_hint: The hint that matches the entry's dates.
+        entry_with_matching_dates: The entry with dates limited to those that match the hint.
+    """
+    unmatched_dates = entry.get("started_dates", []) + entry.get("finished_dates", [])
+
+    matched_pairs = []
+    for hint in hints:
+        new_entry = copy.deepcopy(entry)
+        new_entry["started_dates"] = [
+            date
+            for date in new_entry.get("started_dates", [])
+            if date in hint.get("dates", [])
+        ]
+        new_entry["finished_dates"] = [
+            date
+            for date in new_entry.get("finished_dates", [])
+            if date in hint.get("dates", [])
+        ]
+        if not new_entry["started_dates"] and not new_entry["finished_dates"]:
+            logger.info(
+                "No matching dates found for entry '%s' with hint '%s'.",
+                entry.get("title", "No Title"),
+                ", ".join(hint.get("dates", [])),
+            )
+            continue
+
+        unmatched_dates = [
+            date for date in unmatched_dates if date not in hint.get("dates", [])
+        ]
+        matched_pairs.append((hint, new_entry))
+
+    if unmatched_dates:
+        logger.warning("Unmatched dates after pairing: %s", ", ".join(unmatched_dates))
+
+    return matched_pairs
+
+
+def _tag_entry(entry: Dict, hints: Dict) -> List[Dict]:
+    """
+    Process a single media entry to extract relevant information.
+
+    Args:
+        entry: entry dict with title and dates for hint matching.
+        hints: A dictionary containing hints for tagging.
+
+    Returns:
+        A list of dictionaries with the entry tagged with additional metadata:
+        canonical_title, poster_path, source, type, tags, confidence.
+        The list will only contain multiple entries if hints suggest splitting the entry because only a subset of
+        dates match.
+    """
+    title = entry["title"]
+
+    season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
+    if season_match:
+        title = season_match.group(1).strip()
+        entry["season"] = season_match.group(2).lower()
+        entry["type"] = "TV Show"
+        logger.info("Extracted season from title: %s", entry)
+
+    hint = hints.get(title, None)
+    hint_entry_pairs = [(hint, entry)]
+    if isinstance(hint, list):
+        logger.info("Multiple hints found for '%s'.", title)
+        hint_entry_pairs = _pair_dates_with_hints(hint, entry)
+
+    for hint, new_entry in hint_entry_pairs:
+        _tag_with_hint(title, new_entry, hint)
+    return [
+        new_entry
+        for _, new_entry in hint_entry_pairs
+        if new_entry.get("tagged") is not None
+    ]
 
 
 def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
@@ -335,12 +410,14 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
         Added metadata includes canonical_title, type, tags, confidence.
     """
     hints = load_hints(hints_path)
-    for entry in entries:
-        tagged_entry = _tag_entry(entry["title"], hints)
-        entry["tagged"] = tagged_entry
 
-    logger.info("Tagged %d entries with metadata", len(entries))
-    return _combine_similar_entries(entries)
+    processed_entries = []
+    for entry in entries:
+        tagged_entries = _tag_entry(entry, hints)
+        processed_entries.extend(tagged_entries)
+
+    logger.info("Tagged %d entries with metadata", len(processed_entries))
+    return _combine_similar_entries(processed_entries)
 
 
 if __name__ == "__main__":

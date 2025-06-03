@@ -12,13 +12,22 @@
 BioShock:
   canonical_title: "BioShock"
   type: "Game"
+  release_year: "2007"
 
 FF7:
   canonical_title: "Final Fantasy VII Remake"
   type: "Game"
 
 Hades:
+  canonical_title: "Hades"
   type: "Game"
+  release_year: "2020"
+
+Prey:
+  canonical_title: "Prey"
+  type: "Game"
+  release_year: "2017"
+
 
 The Avengers:
   canonical_title: "Marvel's Avengers"
@@ -29,11 +38,82 @@ The Avengers w/ Danyi:
   type: "Game"
 
 # Books
+Abaddon's Gate:
+  canonical_title: "Abaddon's Gate"
+  type: "Book"
+  release_year: "2013"
+
+Be Prepared:
+  canonical_title: "Be Prepared: A Practical Handbook for New Dads"
+  type: "Book"
+  release_year: "2004"
+
+Blood of Elves:
+  canonical_title: "Blood of Elves"
+  type: "Book"
+  release_year: "2009"
+
+Caliban's War:
+  canonical_title: "Caliban's war"
+  type: "Book"
+  release_year: "2012"
+
+Data Mesh:
+  canonical_title: "Data Mesh"
+  type: "Book"
+  release_year: "2022"
+
+Don Quixote:
+  canonical_title: "Don Quixote"
+  type: "Book"
+  release_year: "1600"
+
+Radical Candor:
+  canonical_title: "Radical Candor"
+  type: "Book"
+  release_year: "2017"
+
 Sapiens:
   type: "Book"
   release_year: "2011"
 
+Soon I Will Be Invincible:
+  canonical_title: "Soon I Will Be Invincible"
+  type: "Book"
+  release_year: "2007"
+
+Sword of Destiny:
+  canonical_title: "Sword of Destiny"
+  type: "Book"
+  release_year: "2015"
+
+The Library of Babel:
+  canonical_title: "The Library of Babel"
+  type: "Book"
+  release_year: "1991"
+
+Thinking Fast & Slow:
+  canonical_title: "Thinking, Fast and Slow"
+  type: "Book"
+  release_year: "2011"
+
+
 # TV Shows
+Ashoka:
+  canonical_title: "Ahsoka"
+  type: "TV Show"
+  release_year: "2023"
+
+Archer:
+  canonical_title: "Archer"
+  type: "TV Show"
+  release_year: "2009"
+
+Big Sky:
+  canonical_title: "Big Sky"
+  type: "TV Show"
+  release_year: "2020"
+
 Captain Falcon & the Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
   type: "TV Show"
@@ -46,46 +126,282 @@ Finished WandaVision:
   canonical_title: "WandaVision"
   type: "TV Show"
 
+Goliath:
+  canonical_title: "Goliath"
+  type: "TV Show"
+  release_year: "2016"
+
 Loki:
   type: "TV Show"
 
+Lost in Space:
+  canonical_title: "Lost in Space"
+  type: "TV Show"
+  release_year: "2018"
+
 Love, Death, & Robots:
   type: "TV Show"
+
+Lupin:
+  canonical_title: "Lupin"
+  type: "TV Show"
+  release_year: "2021"
+
+MODOK:
+  canonical_title: "Marvel's M.O.D.O.K."
+  type: "TV Show"
+  release_year: "2021"
 
 Nevers:
   canonical_title: "The Nevers"
   type: "TV Show"
 
+Search Party:
+  canonical_title: "Search Party"
+  type: "TV Show"
+  release_year: "2016"
+
 Shadow & Bone:
   canonical_title: "Shadow and Bone"
   type: "TV Show"
 
+Sisyphus:
+  canonical_title: "Sisyphus"
+  type: "TV Show"
+  release_year: "2021"
+
 Snowpiercer:
   type: "TV Show"
+
+"Star Trek: Strange New Worlds":
+  canonical_title: "Star Trek: Strange New Worlds"
+  type: "TV Show"
+  release_year: "2022"
 
 Star Trek Discovery:
   canonical_title: "Star Trek: Discovery"
   type: "TV Show"
 
+Startup:
+  canonical_title: "StartUp"
+  type: "TV Show"
+  release_year: "2016"
+
+Superman & Lois:
+  canonical_title: "Superman & Lois"
+  type: "TV Show"
+  release_year: "2021"
+
+The Last Kingdom:
+  canonical_title: "The Last Kingdom"
+  type: "TV Show"
+  release_year: "2015"
+
+The Witcher:
+  canonical_title: "The Witcher"
+  type: "TV Show"
+  release_year: "2019"
+
+Unnatural Selection:
+  canonical_title: "Unnatural Selection"
+  type: "TV Show"
+  release_year: "2019"
+
+X-Men:
+  canonical_title: "X-Men"
+  type: "TV Show"
+  release_year: "1992"
+
 # Movies
+3:10 to Yuma:
+  canonical_title: "3:10 to Yuma"
+  type: "Movie"
+  release_year: "2007"
+
+Black Widow:
+  canonical_title: "Black Widow"
+  type: "Movie"
+  release_year: "2021"
+
+Die Hard:
+  canonical_title: "Die Hard"
+  type: "Movie"
+  release_year: "1988"
+
+Endgame:
+  canonical_title: "Avengers: Endgame"
+  type: "Movie"
+  release_year: "2019"
+
+Hamilton:
+  canonical_title: "Hamilton"
+  type: "Movie"
+  release_year: "2020"
+
+Jungle Cruise:
+  canonical_title: "Jungle Cruise"
+  type: "Movie"
+  release_year: "2021"
+
+Kate:
+  canonical_title: "Kate"
+  type: "Movie"
+  release_year: "2021"
+
+Losers:
+  canonical_title: "Losers"
+  type: "Movie"
+  release_year: "2019"
+
+"Mission: Impossible 3 & 4":
+  canonical_title: "Mission Impossible III"
+  type: "Movie"
+  release_year: "2006"
+
 Mortal Combat:
   canonical_title: "Mortal Kombat"
   type: "Movie"
 
+Nobody:
+  canonical_title: "Nobody"
+  type: "Movie"
+  release_year: "2021"
+
+No Time to Die:
+  canonical_title: "No Time to Die"
+  type: "Movie"
+  release_year: "2021"
+
+Players:
+  canonical_title: "Players"
+  type: "Movie"
+  release_year: "2024"
+
+Porco Rosso:
+  canonical_title: "Porco Rosso"
+  type: "Movie"
+  release_year: "1992"
+
+Raising Arizona:
+  canonical_title: "Raising Arizona"
+  type: "Movie"
+  release_year: "1987"
+
+"Spider-Man: No Way Home":
+  canonical_title: "Spider-Man: No Way Home"
+  type: "Movie"
+  release_year: "2021"
+
+Tenet:
+  canonical_title: "Tenet"
+  type: "Movie"
+  release_year: "2020"
+
+The Batman:
+  canonical_title: "The Batman"
+  type: "Movie"
+  release_year: "2022"
+
+The Big Lebowski:
+  canonical_title: "The Big Lebowski"
+  type: "Movie"
+  release_year: "1998"
+
+The Eternals:
+  canonical_title: "Eternals"
+  type: "Movie"
+  release_year: "2021"
+
+The Harder They Fall:
+  canonical_title: "The Harder They Fall"
+  type: "Movie"
+  release_year: "2021"
+
+The King's Man:
+  canonical_title: "The King's Man"
+  type: "Movie"
+  release_year: "2021"
+
+The Master:
+  canonical_title: "The Master"
+  type: "Movie"
+  release_year: "2012"
+
+The Phantom Menace:
+  canonical_title: "Star Wars: Episode I – The Phantom Menace"
+  type: "Movie"
+  release_year: "1999"
+
+Tombstone:
+  canonical_title: "Tombstone"
+  type: "Movie"
+  release_year: "1993"
+
+Top Gun:
+  canonical_title: "Top Gun"
+  type: "Movie"
+  release_year: "1986"
+
+Uncharted:
+  canonical_title: "Uncharted"
+  type: "Movie"
+  release_year: "2022"
+
+Zodiac:
+  canonical_title: "Zodiac"
+  type: "Movie"
+  release_year: "2007"
+
 # Other
+Accessibility UX study:
+  type: "Ignored"
 Ant Design:
   type: "Ignored"
 BackstopJS:
+  type: "Ignored"
+Bald Move - Fargo:
+  type: "Ignored"
+Hidden Brain:
+  type: "Ignored"
+MSF DD4 (run 1):
+  type: "Ignored"
+MSF Doom Raids:
+  type: "Ignored"
+Off the Clock:
   type: "Ignored"
 React Native Paper:
   type: "Ignored"
 Todo App testing:
   type: "Ignored"
-Accessibility UX study:
-  type: "Ignored"
-Bald Move - Fargo:
-  type: "Ignored"
-MSF Doom Raids:
-  type: "Ignored"
-MSF DD4 (run 1):
-  type: "Ignored"
+
+# Multi-matches
+Dark Matter:
+  - canonical_title: "Dark Matter"
+    type: "TV Show"
+    release_year: "2015"
+    dates:
+      - "2021-08-16"
+      - "2021-08-30"
+      - "2021-10-18"
+  - canonical_title: "Dark Matter"
+    type: "TV Show"
+    release_year: "2024"
+    dates:
+      - "2024-05-06"
+      - "2024-06-24"
+
+Fargo:
+  - canonical_title: "Fargo"
+    type: "Movie"
+    release_year: "1996"
+    dates:
+      - "2021-09-13"
+  - canonical_title: "Fargo"
+    type: "TV Show"
+    release_year: "2014"
+    dates:
+      - "2021-06-21"
+      - "2021-07-26"
+      - "2021-09-13"
+      - "2021-11-01"
+      - "2024-01-22"
