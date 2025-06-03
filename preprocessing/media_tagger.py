@@ -144,20 +144,20 @@ def _query_with_cache(
     return results
 
 
-def _tag_with_hint(entry: Dict, hint: Dict) -> None:
+def _tag_with_hint(title: str, entry: Dict, hint: Dict) -> None:
     """
     Tag an entry with metadata from hints and API calls.
     Args:
+        title: The title of the media entry.  If the season is in the title, it will be removed here.
         entry: The media entry to tag.
         hint: Optional dictionary with metadata from hints.
     """
     # Apply hint if available
-    title = entry["title"]
     release_year_query_term = None
     if hint:
         logger.info("Applying hint for '%s' to entry '%s'", title, entry)
         if hint.get("type") == "Ignored":
-            return None
+            return
         title = hint.get("canonical_title", title)
 
         # Extract release_year from hint if available
@@ -229,7 +229,7 @@ def _pair_dates_with_hints(hints: List[Dict], entry: Dict) -> List[Tuple[Dict, D
             if date in hint.get("dates", [])
         ]
         if not new_entry["started_dates"] and not new_entry["finished_dates"]:
-            logger.warning(
+            logger.info(
                 "No matching dates found for entry '%s' with hint '%s'.",
                 entry.get("title", "No Title"),
                 ", ".join(hint.get("dates", [])),
@@ -273,12 +273,12 @@ def _tag_entry(entry: Dict, hints: Dict) -> List[Dict]:
     hint = hints.get(title, None)
     hint_entry_pairs = [(hint, entry)]
     if isinstance(hint, list):
-        logger.warning("Multiple hints found for '%s'.", title)
+        logger.info("Multiple hints found for '%s'.", title)
         hint_entry_pairs = _pair_dates_with_hints(hint, entry)
 
-    for hint, entry in hint_entry_pairs:
-        _tag_with_hint(entry, hint)
-    return [entry for _, entry in hint_entry_pairs]
+    for hint, new_entry in hint_entry_pairs:
+        _tag_with_hint(title, new_entry, hint)
+    return [new_entry for _, new_entry in hint_entry_pairs]
 
 
 def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:

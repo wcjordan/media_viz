@@ -366,21 +366,32 @@ Todo App testing:
 
 # Multi-matches
 Dark Matter:
-  - canonical_title: "Dark Matter"
-    type: "TV Show"
-    release_year: "2015"
-    week: "Aug 10-16"
-  - canonical_title: "Dark Matter"
-    type: "TV Show"
-    release_year: "2024"
-    week: "Sep 10-16"
+- canonical_title: "Dark Matter"
+  type: "TV Show"
+  release_year: "2015"
+  dates:
+  - "2021-08-16"
+  - "2021-08-30"
+  - "2021-10-18"
+- canonical_title: "Dark Matter"
+  type: "TV Show"
+  release_year: "2024"
+  dates:
+  - "2024-05-06"
+  - "2024-06-24"
 
 Fargo:
-  - canonical_title: "Fargo"
-    type: "Movie"
-    release_year: "1996"
-    week: "Sept 13-19"
-  - canonical_title: "Fargo"
-    type: "TV Show"
-    release_year: "2014"
-    week: "Jan 13-19"
+- canonical_title: "Fargo"
+  type: "Movie"
+  release_year: "1996"
+  dates:
+  - "2021-09-13"
+- canonical_title: "Fargo"
+  type: "TV Show"
+  release_year: "2014"
+  dates:
+  - "2021-06-21"
+  - "2021-07-26"
+  - "2021-09-13"
+  - "2021-11-01"
+  - "2024-01-22"

@@ -25,3 +25,18 @@ def sample_hints():
             },
         },
     }
+
+
+@pytest.fixture()
+def sample_multi_match_hints():
+    """Sample multi-match hints data for testing."""
+    return {
+        "Fargo": [
+            {"canonical_title": "Fargo", "type": "Movie", "dates": ["2021-02-03"]},
+            {
+                "canonical_title": "Fargo",
+                "type": "TV Show",
+                "dates": ["2023-10-23"],
+            },
+        ]
+    }
