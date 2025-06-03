@@ -278,7 +278,11 @@ def _tag_entry(entry: Dict, hints: Dict) -> List[Dict]:
 
     for hint, new_entry in hint_entry_pairs:
         _tag_with_hint(title, new_entry, hint)
-    return [new_entry for _, new_entry in hint_entry_pairs]
+    return [
+        new_entry
+        for _, new_entry in hint_entry_pairs
+        if new_entry.get("tagged") is not None
+    ]
 
 
 def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
@@ -409,9 +413,7 @@ def apply_tagging(entries: List[Dict], hints_path: Optional[str] = None) -> List
 
     processed_entries = []
     for entry in entries:
-        tagged_entries = [
-            entry for entry in _tag_entry(entry, hints) if entry is not None
-        ]
+        tagged_entries = _tag_entry(entry, hints)
         processed_entries.extend(tagged_entries)
 
     logger.info("Tagged %d entries with metadata", len(processed_entries))
