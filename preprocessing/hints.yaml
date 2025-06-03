@@ -99,6 +99,11 @@ Thinking Fast & Slow:
 
 
 # TV Shows
+Ashoka:
+  canonical_title: "Ahsoka"
+  type: "TV Show"
+  release_year: "2023"
+
 Archer:
   canonical_title: "Archer"
   type: "TV Show"
@@ -247,6 +252,11 @@ Losers:
   canonical_title: "Losers"
   type: "Movie"
   release_year: "2019"
+
+"Mission: Impossible 3 & 4":
+  canonical_title: "Mission Impossible III"
+  type: "Movie"
+  release_year: "2006"
 
 Mortal Combat:
   canonical_title: "Mortal Kombat"
