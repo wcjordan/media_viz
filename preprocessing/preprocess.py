@@ -217,7 +217,7 @@ if __name__ == "__main__":
         "preprocessing/raw_data/media_enjoyed.csv",
         "preprocessing/processed_data/media_entries.json",
         start_date=None,
-        end_date=None,
+        end_date="2021-04-01",
     )
 
     # Print statistics

@@ -361,7 +361,15 @@ def query_igdb(title: str, release_year: str = None) -> list:
         games = response.json()
 
         tagged_games = [_format_igdb_entry(title, game) for game in games]
-        return [game for game in tagged_games if game is not None]
+        tagged_games = [game for game in tagged_games if game is not None]
+        if release_year:
+            # Filter out games that don't match the release year
+            tagged_games = [
+                game
+                for game in tagged_games
+                if game["tags"]["release_year"] == release_year
+            ]
+        return tagged_games
 
     except requests.RequestException as e:
         logger.error("Error querying IGDB API: %s", e)

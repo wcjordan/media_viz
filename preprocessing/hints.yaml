@@ -1,15 +1,13 @@
 # Media hints file for manual overrides
 # Format:
-# key_phrase:
+# title_key:
 #   canonical_title: "Official Title"
 #   type: "Movie|TV|Game|Book"
-#   tags:
-#     genre: ["Genre1", "Genre2"]
-#     platform: ["Platform1", "Platform2"]
-#     mood: ["Mood1", "Mood2"]
+#   release_year: "YYYY"
+#   dates: ["YYYY-MM-DD", "YYYY-MM-DD"] # Optional, for multi-matches
 
 # Video Games
-BioShock:
+Bioshock:
   canonical_title: "BioShock"
   type: "Game"
   release_year: "2007"
@@ -28,7 +26,6 @@ Prey:
   type: "Game"
   release_year: "2017"
 
-
 The Avengers:
   canonical_title: "Marvel's Avengers"
   type: "Game"
@@ -36,6 +33,11 @@ The Avengers:
 The Avengers w/ Danyi:
   canonical_title: "Marvel's Avengers"
   type: "Game"
+
+The Witness:
+  canonical_title: "The Witness"
+  type: "Game"
+  release_year: "2016"
 
 # Books
 Abaddon's Gate:
@@ -261,6 +263,7 @@ Losers:
 Mortal Combat:
   canonical_title: "Mortal Kombat"
   type: "Movie"
+  release_year: "2021"
 
 Nobody:
   canonical_title: "Nobody"
@@ -362,6 +365,8 @@ BackstopJS:
 Bald Move - Fargo:
   type: "Ignored"
 Hidden Brain:
+  type: "Ignored"
+House Budget / Relocation Comparison model:
   type: "Ignored"
 MSF DD4 (run 1):
   type: "Ignored"
