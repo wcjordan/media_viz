@@ -28,7 +28,7 @@ def get_media_db_api_calls() -> Dict:
 
 
 def _combine_votes(
-    entry: Dict, api_hits: List[Dict], hint: Optional[Dict] = None
+    entry: Dict, api_hits: List[Dict], hint: Optional[Dict] = None, title_query_term: str = None, release_year_query_term: str = None
 ) -> Dict:
     """
     Combine votes from hints and API hits.
@@ -36,6 +36,8 @@ def _combine_votes(
         entry: The original media entry.
         api_hits: List of dictionaries with metadata from API calls.
         hint: Optional dictionary with metadata from hints.
+        title_query_term: The title used for querying the API.
+        release_year_query_term: The release year used for querying the API.
     Returns:
         Dictionary copied from the past in entry and modified with the highest confidence API data and hints.
         Includes fields:
@@ -73,11 +75,19 @@ def _combine_votes(
 
         return tagged_entry
 
+    # Filter API hits to only those with a poster_path unless none are available
+    api_hits_w_poster = [hit for hit in api_hits if len(hit.get("poster_path", "")) > 0]
+    if api_hits_w_poster:
+        api_hits = api_hits_w_poster
+    else:
+        logger.warning(
+            "No API hits with poster_path found for %s.",
+            entry["title"],
+        )
+
     # Sort API hits by confidence so we can check how close the to matches are
     if len(api_hits) > 1:
-        api_hits = [
-            hit for hit in api_hits if len(hit.get("poster_path", "")) > 0
-        ]
+
         api_hits.sort(key=lambda x: x["confidence"], reverse=True)
         close_api_hits = [
             hit
@@ -86,8 +96,9 @@ def _combine_votes(
         ]
         if len(close_api_hits) > 1:
             logger.warning(
-                "Multiple API hits with close confidence for %s.\n\t%s",
-                entry,
+                "Multiple API hits with close confidence for %s with year query (%s).\n\t%s",
+                title_query_term,
+                release_year_query_term if release_year_query_term else "",
                 ",\n\t".join(str(hit) for hit in close_api_hits),
             )
 
@@ -195,7 +206,7 @@ def _tag_with_hint(title: str, entry: Dict, hint: Dict) -> None:
         api_hits.extend(_query_with_cache("book", title, release_year_query_term))
 
     # Combine votes from hints and API hits
-    tagged_entry = _combine_votes(entry, api_hits, hint)
+    tagged_entry = _combine_votes(entry, api_hits, hint, title, release_year_query_term)
     if tagged_entry["confidence"] < 0.5 and not hint:
         logger.warning("Low confidence match for entry: %s", tagged_entry)
 
@@ -228,7 +239,7 @@ def _pair_dates_with_hints(hints: List[Dict], entry: Dict) -> List[Tuple[Dict, D
 
     matched_pairs = []
     for hint in hints:
-        if 'type' in entry and entry['type'] != hint.get('type'):
+        if "type" in entry and entry["type"] != hint.get("type"):
             logger.info(
                 "Skipping hint '%s' for entry '%s' due to type mismatch.",
                 hint.get("canonical_title", "No Title"),

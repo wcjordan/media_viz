@@ -16,17 +16,54 @@ FF7:
   canonical_title: "Final Fantasy VII Remake"
   type: "Game"
 
+Frostpunk & finished the New Home & Seed Vault missions:
+  canonical_title: Frostpunk
+  type: "Game"
+
+Guardians of the Galaxy:
+  canonical_title: "Marvel's Guardians of the Galaxy"
+  type: "Game"
+
+Guardians of the Galaxy game:
+  canonical_title: "Marvel's Guardians of the Galaxy"
+  type: "Game"
+
 Hades:
-  canonical_title: "Hades"
   type: "Game"
   release_year: "2020"
 
+Portal:
+  type: "Game"
+  release_year: "2007"
+
 Prey:
-  canonical_title: "Prey"
   type: "Game"
   release_year: "2017"
 
+StarCraft:
+  type: "Game"
+  release_year: "1998"
+
+StarCraft terran campaign:
+  canonical_title: "StarCraft"
+  type: "Game"
+  release_year: "1998"
+
+StarCraft zerg campaign:
+  canonical_title: "StarCraft"
+  type: "Game"
+  release_year: "1998"
+
+Starcraft zerg campaign:
+  canonical_title: "StarCraft"
+  type: "Game"
+  release_year: "1998"
+
 The Avengers:
+  canonical_title: "Marvel's Avengers"
+  type: "Game"
+
+The Avengers (game):
   canonical_title: "Marvel's Avengers"
   type: "Game"
 
@@ -35,7 +72,6 @@ The Avengers w/ Danyi:
   type: "Game"
 
 The Witness:
-  canonical_title: "The Witness"
   type: "Game"
   release_year: "2016"
 
@@ -46,7 +82,6 @@ Abbadon's Gate:
   release_year: "2013"
 
 Abaddon's Gate:
-  canonical_title: "Abaddon's Gate"
   type: "Book"
   release_year: "2013"
 
@@ -56,27 +91,31 @@ Be Prepared:
   release_year: "2004"
 
 Blood of Elves:
-  canonical_title: "Blood of Elves"
   type: "Book"
   release_year: "2009"
 
 Caliban's War:
-  canonical_title: "Caliban's war"
   type: "Book"
   release_year: "2012"
 
 Data Mesh:
-  canonical_title: "Data Mesh"
   type: "Book"
   release_year: "2022"
 
 Don Quixote:
-  canonical_title: "Don Quixote"
   type: "Book"
   release_year: "1600"
 
+"Game of Thrones (book)":
+  canonical_title: "A Game of Thrones"
+  type: "Book"
+  release_year: "1996"
+
+Nemesis Game:
+  canonical_title: "Nemesis Games"
+  type: "Book"
+
 Radical Candor:
-  canonical_title: "Radical Candor"
   type: "Book"
   release_year: "2017"
 
@@ -84,20 +123,20 @@ Sapiens:
   type: "Book"
   release_year: "2011"
 
+Slapstick:
+  type: "Book"
+  release_year: "1976"
+
 Soon I Will Be Invincible:
-  canonical_title: "Soon I Will Be Invincible"
   type: "Book"
   release_year: "2007"
 
 Sword of Destiny:
-  canonical_title: "Sword of Destiny"
   type: "Book"
   release_year: "2015"
 
 The Library of Babel:
-  canonical_title: "The Library of Babel"
   type: "Book"
-  release_year: "1991"
 
 The Kubernetes Book:
   canonical_title: "Kubernetes Book"
@@ -109,29 +148,46 @@ Thinking Fast & Slow:
   release_year: "2011"
 
 # TV Shows
+"1923":
+  type: "TV Show"
+
+American Vandal:
+  type: "TV Show"
+
 Ashoka:
   canonical_title: "Ahsoka"
   type: "TV Show"
-  release_year: "2023"
 
 Archer:
-  canonical_title: "Archer"
   type: "TV Show"
   release_year: "2009"
 
+Barry:
+  type: "TV Show"
+
 Big Sky:
-  canonical_title: "Big Sky"
   type: "TV Show"
   release_year: "2020"
 
+Black Monday:
+  type: "TV Show"
+
 Captain Falcon & the Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
+  type: "TV Show"
+
+Clone Wars:
+  canonical_title: "Star Wars: The Clone Wars"
   type: "TV Show"
 
 "Explained: The Mind":
   canonical_title: "The Mind, Explained"
   type: "TV Show"
   release_year: "2019"
+
+Expanse:
+  canonical_title: The Expanse
+  type: "TV Show"
 
 Falcon & Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
@@ -141,16 +197,28 @@ Finished WandaVision:
   canonical_title: "WandaVision"
   type: "TV Show"
 
+Gentleman Jack:
+  type: "TV Show"
+
 Goliath:
-  canonical_title: "Goliath"
   type: "TV Show"
   release_year: "2016"
+
+"Headspace: Guide to Meditation":
+  canonical_title: "Headspace Guide to Meditation"
+  type: "TV Show"
+
+Hocus Pocus:
+  type: "TV Show"
+
+Interview w/ a Vampire:
+  canonical_title: "Interview with the Vampire"
+  type: "TV Show"
 
 Loki:
   type: "TV Show"
 
 Lost in Space:
-  canonical_title: "Lost in Space"
   type: "TV Show"
   release_year: "2018"
 
@@ -158,36 +226,49 @@ Love, Death, & Robots:
   type: "TV Show"
 
 Lupin:
-  canonical_title: "Lupin"
   type: "TV Show"
   release_year: "2021"
 
 Marvel's What If:
   canonical_title: "What If...?"
   type: "TV Show"
-  release_year: "2021"
 
 Midnight Mass:
-  canonical_title: "Midnight Mass"
   type: "TV Show"
-  release_year: "2021"
 
 MODOK:
   canonical_title: "Marvel's M.O.D.O.K."
   type: "TV Show"
-  release_year: "2021"
+
+Moon Knight:
+  type: "TV Show"
 
 Morning Show:
   canonical_title: "The Morning Show"
   type: "TV Show"
-  release_year: "2019"
+
+Mrs. Maisel:
+  canonical_title: "The Marvelous Mrs. Maisel"
+  type: "TV Show"
+
+Neon Genesis Evangelion:
+  type: "TV Show"
 
 Nevers:
   canonical_title: "The Nevers"
   type: "TV Show"
 
+Obi-Wan Kenobi:
+  type: "TV Show"
+
+Only Murders:
+  canonical_title: Only Murders in the Building
+  type: "TV Show"
+
+Pieces of Her:
+  type: "TV Show"
+
 Search Party:
-  canonical_title: "Search Party"
   type: "TV Show"
   release_year: "2016"
 
@@ -195,23 +276,28 @@ Shadow & Bone:
   canonical_title: "Shadow and Bone"
   type: "TV Show"
 
+Severance:
+  type: "TV Show"
+
+She-Hulk:
+  type: "TV Show"
+
 Sisyphus:
-  canonical_title: "Sisyphus"
   type: "TV Show"
   release_year: "2021"
 
-Six Feet Under:
+Six Fee Under:
   canonical_title: "Six Feet Under"
   type: "TV Show"
-  release_year: "2001"
+
+Six Feet Under:
+  type: "TV Show"
 
 Snowpiercer:
   type: "TV Show"
 
 "Star Trek: Strange New Worlds":
-  canonical_title: "Star Trek: Strange New Worlds"
   type: "TV Show"
-  release_year: "2022"
 
 Star Trek Discovery:
   canonical_title: "Star Trek: Discovery"
@@ -223,40 +309,82 @@ Startup:
   release_year: "2016"
 
 Superman & Lois:
-  canonical_title: "Superman & Lois"
   type: "TV Show"
-  release_year: "2021"
+
+The Clone Wars:
+  canonical_title: "Star Wars: The Clone Wars"
+  type: "TV Show"
+
+the Clone Wars:
+  canonical_title: "Star Wars: The Clone Wars"
+  type: "TV Show"
+
+The Expanse S3 (& podcast):
+  canonical_title: "The Expanse"
+  type: "TV Show"
 
 The Last Kingdom:
-  canonical_title: "The Last Kingdom"
   type: "TV Show"
-  release_year: "2015"
+
+The Making of 1899:
+  canonical_title: "1899"
+  type: "TV Show"
+
+The Midnight Club:
+  type: "TV Show"
 
 The Morning Show:
-  canonical_title: "The Morning Show"
   type: "TV Show"
-  release_year: "2019"
+
+The Old Man:
+  type: "TV Show"
+
+The Rings of Power:
+  type: "TV Show"
+
+The Sandman:
+  type: "TV Show"
 
 The Witcher:
-  canonical_title: "The Witcher"
   type: "TV Show"
   release_year: "2019"
+
+"The Witcher: Blood Origins":
+  canonical_title: "The Witcher: Blood Origin"
+  type: "TV Show"
+
+Umbrella Academy:
+  canonical_title: "The Umbrella Academy"
+  type: "TV Show"
 
 Unnatural Selection:
-  canonical_title: "Unnatural Selection"
   type: "TV Show"
   release_year: "2019"
 
+Vikings Valhalla:
+  type: "TV Show"
+
+We Own this City:
+  type: "TV Show"
+
+We Own This City:
+  type: "TV Show"
+
 X-Men:
-  canonical_title: "X-Men"
   type: "TV Show"
   release_year: "1992"
 
+Yellowjackets:
+  type: "TV Show"
+
 # Movies
 3:10 to Yuma:
-  canonical_title: "3:10 to Yuma"
   type: "Movie"
   release_year: "2007"
+
+Alien:
+  type: "Movie"
+  release_year: "1979"
 
 "Batman: The Long Halloween pt 1":
   canonical_title: "Batman: The Long Halloween, Part One"
@@ -269,12 +397,10 @@ X-Men:
   release_year: "2021"
 
 Black Widow:
-  canonical_title: "Black Widow"
   type: "Movie"
   release_year: "2021"
 
 Die Hard:
-  canonical_title: "Die Hard"
   type: "Movie"
   release_year: "1988"
 
@@ -288,23 +414,26 @@ Endgame:
   type: "Movie"
   release_year: "2019"
 
+Everything, Everywhere, All at Once:
+  type: "Movie"
+
+Glass Onion:
+  canonical_title: "Glass Onion: A Knives Out Mystery"
+  type: "Movie"
+
 Hamilton:
-  canonical_title: "Hamilton"
   type: "Movie"
   release_year: "2020"
 
 Jungle Cruise:
-  canonical_title: "Jungle Cruise"
   type: "Movie"
   release_year: "2021"
 
 Kate:
-  canonical_title: "Kate"
   type: "Movie"
   release_year: "2021"
 
 Losers:
-  canonical_title: "Losers"
   type: "Movie"
   release_year: "2019"
 
@@ -319,29 +448,32 @@ Mortal Combat:
   release_year: "2021"
 
 Nobody:
-  canonical_title: "Nobody"
   type: "Movie"
   release_year: "2021"
 
 No Time to Die:
-  canonical_title: "No Time to Die"
   type: "Movie"
   release_year: "2021"
 
 Players:
-  canonical_title: "Players"
   type: "Movie"
   release_year: "2024"
 
 Porco Rosso:
-  canonical_title: "Porco Rosso"
   type: "Movie"
   release_year: "1992"
 
 Raising Arizona:
-  canonical_title: "Raising Arizona"
   type: "Movie"
   release_year: "1987"
+
+Running with the Devil:
+  type: "Movie"
+  release_year: "2019"
+
+Scream:
+  type: "Movie"
+  release_year: "1996"
 
 Shang-chi:
   canonical_title: "Shang-Chi and the Legend of the Ten Rings"
@@ -349,22 +481,21 @@ Shang-chi:
   release_year: "2021"
 
 "Spider-Man: No Way Home":
-  canonical_title: "Spider-Man: No Way Home"
   type: "Movie"
   release_year: "2021"
 
 Tenet:
-  canonical_title: "Tenet"
   type: "Movie"
   release_year: "2020"
 
+"Terminator 2: Judgement Day":
+  type: "Movie"
+
 The Batman:
-  canonical_title: "The Batman"
   type: "Movie"
   release_year: "2022"
 
 The Big Lebowski:
-  canonical_title: "The Big Lebowski"
   type: "Movie"
   release_year: "1998"
 
@@ -378,18 +509,23 @@ The Eternals:
   type: "Movie"
   release_year: "2021"
 
+The Grey Man:
+  type: "Movie"
+
 The Harder They Fall:
-  canonical_title: "The Harder They Fall"
   type: "Movie"
   release_year: "2021"
 
+The Joker:
+  canonical_title: "Joker"
+  type: "Movie"
+  release_year: "2019"
+
 The King's Man:
-  canonical_title: "The King's Man"
   type: "Movie"
   release_year: "2021"
 
 The Master:
-  canonical_title: "The Master"
   type: "Movie"
   release_year: "2012"
 
@@ -398,18 +534,18 @@ The Phantom Menace:
   type: "Movie"
   release_year: "1999"
 
+"Thor: Love & Thunder":
+  type: "Movie"
+
 Tombstone:
-  canonical_title: "Tombstone"
   type: "Movie"
   release_year: "1993"
 
 Top Gun:
-  canonical_title: "Top Gun"
   type: "Movie"
   release_year: "1986"
 
 Uncharted:
-  canonical_title: "Uncharted"
   type: "Movie"
   release_year: "2022"
 
@@ -419,7 +555,6 @@ WeWork documentary:
   release_year: "2021"
 
 Zodiac:
-  canonical_title: "Zodiac"
   type: "Movie"
   release_year: "2007"
 
@@ -454,33 +589,41 @@ React Native Paper:
   type: "Ignored"
 Todo App testing:
   type: "Ignored"
+Washington DC puzzle:
+  type: "Ignored"
 Xmas/Thanksgiving movies:
   type: "Ignored"
 
 # Multi-matches
+Cowboy Bebop:
+  - type: "TV Show"
+    release_year: "2021"
+    dates:
+      - "2022-01-31"
+  - type: "TV Show"
+    release_year: "1998"
+    dates:
+      - "2023-08-07"
+
 Dark Matter:
-  - canonical_title: "Dark Matter"
-    type: "TV Show"
+  - type: "TV Show"
     release_year: "2015"
     dates:
       - "2021-08-16"
       - "2021-08-30"
       - "2021-10-18"
-  - canonical_title: "Dark Matter"
-    type: "TV Show"
+  - type: "TV Show"
     release_year: "2024"
     dates:
       - "2024-05-06"
       - "2024-06-24"
 
 Fargo:
-  - canonical_title: "Fargo"
-    type: "Movie"
+  - type: "Movie"
     release_year: "1996"
     dates:
       - "2021-09-13"
-  - canonical_title: "Fargo"
-    type: "TV Show"
+  - type: "TV Show"
     release_year: "2014"
     dates:
       - "2021-06-21"
