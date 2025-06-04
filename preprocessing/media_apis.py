@@ -362,13 +362,6 @@ def query_igdb(title: str, release_year: str = None) -> list:
 
         tagged_games = [_format_igdb_entry(title, game) for game in games]
         tagged_games = [game for game in tagged_games if game is not None]
-        if release_year:
-            # Filter out games that don't match the release year
-            tagged_games = [
-                game
-                for game in tagged_games
-                if game["tags"]["release_year"] == release_year
-            ]
         return tagged_games
 
     except requests.RequestException as e:
@@ -478,7 +471,8 @@ def query_openlibrary(title: str, release_year: str = None) -> list:
             _format_openlibrary_entry(title, book)
             for book in search_data.get("docs", [])
         ]
-        return [book for book in tagged_books if book is not None]
+        tagged_books = [book for book in tagged_books if book is not None]
+        return tagged_books
 
     except requests.RequestException as e:
         logger.error("Error querying Open Library API: %s", e)

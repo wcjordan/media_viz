@@ -40,6 +40,11 @@ The Witness:
   release_year: "2016"
 
 # Books
+Abbadon's Gate:
+  canonical_title: "Abaddon's Gate"
+  type: "Book"
+  release_year: "2013"
+
 Abaddon's Gate:
   canonical_title: "Abaddon's Gate"
   type: "Book"
@@ -94,11 +99,14 @@ The Library of Babel:
   type: "Book"
   release_year: "1991"
 
+The Kubernetes Book:
+  canonical_title: "Kubernetes Book"
+  type: "Book"
+
 Thinking Fast & Slow:
   canonical_title: "Thinking, Fast and Slow"
   type: "Book"
   release_year: "2011"
-
 
 # TV Shows
 Ashoka:
@@ -119,6 +127,11 @@ Big Sky:
 Captain Falcon & the Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
   type: "TV Show"
+
+"Explained: The Mind":
+  canonical_title: "The Mind, Explained"
+  type: "TV Show"
+  release_year: "2019"
 
 Falcon & Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
@@ -149,10 +162,25 @@ Lupin:
   type: "TV Show"
   release_year: "2021"
 
+Marvel's What If:
+  canonical_title: "What If...?"
+  type: "TV Show"
+  release_year: "2021"
+
+Midnight Mass:
+  canonical_title: "Midnight Mass"
+  type: "TV Show"
+  release_year: "2021"
+
 MODOK:
   canonical_title: "Marvel's M.O.D.O.K."
   type: "TV Show"
   release_year: "2021"
+
+Morning Show:
+  canonical_title: "The Morning Show"
+  type: "TV Show"
+  release_year: "2019"
 
 Nevers:
   canonical_title: "The Nevers"
@@ -171,6 +199,11 @@ Sisyphus:
   canonical_title: "Sisyphus"
   type: "TV Show"
   release_year: "2021"
+
+Six Feet Under:
+  canonical_title: "Six Feet Under"
+  type: "TV Show"
+  release_year: "2001"
 
 Snowpiercer:
   type: "TV Show"
@@ -199,6 +232,11 @@ The Last Kingdom:
   type: "TV Show"
   release_year: "2015"
 
+The Morning Show:
+  canonical_title: "The Morning Show"
+  type: "TV Show"
+  release_year: "2019"
+
 The Witcher:
   canonical_title: "The Witcher"
   type: "TV Show"
@@ -220,6 +258,16 @@ X-Men:
   type: "Movie"
   release_year: "2007"
 
+"Batman: The Long Halloween pt 1":
+  canonical_title: "Batman: The Long Halloween, Part One"
+  type: "Movie"
+  release_year: "2021"
+
+"Batman: The Long Halloween pt 2":
+  canonical_title: "Batman: The Long Halloween, Part Two"
+  type: "Movie"
+  release_year: "2021"
+
 Black Widow:
   canonical_title: "Black Widow"
   type: "Movie"
@@ -229,6 +277,11 @@ Die Hard:
   canonical_title: "Die Hard"
   type: "Movie"
   release_year: "1988"
+
+Dune pt 1:
+  canonical_title: "Dune"
+  type: "Movie"
+  release_year: "2021"
 
 Endgame:
   canonical_title: "Avengers: Endgame"
@@ -290,6 +343,11 @@ Raising Arizona:
   type: "Movie"
   release_year: "1987"
 
+Shang-chi:
+  canonical_title: "Shang-Chi and the Legend of the Ten Rings"
+  type: "Movie"
+  release_year: "2021"
+
 "Spider-Man: No Way Home":
   canonical_title: "Spider-Man: No Way Home"
   type: "Movie"
@@ -309,6 +367,11 @@ The Big Lebowski:
   canonical_title: "The Big Lebowski"
   type: "Movie"
   release_year: "1998"
+
+the Clone Wars movie:
+  canonical_title: "Star Wars: The Clone Wars"
+  type: "Movie"
+  release_year: "2008"
 
 The Eternals:
   canonical_title: "Eternals"
@@ -350,6 +413,11 @@ Uncharted:
   type: "Movie"
   release_year: "2022"
 
+WeWork documentary:
+  canonical_title: "WeWork: Or the Making and Breaking of a $47 Billion Unicorn"
+  type: "Movie"
+  release_year: "2021"
+
 Zodiac:
   canonical_title: "Zodiac"
   type: "Movie"
@@ -364,9 +432,17 @@ BackstopJS:
   type: "Ignored"
 Bald Move - Fargo:
   type: "Ignored"
+"Bald Move: The Expanse":
+  type: "Ignored"
+Coaching Real Leaders:
+  type: "Ignored"
 Hidden Brain:
   type: "Ignored"
 House Budget / Relocation Comparison model:
+  type: "Ignored"
+How They SRE:
+  type: "Ignored"
+How to Fix Economic Inequality:
   type: "Ignored"
 MSF DD4 (run 1):
   type: "Ignored"
@@ -377,6 +453,8 @@ Off the Clock:
 React Native Paper:
   type: "Ignored"
 Todo App testing:
+  type: "Ignored"
+Xmas/Thanksgiving movies:
   type: "Ignored"
 
 # Multi-matches

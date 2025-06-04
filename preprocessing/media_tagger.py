@@ -75,6 +75,9 @@ def _combine_votes(
 
     # Sort API hits by confidence so we can check how close the to matches are
     if len(api_hits) > 1:
+        api_hits = [
+            hit for hit in api_hits if len(hit.get("poster_path", "")) > 0
+        ]
         api_hits.sort(key=lambda x: x["confidence"], reverse=True)
         close_api_hits = [
             hit
@@ -138,6 +141,14 @@ def _query_with_cache(
         results = query_igdb(title, release_year)
     elif media_type == "book":
         results = query_openlibrary(title, release_year)
+
+    if release_year:
+        # Filter out results that don't match the release year
+        results = [
+            api_hit
+            for api_hit in results
+            if api_hit["tags"]["release_year"] == release_year
+        ]
 
     # Cache the results
     QUERY_CACHE[cache_key] = results
@@ -217,16 +228,24 @@ def _pair_dates_with_hints(hints: List[Dict], entry: Dict) -> List[Tuple[Dict, D
 
     matched_pairs = []
     for hint in hints:
+        if 'type' in entry and entry['type'] != hint.get('type'):
+            logger.info(
+                "Skipping hint '%s' for entry '%s' due to type mismatch.",
+                hint.get("canonical_title", "No Title"),
+                entry.get("title", "No Title"),
+            )
+            continue
+
         new_entry = copy.deepcopy(entry)
         new_entry["started_dates"] = [
             date
             for date in new_entry.get("started_dates", [])
-            if date in hint.get("dates", [])
+            if date in hint.get("dates", []) and date in unmatched_dates
         ]
         new_entry["finished_dates"] = [
             date
             for date in new_entry.get("finished_dates", [])
-            if date in hint.get("dates", [])
+            if date in hint.get("dates", []) and date in unmatched_dates
         ]
         if not new_entry["started_dates"] and not new_entry["finished_dates"]:
             logger.info(
