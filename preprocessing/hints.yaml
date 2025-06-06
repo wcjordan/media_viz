@@ -203,8 +203,8 @@ Don Quixote:
   release_year: "1996"
 
 Left Bank:
-  canonical_title: "Left Bank: Art, Passion, and the Rebirth of Paris, 1940-50"
   type: "Book"
+  release_year: "2018"
 
 "Memory's Legion: Auberon":
   canonical_title: "Auberon"
@@ -273,7 +273,7 @@ The Girl Who Played with Fire:
   release_year: "2009"
 
 The Hitchhiker’s Guide to the Galaxy:
-  canonical_title: "The Hitchhiker's Guide to the Galaxy"
+  canonical_title: "The Hitch Hiker's Guide to the Galaxy"
   type: "Book"
   release_year: "1979"
 
@@ -442,7 +442,7 @@ Luther:
   release_year: "2010"
 
 "Marvel: What If?":
-  canonical_title: "Marvel's What If...?"
+  canonical_title: "What If...?"
   type: "TV Show"
 
 Marvel's What If:
@@ -534,7 +534,7 @@ She-Hulk:
 Shogun:
   canonical_title: "Shōgun"
   type: "TV Show"
-  release_year: "2023"
+  release_year: "2024"
 
 Silicon Valley:
   type: "TV Show"
