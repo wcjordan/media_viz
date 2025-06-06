@@ -96,7 +96,7 @@ def fixture_mock_api_responses():
                     "canonical_title": "The Hobbit: An Unexpected Journey",
                     "type": "Movie",
                     "tags": {"genre": ["Adventure"]},
-                    "confidence": 0.9,
+                    "confidence": 0.95,
                     "source": "tmdb",
                 }
             ],
@@ -409,7 +409,7 @@ def test_apply_tagging_fix_confidence_with_hint(
     tagged_entry = entry["tagged"]
     assert tagged_entry["type"] == "Movie"
     assert tagged_entry["tags"]["genre"] == ["Adventure"]
-    assert tagged_entry["confidence"] == 0.9
+    assert tagged_entry["confidence"] == 0.95
     assert tagged_entry["source"] == "tmdb"
 
 

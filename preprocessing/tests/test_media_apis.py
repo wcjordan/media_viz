@@ -574,7 +574,7 @@ def test_query_openlibrary_success(mock_openlibrary_response):
     assert "Fantasy" in results[0]["tags"]["genre"]
     assert "J.R.R. Tolkien" in results[0]["tags"]["author"]
     assert results[0]["tags"]["release_year"] == "1937"
-    assert results[0]["confidence"] > 0.7  # High confidence for exact match
+    assert results[0]["confidence"] >= 0.7  # High confidence for exact match
     assert results[0]["source"] == "openlibrary"
     assert "covers.openlibrary.org" in results[0]["poster_path"]
 

@@ -216,8 +216,8 @@ if __name__ == "__main__":
     final_stats = process_and_save(
         "preprocessing/raw_data/media_enjoyed.csv",
         "preprocessing/processed_data/media_entries.json",
-        start_date=None,  # "2023-12-01",
-        end_date="2024-07-01",
+        start_date=None,
+        end_date=None,
     )
 
     # Print statistics
