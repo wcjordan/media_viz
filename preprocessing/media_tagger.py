@@ -28,7 +28,11 @@ def get_media_db_api_calls() -> Dict:
 
 
 def _combine_votes(
-    entry: Dict, api_hits: List[Dict], hint: Optional[Dict] = None, title_query_term: str = None, release_year_query_term: str = None
+    entry: Dict,
+    api_hits: List[Dict],
+    hint: Optional[Dict] = None,
+    title_query_term: str = None,
+    release_year_query_term: str = None,
 ) -> Dict:
     """
     Combine votes from hints and API hits.

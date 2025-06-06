@@ -356,7 +356,7 @@ def test_apply_tagging_with_narrow_confidence(
 
     # Check for warnings about close confidence scores
     assert (
-        "Multiple API hits with close confidence for {'title': 'The Hobbit'"
+        "Multiple API hits with close confidence for The Hobbit with year query ()."
         in caplog.text
     )
 
