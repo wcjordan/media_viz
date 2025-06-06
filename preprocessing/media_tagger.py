@@ -96,7 +96,7 @@ def _combine_votes(
         close_api_hits = [
             hit
             for hit in api_hits
-            if hit["confidence"] >= api_hits[0]["confidence"] - 0.1
+            if hit["confidence"] > api_hits[0]["confidence"] - 0.1
         ]
         if len(close_api_hits) > 1:
             logger.warning(
@@ -297,7 +297,7 @@ def _tag_entry(entry: Dict, hints: Dict) -> List[Dict]:
     """
     title = entry["title"]
 
-    season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
+    season_match = re.search(r"(.+)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
     if season_match:
         title = season_match.group(1).strip()
         entry["season"] = season_match.group(2).lower()

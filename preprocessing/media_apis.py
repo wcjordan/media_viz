@@ -384,10 +384,15 @@ def _format_openlibrary_entry(search_title: str, book: dict) -> dict:
             - confidence: A float between 0 and 1 indicating match confidence
             - source: The source of the metadata (e.g., "openlibrary")
     """
+    # Drop entries that are audio book only since they'll have a print format entry that's preferred
+    formats = [format for format in book.get("format", []) if format.lower() in ("paperback", "hardcover", "ebook")]
+    if not formats and len(book.get("format", [])) > 0:
+        return None
+
     # Calculate confidence based on title similarity
     # Note books confidence is handicapped to 0.8 to avoid drowning out games and movies
     book_title = book.get("title", "")
-    confidence = 0.8 * _calculate_title_similarity(search_title, book_title)
+    confidence = 0.7 * _calculate_title_similarity(search_title, book_title) + 0.05 * len(formats)
 
     # Get cover image URL if available
     cover_id = book.get("cover_i")
@@ -448,8 +453,8 @@ def query_openlibrary(title: str, release_year: str = None) -> list:
         # Prepare parameters for the API call
         params = {
             "title": title,
-            "limit": 5,
-            "fields": "key,title,author_name,first_publish_year,subject,cover_i",
+            "limit": 10,
+            "fields": "key,title,author_name,first_publish_year,subject,cover_i,format",
         }
 
         # Add first_publish_year parameter if provided
@@ -471,7 +476,7 @@ def query_openlibrary(title: str, release_year: str = None) -> list:
             _format_openlibrary_entry(title, book)
             for book in search_data.get("docs", [])
         ]
-        tagged_books = [book for book in tagged_books if book is not None]
+        tagged_books = [book for book in tagged_books if book is not None][:5]
         return tagged_books
 
     except requests.RequestException as e:

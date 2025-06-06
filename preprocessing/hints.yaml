@@ -7,6 +7,15 @@
 #   dates: ["YYYY-MM-DD", "YYYY-MM-DD"] # Optional, for multi-matches
 
 # Video Games
+Anno 1800:
+  type: "Game"
+  release_year: "2019"
+
+Anno 1800 campaign:
+  canonical_title: "Anno 1800"
+  type: "Game"
+  release_year: "2019"
+
 Advent of Code:
   type: "Game"
 
@@ -19,7 +28,15 @@ BrawlStars:
   canonical_title: "Brawl Stars"
   type: "Game"
 
+Control Foundation DLC:
+  canonical_title: "Control"
+  type: "Game"
+
 Elevator Saga:
+  type: "Game"
+
+"Factorio: Demo":
+  canonical_title: "Factorio"
   type: "Game"
 
 FF7:
@@ -69,6 +86,11 @@ Prey:
 Secret of Mana:
   type: "Game"
   release_year: "1993"
+
+Spider-Man 2:
+  canonical_title: "Marvel's Spider-Man 2"
+  type: "Game"
+  release_year: "2023"
 
 StarCraft:
   type: "Game"
@@ -120,6 +142,15 @@ Abaddon's Gate:
   type: "Book"
   release_year: "2013"
 
+"Memory's Legion: Auberon":
+  canonical_title: "Auberon"
+  type: "Book"
+
+Babylon's Ashes:
+  canonical_title: "Babylon's Ashes (The Expanse)"
+  type: "Book"
+  release_year: "2016"
+
 Be Prepared:
   canonical_title: "Be Prepared: A Practical Handbook for New Dads"
   type: "Book"
@@ -157,20 +188,22 @@ Don Quixote:
   release_year: "1996"
 
 "Memory's Legion: Drive":
-  canonical_title: "Memory's Legion"
+  canonical_title: "Drive"
   type: "Book"
+  release_year: "2012"
 
 "Memory's Legion: Gods of Risk":
-  canonical_title: "Memory's Legion"
+  canonical_title: "Gods of Risk"
   type: "Book"
 
 "Memory's Legion: The Butcher of Anderson Station":
-  canonical_title: "Memory's Legion"
+  canonical_title: "The Butcher of Anderson Station"
   type: "Book"
 
 "Memory's Legion: The Churn":
-  canonical_title: "Memory's Legion"
+  canonical_title: "The Churn"
   type: "Book"
+  release_year: "2014"
 
 Nemesis Game:
   canonical_title: "Nemesis Games"
@@ -197,9 +230,19 @@ Soon I Will Be Invincible:
   type: "Book"
   release_year: "2007"
 
+Strange Dogs:
+  canonical_title: "Strange Dogs"
+  type: "Book"
+  release_year: "2017"
+
 Sword of Destiny:
   type: "Book"
   release_year: "2015"
+
+The Girl Who Played with Fire:
+  canonical_title: "The Girl Who Played with Fire"
+  type: "Book"
+  release_year: "2009"
 
 The Library of Babel:
   type: "Book"
@@ -218,6 +261,11 @@ Thinking in Systems:
   type: "Book"
   release_year: "2008"
 
+Tomorrow, and Tomorrow, and Tomorrow:
+  canonical_title: "Tomorrow, and Tomorrow, and Tomorrow"
+  type: "Book"
+  release_year: "2022"
+
 Ubik:
   type: "Book"
 
@@ -235,6 +283,11 @@ Ashoka:
 Archer:
   type: "TV Show"
   release_year: "2009"
+
+"Avatar: The Last Airbender (2024)":
+  canonical_title: "Avatar: The Last Airbender"
+  type: "TV Show"
+  release_year: "2024"
 
 Barry:
   type: "TV Show"
@@ -276,6 +329,10 @@ Falcon & Winter Soldier:
 
 Fall of the House of Usher:
   type: "TV Show"
+
+Fallout:
+  type: "TV Show"
+  release_year: "2024"
 
 Finished WandaVision:
   canonical_title: "WandaVision"
@@ -334,6 +391,10 @@ Luther:
   type: "TV Show"
   release_year: "2010"
 
+"Marvel: What If?":
+  canonical_title: "Marvel's What If...?"
+  type: "TV Show"
+
 Marvel's What If:
   canonical_title: "What If...?"
   type: "TV Show"
@@ -374,8 +435,15 @@ Nevers:
 Obi-Wan Kenobi:
   type: "TV Show"
 
+One Piece:
+  type: "TV Show"
+  release_year: "2023"
+
 Only Murders:
   canonical_title: Only Murders in the Building
+  type: "TV Show"
+
+Outlander:
   type: "TV Show"
 
 Picard:
@@ -386,6 +454,10 @@ Pieces of Her:
   type: "TV Show"
 
 Poker Face:
+  type: "TV Show"
+
+s4:
+  canonical_title: "Bosch"
   type: "TV Show"
 
 Search Party:
@@ -401,6 +473,11 @@ Severance:
 
 She-Hulk:
   type: "TV Show"
+
+Shogun:
+  canonical_title: "Shōgun"
+  type: "TV Show"
+  release_year: "2023"
 
 Silicon Valley:
   type: "TV Show"
@@ -433,10 +510,17 @@ Star Trek Lower Decks:
   canonical_title: "Star Trek: Lower Decks"
   type: "TV Show"
 
+"Star Wars: The Acolyte":
+  canonical_title: "The Acolyte"
+  type: "TV Show"
+
 Startup:
   canonical_title: "StartUp"
   type: "TV Show"
   release_year: "2016"
+
+Station Eleven:
+  type: "TV Show"
 
 Superman & Lois:
   type: "TV Show"
@@ -446,6 +530,9 @@ Superman and Lois:
   type: "TV Show"
 
 Succession:
+  type: "TV Show"
+
+The Bear:
   type: "TV Show"
 
 The Clone Wars:
@@ -461,6 +548,9 @@ The Dropout:
 
 The Expanse S3 (& podcast):
   canonical_title: "The Expanse"
+  type: "TV Show"
+
+The Gentlemen:
   type: "TV Show"
 
 The Killing:
@@ -491,6 +581,14 @@ The Rings of Power:
   type: "TV Show"
 
 The Sandman:
+  type: "TV Show"
+
+The Three Body Problem:
+  canonical_title: "The Three-Body Problem"
+  type: "TV Show"
+
+The Umbrella Academy:
+  canonical_title: "The Umbrella Academy"
   type: "TV Show"
 
 The Watchful Eye:
@@ -573,17 +671,29 @@ Blade:
   type: "Movie"
   release_year: "1998"
 
+Blade 2:
+  type: "Movie"
+  release_year: "2002"
+
 Blade Runner:
   type: "Movie"
 
 Blade Runner 2049:
   type: "Movie"
 
+Casino Royale:
+  type: "Movie"
+  release_year: "2006"
+
 Civil War:
   canonical_title: "Captain America: Civil War"
   type: "Movie"
 
 Coherence:
+  type: "Movie"
+
+Creative Assembly:
+  canonical_title: "NoClip: Creative Assembly"
   type: "Movie"
 
 Die Hard:
@@ -595,13 +705,24 @@ Dune pt 1:
   type: "Movie"
   release_year: "2021"
 
+Empire Strikes Back:
+  canonical_title: "The Empire Strikes Back"
+  type: "Movie"
+
 Endgame:
   canonical_title: "Avengers: Endgame"
   type: "Movie"
   release_year: "2019"
 
+Enter the Dragon:
+  type: "Movie"
+
 Everything, Everywhere, All at Once:
   type: "Movie"
+
+Ex Machina:
+  type: "Movie"
+  release_year: "2015"
 
 "Fantastic Beasts: Secrets of Dumbledore":
   canonical_title: "Fantastic Beasts: The Secrets of Dumbledore"
@@ -631,9 +752,20 @@ Hamilton:
   type: "Movie"
   release_year: "2020"
 
+Harry Potter movies:
+  canonical_title: "Harry Potter and the Philosopher's Stone"
+  type: "Movie"
+
 I Know What You Did Last Summer:
   type: "Movie"
   release_year: "1997"
+
+Iron Man:
+  type: "Movie"
+  release_year: "2008"
+
+Iron Man 2:
+  type: "Movie"
 
 John Wick 3:
   canonical_title: "John Wick: Chapter 3 – Parabellum"
@@ -650,6 +782,10 @@ Jurassic Park:
 Kate:
   type: "Movie"
   release_year: "2021"
+
+L.A. Confidential:
+  type: "Movie"
+  release_year: "1997"
 
 Losers:
   type: "Movie"
@@ -670,15 +806,30 @@ Mean Girls:
   type: "Movie"
   release_year: "2004"
 
-"Mission: Impossible 3 & 4":
+"Mission Impossible 3 & 4":
   canonical_title: "Mission Impossible III"
   type: "Movie"
   release_year: "2006"
+
+Mission Impossible 4:
+  canonical_title: "Mission: Impossible – Ghost Protocol"
+  type: "Movie"
+  release_year: "2011"
 
 Mortal Combat:
   canonical_title: "Mortal Kombat"
   type: "Movie"
   release_year: "2021"
+
+No-Clip FFXIV:
+  canonical_title: "NoClip: Final Fantasy XIV"
+  type: "Movie"
+
+"NoClip: Crystal Dynamics":
+  type: "Movie"
+
+"NoClip: The Making of Prey":
+  type: "Movie"
 
 Nobody:
   type: "Movie"
@@ -695,6 +846,10 @@ No Time to Die:
 Pitch Perfect 2:
   type: "Movie"
   release_year: "2015"
+
+Point Break:
+  type: "Movie"
+  release_year: "1991"
 
 Players:
   type: "Movie"
@@ -720,6 +875,11 @@ Rebel Moon:
   canonical_title: "Rebel Moon - Part One: A Child of Fire"
   type: "Movie"
 
+Reminiscience:
+  canonical_title: "Reminiscence"
+  type: "Movie"
+  release_year: "2021"
+
 Rogue One:
   canonical_title: "Rogue One: A Star Wars Story"
   type: "Movie"
@@ -740,6 +900,10 @@ Shang-chi:
 
 Shaun of the Dead:
   type: "Movie"
+
+Snatch:
+  type: "Movie"
+  release_year: "2000"
 
 Species:
   type: "Movie"
@@ -778,6 +942,9 @@ The Eternals:
   type: "Movie"
   release_year: "2021"
 
+The Fifth Element:
+  type: "Movie"
+
 The Grey Man:
   type: "Movie"
 
@@ -794,11 +961,18 @@ The King's Man:
   type: "Movie"
   release_year: "2021"
 
+The Kingsmen:
+  canonical_title: "Kingsman: The Secret Service"
+  type: "Movie"
+
 The Master:
   type: "Movie"
   release_year: "2012"
 
 The Matrix:
+  type: "Movie"
+
+The Ministry of Ungentlemanly Warfare:
   type: "Movie"
 
 The Mummy:
@@ -925,3 +1099,14 @@ The Girl with the Dragon Tattoo:
     dates:
       - "2023-04-17"
       - "2023-05-22"
+
+The Martian:
+  - type: "Movie"
+    release_year: "2015"
+    dates:
+      - "2024-03-24"
+  - type: "Book"
+    release_year: "2011"
+    dates:
+      - "2024-04-22"
+      - "2024-05-06"
