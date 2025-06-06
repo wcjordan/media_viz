@@ -332,6 +332,7 @@ def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
         canonical_key = (
             tagged_entry.get("canonical_title", ""),
             tagged_entry.get("type", ""),
+            tagged_entry.get("release_year", ""),
         )
         if canonical_key not in canonical_groups:
             canonical_groups[canonical_key] = []

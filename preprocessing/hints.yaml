@@ -7,10 +7,20 @@
 #   dates: ["YYYY-MM-DD", "YYYY-MM-DD"] # Optional, for multi-matches
 
 # Video Games
+Advent of Code:
+  type: "Game"
+
 Bioshock:
   canonical_title: "BioShock"
   type: "Game"
   release_year: "2007"
+
+BrawlStars:
+  canonical_title: "Brawl Stars"
+  type: "Game"
+
+Elevator Saga:
+  type: "Game"
 
 FF7:
   canonical_title: "Final Fantasy VII Remake"
@@ -18,6 +28,18 @@ FF7:
 
 Frostpunk & finished the New Home & Seed Vault missions:
   canonical_title: Frostpunk
+  type: "Game"
+
+"Frostpunk: The Refugees":
+  canonical_title: "Frostpunk"
+  type: "Game"
+
+"Frostpunk: A New Home - Hard":
+  canonical_title: "Frostpunk"
+  type: "Game"
+
+"Frostpunk: A New Home - Very Hard and Endless":
+  canonical_title: "Frostpunk"
   type: "Game"
 
 Guardians of the Galaxy:
@@ -32,6 +54,10 @@ Hades:
   type: "Game"
   release_year: "2020"
 
+Oxygen Not Guaranteed:
+  canonical_title: "Oxygen Not Included"
+  type: "Game"
+
 Portal:
   type: "Game"
   release_year: "2007"
@@ -39,6 +65,10 @@ Portal:
 Prey:
   type: "Game"
   release_year: "2017"
+
+Secret of Mana:
+  type: "Game"
+  release_year: "1993"
 
 StarCraft:
   type: "Game"
@@ -76,6 +106,11 @@ The Witness:
   release_year: "2016"
 
 # Books
+100 Years of Solitude:
+  canonical_title: One Hundred Years of Solitude
+  type: "Book"
+  release_year: "1967"
+
 Abbadon's Gate:
   canonical_title: "Abaddon's Gate"
   type: "Book"
@@ -98,9 +133,19 @@ Caliban's War:
   type: "Book"
   release_year: "2012"
 
+Clash of Kings:
+  canonical_title: "A Clash of Kings"
+  type: "Book"
+  release_year: "1998"
+
 Data Mesh:
   type: "Book"
   release_year: "2022"
+
+Do Androids Dream of Electric Sheep:
+  canonical_title: "Do Androids Dream of Electric Sheep?"
+  type: "Book"
+  release_year: "1968"
 
 Don Quixote:
   type: "Book"
@@ -111,9 +156,30 @@ Don Quixote:
   type: "Book"
   release_year: "1996"
 
+"Memory's Legion: Drive":
+  canonical_title: "Memory's Legion"
+  type: "Book"
+
+"Memory's Legion: Gods of Risk":
+  canonical_title: "Memory's Legion"
+  type: "Book"
+
+"Memory's Legion: The Butcher of Anderson Station":
+  canonical_title: "Memory's Legion"
+  type: "Book"
+
+"Memory's Legion: The Churn":
+  canonical_title: "Memory's Legion"
+  type: "Book"
+
 Nemesis Game:
   canonical_title: "Nemesis Games"
   type: "Book"
+
+Peopleware:
+  canonical_title: "Peopleware"
+  type: "Book"
+  release_year: "2013"
 
 Radical Candor:
   type: "Book"
@@ -147,6 +213,14 @@ Thinking Fast & Slow:
   type: "Book"
   release_year: "2011"
 
+Thinking in Systems:
+  canonical_title: "Thinking in systems"
+  type: "Book"
+  release_year: "2008"
+
+Ubik:
+  type: "Book"
+
 # TV Shows
 "1923":
   type: "TV Show"
@@ -176,8 +250,15 @@ Captain Falcon & the Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
   type: "TV Show"
 
+Class of '09:
+  type: "TV Show"
+
 Clone Wars:
   canonical_title: "Star Wars: The Clone Wars"
+  type: "TV Show"
+
+Daredevil:
+  canonical_title: "Marvel's Daredevil"
   type: "TV Show"
 
 "Explained: The Mind":
@@ -193,6 +274,9 @@ Falcon & Winter Soldier:
   canonical_title: "The Falcon and the Winter Soldier"
   type: "TV Show"
 
+Fall of the House of Usher:
+  type: "TV Show"
+
 Finished WandaVision:
   canonical_title: "WandaVision"
   type: "TV Show"
@@ -204,6 +288,9 @@ Goliath:
   type: "TV Show"
   release_year: "2016"
 
+Hawkeye:
+  type: "TV Show"
+
 "Headspace: Guide to Meditation":
   canonical_title: "Headspace Guide to Meditation"
   type: "TV Show"
@@ -213,6 +300,20 @@ Hocus Pocus:
 
 Interview w/ a Vampire:
   canonical_title: "Interview with the Vampire"
+  type: "TV Show"
+
+Jack Ryan:
+  canonical_title: "Tom Clancy's Jack Ryan"
+  type: "TV Show"
+
+Jury Duty:
+  type: "TV Show"
+
+"Justified: City of Primeval":
+  canonical_title: "Justified: City Primeval"
+  type: "TV Show"
+
+Kaleidoscope:
   type: "TV Show"
 
 Loki:
@@ -229,8 +330,16 @@ Lupin:
   type: "TV Show"
   release_year: "2021"
 
+Luther:
+  type: "TV Show"
+  release_year: "2010"
+
 Marvel's What If:
   canonical_title: "What If...?"
+  type: "TV Show"
+
+Marvelous Ms. Maisel:
+  canonical_title: "The Marvelous Mrs. Maisel"
   type: "TV Show"
 
 Midnight Mass:
@@ -251,6 +360,10 @@ Mrs. Maisel:
   canonical_title: "The Marvelous Mrs. Maisel"
   type: "TV Show"
 
+Murder at the End of the World:
+  canonical_title: "A Murder at the End of the World"
+  type: "TV Show"
+
 Neon Genesis Evangelion:
   type: "TV Show"
 
@@ -265,7 +378,14 @@ Only Murders:
   canonical_title: Only Murders in the Building
   type: "TV Show"
 
+Picard:
+  canonical_title: "Star Trek: Picard"
+  type: "TV Show"
+
 Pieces of Her:
+  type: "TV Show"
+
+Poker Face:
   type: "TV Show"
 
 Search Party:
@@ -280,6 +400,12 @@ Severance:
   type: "TV Show"
 
 She-Hulk:
+  type: "TV Show"
+
+Silicon Valley:
+  type: "TV Show"
+
+Silo:
   type: "TV Show"
 
 Sisyphus:
@@ -303,12 +429,23 @@ Star Trek Discovery:
   canonical_title: "Star Trek: Discovery"
   type: "TV Show"
 
+Star Trek Lower Decks:
+  canonical_title: "Star Trek: Lower Decks"
+  type: "TV Show"
+
 Startup:
   canonical_title: "StartUp"
   type: "TV Show"
   release_year: "2016"
 
 Superman & Lois:
+  type: "TV Show"
+
+Superman and Lois:
+  canonical_title: "Superman & Lois"
+  type: "TV Show"
+
+Succession:
   type: "TV Show"
 
 The Clone Wars:
@@ -319,15 +456,26 @@ the Clone Wars:
   canonical_title: "Star Wars: The Clone Wars"
   type: "TV Show"
 
+The Dropout:
+  type: "TV Show"
+
 The Expanse S3 (& podcast):
   canonical_title: "The Expanse"
   type: "TV Show"
+
+The Killing:
+  type: "TV Show"
+  release_year: "2011"
 
 The Last Kingdom:
   type: "TV Show"
 
 The Making of 1899:
   canonical_title: "1899"
+  type: "TV Show"
+
+The Marvelous Ms Maisel:
+  canonical_title: "The Marvelous Mrs. Maisel"
   type: "TV Show"
 
 The Midnight Club:
@@ -343,6 +491,9 @@ The Rings of Power:
   type: "TV Show"
 
 The Sandman:
+  type: "TV Show"
+
+The Watchful Eye:
   type: "TV Show"
 
 The Witcher:
@@ -364,6 +515,9 @@ Unnatural Selection:
 Vikings Valhalla:
   type: "TV Show"
 
+Warrior:
+  type: "TV Show"
+
 We Own this City:
   type: "TV Show"
 
@@ -382,9 +536,24 @@ Yellowjackets:
   type: "Movie"
   release_year: "2007"
 
+30 Days of Night:
+  type: "Movie"
+
+A Haunting of Venice:
+  canonical_title: "A Haunting in Venice"
+  type: "Movie"
+
+Age of Ultron:
+  canonical_title: "Avengers: Age of Ultron"
+  type: "Movie"
+
 Alien:
   type: "Movie"
   release_year: "1979"
+
+Aliens:
+  type: "Movie"
+  release_year: "1986"
 
 "Batman: The Long Halloween pt 1":
   canonical_title: "Batman: The Long Halloween, Part One"
@@ -399,6 +568,23 @@ Alien:
 Black Widow:
   type: "Movie"
   release_year: "2021"
+
+Blade:
+  type: "Movie"
+  release_year: "1998"
+
+Blade Runner:
+  type: "Movie"
+
+Blade Runner 2049:
+  type: "Movie"
+
+Civil War:
+  canonical_title: "Captain America: Civil War"
+  type: "Movie"
+
+Coherence:
+  type: "Movie"
 
 Die Hard:
   type: "Movie"
@@ -417,17 +603,49 @@ Endgame:
 Everything, Everywhere, All at Once:
   type: "Movie"
 
+"Fantastic Beasts: Secrets of Dumbledore":
+  canonical_title: "Fantastic Beasts: The Secrets of Dumbledore"
+  type: "Movie"
+
+Final Destination 3:
+  type: "Movie"
+  release_year: "2006"
+
+Friday the 13th:
+  type: "Movie"
+  release_year: "1980"
+
+Gladiator:
+  type: "Movie"
+  release_year: "2000"
+
 Glass Onion:
   canonical_title: "Glass Onion: A Knives Out Mystery"
+  type: "Movie"
+
+Guardians of the Galaxy Vol 3:
+  canonical_title: "Guardians of the Galaxy Vol. 3"
   type: "Movie"
 
 Hamilton:
   type: "Movie"
   release_year: "2020"
 
+I Know What You Did Last Summer:
+  type: "Movie"
+  release_year: "1997"
+
+John Wick 3:
+  canonical_title: "John Wick: Chapter 3 – Parabellum"
+  type: "Movie"
+
 Jungle Cruise:
   type: "Movie"
   release_year: "2021"
+
+Jurassic Park:
+  type: "Movie"
+  release_year: "1993"
 
 Kate:
   type: "Movie"
@@ -436,6 +654,21 @@ Kate:
 Losers:
   type: "Movie"
   release_year: "2019"
+
+"LOTR: Return of the King":
+  canonical_title: "The Lord of the Rings: The Return of the King"
+  type: "Movie"
+
+Man of Steel:
+  type: "Movie"
+  release_year: "2013"
+
+Matchstick Men:
+  type: "Movie"
+
+Mean Girls:
+  type: "Movie"
+  release_year: "2004"
 
 "Mission: Impossible 3 & 4":
   canonical_title: "Mission Impossible III"
@@ -451,9 +684,17 @@ Nobody:
   type: "Movie"
   release_year: "2021"
 
+No Hard Feelings:
+  type: "Movie"
+  release_year: "2023"
+
 No Time to Die:
   type: "Movie"
   release_year: "2021"
+
+Pitch Perfect 2:
+  type: "Movie"
+  release_year: "2015"
 
 Players:
   type: "Movie"
@@ -463,9 +704,26 @@ Porco Rosso:
   type: "Movie"
   release_year: "1992"
 
+Prometheus:
+  type: "Movie"
+  release_year: "2012"
+
+Quantumania:
+  canonical_title: "Ant-Man and the Wasp: Quantumania"
+  type: "Movie"
+
 Raising Arizona:
   type: "Movie"
   release_year: "1987"
+
+Rebel Moon:
+  canonical_title: "Rebel Moon - Part One: A Child of Fire"
+  type: "Movie"
+
+Rogue One:
+  canonical_title: "Rogue One: A Star Wars Story"
+  type: "Movie"
+  release_year: "2016"
 
 Running with the Devil:
   type: "Movie"
@@ -479,6 +737,17 @@ Shang-chi:
   canonical_title: "Shang-Chi and the Legend of the Ten Rings"
   type: "Movie"
   release_year: "2021"
+
+Shaun of the Dead:
+  type: "Movie"
+
+Species:
+  type: "Movie"
+  release_year: "1995"
+
+Speed:
+  type: "Movie"
+  release_year: "1994"
 
 "Spider-Man: No Way Home":
   type: "Movie"
@@ -529,6 +798,16 @@ The Master:
   type: "Movie"
   release_year: "2012"
 
+The Matrix:
+  type: "Movie"
+
+The Mummy:
+  type: "Movie"
+  release_year: "1999"
+
+The Northman:
+  type: "Movie"
+
 The Phantom Menace:
   canonical_title: "Star Wars: Episode I – The Phantom Menace"
   type: "Movie"
@@ -553,6 +832,10 @@ WeWork documentary:
   canonical_title: "WeWork: Or the Making and Breaking of a $47 Billion Unicorn"
   type: "Movie"
   release_year: "2021"
+
+You People:
+  type: "Movie"
+  release_year: "2023"
 
 Zodiac:
   type: "Movie"
@@ -631,3 +914,14 @@ Fargo:
       - "2021-09-13"
       - "2021-11-01"
       - "2024-01-22"
+
+The Girl with the Dragon Tattoo:
+  - type: "Movie"
+    release_year: "2011"
+    dates:
+      - "2023-04-17"
+  - type: "Book"
+    release_year: "2008"
+    dates:
+      - "2023-04-17"
+      - "2023-05-22"
