@@ -664,6 +664,9 @@ the Clone Wars:
 The Dropout:
   type: "TV Show"
 
+The Expanse:
+  type: "TV Show"
+
 The Expanse S3 (& podcast):
   canonical_title: "The Expanse"
   type: "TV Show"
@@ -1161,6 +1164,9 @@ Speed:
 "Spider-Man: No Way Home":
   type: "Movie"
   release_year: "2021"
+
+Spirited Away:
+  type: "Movie"
 
 Section 31:
   canonical_title: "Star Trek: Section 31"
