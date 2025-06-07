@@ -41,8 +41,12 @@ Breath of the Wild:
   type: "Game"
   release_year: "2017"
 
+Control:
+  canonical_title: "Control: Ultimate Edition"
+  type: "Game"
+
 Control Foundation DLC:
-  canonical_title: "Control"
+  canonical_title: "Control: Ultimate Edition"
   type: "Game"
 
 Elevator Saga:
@@ -149,17 +153,17 @@ Starcraft zerg campaign:
   release_year: "1998"
 
 The Avengers:
-  canonical_title: "Marvel's Avengers Definitive Edition"
+  canonical_title: "Marvel's Avengers"
   type: "Game"
   release_year: "2020"
 
 The Avengers (game):
-  canonical_title: "Marvel's Avengers Definitive Edition"
+  canonical_title: "Marvel's Avengers"
   type: "Game"
   release_year: "2020"
 
 The Avengers w/ Danyi:
-  canonical_title: "Marvel's Avengers Definitive Edition"
+  canonical_title: "Marvel's Avengers"
   type: "Game"
   release_year: "2020"
 
@@ -822,6 +826,7 @@ Blade 2:
 
 Blade Runner:
   type: "Movie"
+  release_year: "1982"
 
 Blade Runner 2049:
   type: "Movie"

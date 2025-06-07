@@ -330,7 +330,6 @@ def query_igdb(title: str, release_year: str = None) -> list:
             f"""
             search "{title}";
             fields name, cover.url, first_release_date, genres.name, platforms.name, rating, aggregated_rating;
-            where version_parent = null;
         """
         ]
 
@@ -418,9 +417,7 @@ def _format_openlibrary_entry(search_title: str, book: dict) -> dict:
 
     # Calculate confidence based on title similarity
     # Note books confidence is handicapped to 0.8 to avoid drowning out games and movies
-    confidence = 0.7 * _calculate_title_similarity(
-        search_title, book_title
-    )
+    confidence = 0.7 * _calculate_title_similarity(search_title, book_title)
     if len(formats) > 1:
         confidence += 0.05
     if authors:
