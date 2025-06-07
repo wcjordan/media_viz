@@ -13,7 +13,7 @@ class MediaTags(BaseModel):
     author: Annotated[Optional[List[str]], Field(default=None)]
     genre: Annotated[Optional[List[str]], Field(default=None)]
     platform: Annotated[Optional[List[str]], Field(default=None)]
-    release_year: int
+    release_year: Optional[int] = None
 
 
 class TaggedEntry(BaseModel):

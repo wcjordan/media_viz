@@ -96,7 +96,7 @@ def fixture_mock_api_responses():
                     "canonical_title": "The Hobbit: An Unexpected Journey",
                     "type": "Movie",
                     "tags": {"genre": ["Adventure"]},
-                    "confidence": 0.9,
+                    "confidence": 0.95,
                     "source": "tmdb",
                 }
             ],
@@ -356,7 +356,7 @@ def test_apply_tagging_with_narrow_confidence(
 
     # Check for warnings about close confidence scores
     assert (
-        "Multiple API hits with close confidence for {'title': 'The Hobbit'"
+        "Multiple API hits with close confidence for The Hobbit with year query ()."
         in caplog.text
     )
 
@@ -409,7 +409,7 @@ def test_apply_tagging_fix_confidence_with_hint(
     tagged_entry = entry["tagged"]
     assert tagged_entry["type"] == "Movie"
     assert tagged_entry["tags"]["genre"] == ["Adventure"]
-    assert tagged_entry["confidence"] == 0.9
+    assert tagged_entry["confidence"] == 0.95
     assert tagged_entry["source"] == "tmdb"
 
 
@@ -526,14 +526,14 @@ def test_use_canonical_title_from_hint(
     mock_igdb.assert_called_once_with("Final Fantasy VII Remake", None)
 
 
-def test_season_extraction_in_tagging(
+def test_season_extraction_disabled(
     mock_api_responses,
     setup_hints_mock,
     setup_api_mocks,
     reset_dependency_mocks,
     reset_query_cache,
 ):
-    """Test that season information is correctly extracted and added back to canonical title."""
+    """Test that season information is correctly extracted but not added back to canonical title."""
     # Test cases for different season formats
     expected_title = "Succession"
     test_cases = [
@@ -570,10 +570,7 @@ def test_season_extraction_in_tagging(
         # Verify season extraction and canonical title
         assert len(tagged_entries) == 1
         tagged_entry = tagged_entries[0]
-        assert (
-            tagged_entry["canonical_title"]
-            == f"Succession {test_case['expected_season']}"
-        )
+        assert tagged_entry["canonical_title"] == "Succession"
         assert tagged_entry["tagged"]["type"] == "TV Show"
 
         # Verify API was called with the title without season information

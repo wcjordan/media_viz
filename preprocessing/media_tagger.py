@@ -28,7 +28,11 @@ def get_media_db_api_calls() -> Dict:
 
 
 def _combine_votes(
-    entry: Dict, api_hits: List[Dict], hint: Optional[Dict] = None
+    entry: Dict,
+    api_hits: List[Dict],
+    hint: Optional[Dict] = None,
+    title_query_term: str = None,
+    release_year_query_term: str = None,
 ) -> Dict:
     """
     Combine votes from hints and API hits.
@@ -36,6 +40,8 @@ def _combine_votes(
         entry: The original media entry.
         api_hits: List of dictionaries with metadata from API calls.
         hint: Optional dictionary with metadata from hints.
+        title_query_term: The title used for querying the API.
+        release_year_query_term: The release year used for querying the API.
     Returns:
         Dictionary copied from the past in entry and modified with the highest confidence API data and hints.
         Includes fields:
@@ -73,18 +79,30 @@ def _combine_votes(
 
         return tagged_entry
 
+    # Filter API hits to only those with a poster_path unless none are available
+    api_hits_w_poster = [hit for hit in api_hits if len(hit.get("poster_path", "")) > 0]
+    if api_hits_w_poster:
+        api_hits = api_hits_w_poster
+    else:
+        logger.warning(
+            "No API hits with poster_path found for %s.",
+            entry["title"],
+        )
+
     # Sort API hits by confidence so we can check how close the to matches are
     if len(api_hits) > 1:
+
         api_hits.sort(key=lambda x: x["confidence"], reverse=True)
         close_api_hits = [
             hit
             for hit in api_hits
-            if hit["confidence"] >= api_hits[0]["confidence"] - 0.1
+            if hit["confidence"] > api_hits[0]["confidence"] - 0.1
         ]
         if len(close_api_hits) > 1:
             logger.warning(
-                "Multiple API hits with close confidence for %s.\n\t%s",
-                entry,
+                "Multiple API hits with close confidence for %s with year query (%s).\n\t%s",
+                title_query_term,
+                release_year_query_term if release_year_query_term else "",
                 ",\n\t".join(str(hit) for hit in close_api_hits),
             )
 
@@ -139,6 +157,14 @@ def _query_with_cache(
     elif media_type == "book":
         results = query_openlibrary(title, release_year)
 
+    if release_year:
+        # Filter out results that don't match the release year
+        results = [
+            api_hit
+            for api_hit in results
+            if api_hit["tags"]["release_year"] == release_year
+        ]
+
     # Cache the results
     QUERY_CACHE[cache_key] = results
     return results
@@ -184,18 +210,19 @@ def _tag_with_hint(title: str, entry: Dict, hint: Dict) -> None:
         api_hits.extend(_query_with_cache("book", title, release_year_query_term))
 
     # Combine votes from hints and API hits
-    tagged_entry = _combine_votes(entry, api_hits, hint)
+    tagged_entry = _combine_votes(entry, api_hits, hint, title, release_year_query_term)
     if tagged_entry["confidence"] < 0.5 and not hint:
         logger.warning("Low confidence match for entry: %s", tagged_entry)
 
-    if entry.get("season"):
-        # If we have a season, add it to the canonical title
-        tagged_entry["canonical_title"] = (
-            f"{tagged_entry['canonical_title']} {entry['season']}"
-        )
-        logger.info(
-            "Added season to canonical title: %s", tagged_entry["canonical_title"]
-        )
+    # Disabling this functionality since use of seasons is inconsistent and the TV show timeline is cluttered
+    # if entry.get("season"):
+    #     # If we have a season, add it to the canonical title
+    #     tagged_entry["canonical_title"] = (
+    #         f"{tagged_entry['canonical_title']} {entry['season']}"
+    #     )
+    #     logger.info(
+    #         "Added season to canonical title: %s", tagged_entry["canonical_title"]
+    #     )
 
     entry["tagged"] = tagged_entry
 
@@ -217,16 +244,24 @@ def _pair_dates_with_hints(hints: List[Dict], entry: Dict) -> List[Tuple[Dict, D
 
     matched_pairs = []
     for hint in hints:
+        if "type" in entry and entry["type"] != hint.get("type"):
+            logger.info(
+                "Skipping hint '%s' for entry '%s' due to type mismatch.",
+                hint.get("canonical_title", "No Title"),
+                entry.get("title", "No Title"),
+            )
+            continue
+
         new_entry = copy.deepcopy(entry)
         new_entry["started_dates"] = [
             date
             for date in new_entry.get("started_dates", [])
-            if date in hint.get("dates", [])
+            if date in hint.get("dates", []) and date in unmatched_dates
         ]
         new_entry["finished_dates"] = [
             date
             for date in new_entry.get("finished_dates", [])
-            if date in hint.get("dates", [])
+            if date in hint.get("dates", []) and date in unmatched_dates
         ]
         if not new_entry["started_dates"] and not new_entry["finished_dates"]:
             logger.info(
@@ -263,7 +298,7 @@ def _tag_entry(entry: Dict, hints: Dict) -> List[Dict]:
     """
     title = entry["title"]
 
-    season_match = re.search(r"(.*)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
+    season_match = re.search(r"(.+)(s\d{1,2})\s*(e\d{1,2})?\s*", title, re.IGNORECASE)
     if season_match:
         title = season_match.group(1).strip()
         entry["season"] = season_match.group(2).lower()
@@ -302,6 +337,7 @@ def _combine_similar_entries(tagged_entries: List[Dict]) -> List[Dict]:
         canonical_key = (
             tagged_entry.get("canonical_title", ""),
             tagged_entry.get("type", ""),
+            tagged_entry.get("release_year", ""),
         )
         if canonical_key not in canonical_groups:
             canonical_groups[canonical_key] = []
