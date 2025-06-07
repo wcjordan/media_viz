@@ -214,14 +214,15 @@ def _tag_with_hint(title: str, entry: Dict, hint: Dict) -> None:
     if tagged_entry["confidence"] < 0.5 and not hint:
         logger.warning("Low confidence match for entry: %s", tagged_entry)
 
-    if entry.get("season"):
-        # If we have a season, add it to the canonical title
-        tagged_entry["canonical_title"] = (
-            f"{tagged_entry['canonical_title']} {entry['season']}"
-        )
-        logger.info(
-            "Added season to canonical title: %s", tagged_entry["canonical_title"]
-        )
+    # Disabling this functionality since use of seasons is inconsistent and the TV show timeline is cluttered
+    # if entry.get("season"):
+    #     # If we have a season, add it to the canonical title
+    #     tagged_entry["canonical_title"] = (
+    #         f"{tagged_entry['canonical_title']} {entry['season']}"
+    #     )
+    #     logger.info(
+    #         "Added season to canonical title: %s", tagged_entry["canonical_title"]
+    #     )
 
     entry["tagged"] = tagged_entry
 

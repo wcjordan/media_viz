@@ -393,12 +393,7 @@ def _format_openlibrary_entry(search_title: str, book: dict) -> dict:
     if not formats and len(book.get("format", [])) > 0:
         return None
 
-    # Calculate confidence based on title similarity
-    # Note books confidence is handicapped to 0.8 to avoid drowning out games and movies
     book_title = book.get("title", "")
-    confidence = 0.7 * _calculate_title_similarity(
-        search_title, book_title
-    ) + 0.05 * len(formats)
 
     # Get cover image URL if available
     cover_id = book.get("cover_i")
@@ -420,6 +415,20 @@ def _format_openlibrary_entry(search_title: str, book: dict) -> dict:
     )
     if not publish_year:
         return None
+
+    # Calculate confidence based on title similarity
+    # Note books confidence is handicapped to 0.8 to avoid drowning out games and movies
+    confidence = 0.7 * _calculate_title_similarity(
+        search_title, book_title
+    )
+    if len(formats) > 1:
+        confidence += 0.05
+    if authors:
+        confidence += 0.05
+    if len(subjects) > 4:
+        confidence += 0.05
+    if cover_id:
+        confidence += 0.05
 
     # Create result entry
     return {

@@ -36,6 +36,11 @@ BrawlStars:
   canonical_title: "Brawl Stars"
   type: "Game"
 
+Breath of the Wild:
+  canonical_title: "The Legend of Zelda: Breath of the Wild"
+  type: "Game"
+  release_year: "2017"
+
 Control Foundation DLC:
   canonical_title: "Control"
   type: "Game"
@@ -59,15 +64,27 @@ Frostpunk & finished the New Home & Seed Vault missions:
   canonical_title: Frostpunk
   type: "Game"
 
-"Frostpunk: The Refugees":
-  canonical_title: "Frostpunk"
-  type: "Game"
-
 "Frostpunk: A New Home - Hard":
   canonical_title: "Frostpunk"
   type: "Game"
 
 "Frostpunk: A New Home - Very Hard and Endless":
+  canonical_title: "Frostpunk"
+  type: "Game"
+
+"Frostpunk: On The Edge":
+  canonical_title: "Frostpunk"
+  type: "Game"
+
+"Frostpunk: The Last Autumn":
+  canonical_title: "Frostpunk"
+  type: "Game"
+
+"Frostpunk: The Refugees":
+  canonical_title: "Frostpunk"
+  type: "Game"
+
+"Frostpunk: Winterhome":
   canonical_title: "Frostpunk"
   type: "Game"
 
@@ -111,6 +128,11 @@ StarCraft:
   type: "Game"
   release_year: "1998"
 
+"Starcraft: Remastered":
+  canonical_title: "StarCraft"
+  type: "Game"
+  release_year: "1998"
+
 StarCraft terran campaign:
   canonical_title: "StarCraft"
   type: "Game"
@@ -127,16 +149,19 @@ Starcraft zerg campaign:
   release_year: "1998"
 
 The Avengers:
-  canonical_title: "Marvel's Avengers"
+  canonical_title: "Marvel's Avengers Definitive Edition"
   type: "Game"
+  release_year: "2020"
 
 The Avengers (game):
-  canonical_title: "Marvel's Avengers"
+  canonical_title: "Marvel's Avengers Definitive Edition"
   type: "Game"
+  release_year: "2020"
 
 The Avengers w/ Danyi:
-  canonical_title: "Marvel's Avengers"
+  canonical_title: "Marvel's Avengers Definitive Edition"
   type: "Game"
+  release_year: "2020"
 
 The Witness:
   type: "Game"
@@ -154,6 +179,7 @@ Abbadon's Gate:
   release_year: "2013"
 
 Abaddon's Gate:
+  canonical_title: "Abaddon's Gate"
   type: "Book"
   release_year: "2013"
 
@@ -172,8 +198,9 @@ Be Prepared:
   release_year: "2004"
 
 Blood of Elves:
+  canonical_title: "Blood of Elves (The Witcher)"
   type: "Book"
-  release_year: "2009"
+  release_year: "2018"
 
 Caliban's War:
   type: "Book"
@@ -232,6 +259,11 @@ Nemesis Game:
   canonical_title: "Nemesis Games"
   type: "Book"
 
+On the Road:
+  canonical_title: "On the Road"
+  type: "Book"
+  release_year: "1957"
+
 Peopleware:
   canonical_title: "Peopleware"
   type: "Book"
@@ -260,7 +292,7 @@ Strange Dogs:
 
 Sword of Destiny:
   type: "Book"
-  release_year: "2015"
+  release_year: "2020"
 
 The Girl Who Played With Fire:
   canonical_title: "The Girl Who Played with Fire"
@@ -278,7 +310,9 @@ The Hitchhiker’s Guide to the Galaxy:
   release_year: "1979"
 
 The Library of Babel:
+  canonical_title: "La biblioteca de babel"
   type: "Book"
+  release_year: "1974"
 
 The Kubernetes Book:
   canonical_title: "Kubernetes Book"
@@ -361,6 +395,15 @@ Daredevil:
   canonical_title: "Marvel's Daredevil"
   type: "TV Show"
 
+"Daredevil: Born Again":
+  canonical_title: "Daredevil: Born Again"
+  type: "TV Show"
+  release_year: "2025"
+
+Echo:
+  type: "TV Show"
+  release_year: "2024"
+
 "Explained: The Mind":
   canonical_title: "The Mind, Explained"
   type: "TV Show"
@@ -399,9 +442,6 @@ Hawkeye:
   canonical_title: "Headspace Guide to Meditation"
   type: "TV Show"
 
-Hocus Pocus:
-  type: "TV Show"
-
 Interview w/ a Vampire:
   canonical_title: "Interview with the Vampire"
   type: "TV Show"
@@ -432,6 +472,11 @@ Lost in Space:
 
 Love, Death, & Robots:
   type: "TV Show"
+
+Lower Decks:
+  canonical_title: "Star Trek: Lower Decks"
+  type: "TV Show"
+
 
 Lupin:
   type: "TV Show"
@@ -571,12 +616,21 @@ Star Trek Lower Decks:
   canonical_title: "The Acolyte"
   type: "TV Show"
 
+Start Up:
+  canonical_title: "StartUp"
+  type: "TV Show"
+  release_year: "2016"
+
 Startup:
   canonical_title: "StartUp"
   type: "TV Show"
   release_year: "2016"
 
 Station Eleven:
+  type: "TV Show"
+
+Super Pumped:
+  canonical_title: "Super Pumped: The Battle for Uber"
   type: "TV Show"
 
 Superman & Lois:
@@ -608,6 +662,10 @@ The Dropout:
 
 The Expanse S3 (& podcast):
   canonical_title: "The Expanse"
+  type: "TV Show"
+
+The Foundation:
+  canonical_title: "Foundation"
   type: "TV Show"
 
 The Gentlemen:
@@ -643,6 +701,10 @@ The Morning Show:
 The Old Man:
   type: "TV Show"
 
+The Punisher:
+  canonical_title: "Marvel's The Punisher"
+  type: "TV Show"
+
 The Rings of Power:
   type: "TV Show"
 
@@ -650,8 +712,9 @@ The Sandman:
   type: "TV Show"
 
 The Three Body Problem:
-  canonical_title: "The Three-Body Problem"
+  canonical_title: "3 Body Problem"
   type: "TV Show"
+  release_year: "2024"
 
 The Umbrella Academy:
   canonical_title: "The Umbrella Academy"
@@ -666,6 +729,10 @@ The Witcher:
 
 "The Witcher: Blood Origins":
   canonical_title: "The Witcher: Blood Origin"
+  type: "TV Show"
+
+"True Detective: Night Country":
+  canonical_title: "True Detective"
   type: "TV Show"
 
 Umbrella Academy:
@@ -686,6 +753,14 @@ We Own this City:
   type: "TV Show"
 
 We Own This City:
+  type: "TV Show"
+
+What If:
+  canonical_title: "What If...?"
+  type: "TV Show"
+
+White Lotus:
+  canonical_title: "The White Lotus"
   type: "TV Show"
 
 X-Men:
@@ -772,6 +847,10 @@ Collateral Damage:
 
 Conclave:
   type: "Movie"
+
+Constantine:
+  type: "Movie"
+  release_year: "2005"
 
 Creative Assembly:
   canonical_title: "NoClip: Creative Assembly"
@@ -861,6 +940,10 @@ Heat:
 Hidden Figures:
   type: "Movie"
 
+Hocus Pocus:
+  type: "Movie"
+  release_year: "1993"
+
 I Know What You Did Last Summer:
   type: "Movie"
   release_year: "1997"
@@ -912,8 +995,9 @@ Looper:
   type: "Movie"
 
 Losers:
+  canonical_title: "The Losers"
   type: "Movie"
-  release_year: "2019"
+  release_year: "2010"
 
 "LOTR: Return of the King":
   canonical_title: "The Lord of the Rings: The Return of the King"
@@ -939,6 +1023,10 @@ Mission Impossible 4:
   canonical_title: "Mission: Impossible – Ghost Protocol"
   type: "Movie"
   release_year: "2011"
+
+Moon:
+  type: "Movie"
+  release_year: "2009"
 
 Mortal Combat:
   canonical_title: "Mortal Kombat"
@@ -1110,7 +1198,9 @@ The Fifth Element:
   type: "Movie"
 
 The Grey Man:
+  canonical_title: "The Gray Man"
   type: "Movie"
+  release_year: "2022"
 
 The Harder They Fall:
   type: "Movie"
@@ -1167,6 +1257,10 @@ The Phantom Menace:
 The Prestige:
   type: "Movie"
 
+The Thing:
+  type: "Movie"
+  release_year: "1982"
+
 "Thor: Love & Thunder":
   type: "Movie"
 
@@ -1186,11 +1280,20 @@ Trolls:
   type: "Movie"
   release_year: "2016"
 
+True Lies:
+  type: "Movie"
+  release_year: "1994"
+
 Twisters:
   type: "Movie"
   release_year: "2024"
 
 Uncharted:
+  type: "Movie"
+  release_year: "2022"
+
+Wakanda Forever:
+  canonical_title: "Black Panther: Wakanda Forever"
   type: "Movie"
   release_year: "2022"
 

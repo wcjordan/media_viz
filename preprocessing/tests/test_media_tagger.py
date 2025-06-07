@@ -526,14 +526,14 @@ def test_use_canonical_title_from_hint(
     mock_igdb.assert_called_once_with("Final Fantasy VII Remake", None)
 
 
-def test_season_extraction_in_tagging(
+def test_season_extraction_disabled(
     mock_api_responses,
     setup_hints_mock,
     setup_api_mocks,
     reset_dependency_mocks,
     reset_query_cache,
 ):
-    """Test that season information is correctly extracted and added back to canonical title."""
+    """Test that season information is correctly extracted but not added back to canonical title."""
     # Test cases for different season formats
     expected_title = "Succession"
     test_cases = [
@@ -570,10 +570,7 @@ def test_season_extraction_in_tagging(
         # Verify season extraction and canonical title
         assert len(tagged_entries) == 1
         tagged_entry = tagged_entries[0]
-        assert (
-            tagged_entry["canonical_title"]
-            == f"Succession {test_case['expected_season']}"
-        )
+        assert tagged_entry["canonical_title"] == "Succession"
         assert tagged_entry["tagged"]["type"] == "TV Show"
 
         # Verify API was called with the title without season information
