@@ -488,7 +488,7 @@ def query_openlibrary(title: str, release_year: str = None) -> list:
             _format_openlibrary_entry(title, book)
             for book in search_data.get("docs", [])
         ]
-        tagged_books = [book for book in tagged_books if book is not None][:5]
+        tagged_books = [book for book in tagged_books if book is not None]
         return tagged_books
 
     except requests.RequestException as e:
